@@ -509,6 +509,26 @@ app.post('/api/stories/:id/like', requireUser, checkBan, async (c) => {
 // ═════════════════════════════════════════════════════════
 // ██  USER PROFILES & SOCIAL CAPABILITIES
 // ═════════════════════════════════════════════════════════
+// GET /api/users/search
+app.get('/api/users/search', async (c) => {
+  const db = c.env.DB;
+  const q = c.req.query('q') || '';
+  
+  if (q.trim().length < 2) {
+    return c.json([]);
+  }
+  
+  const queryParam = `%${q.trim()}%`;
+  const { results } = await db.prepare(`
+    SELECT id, user_id, full_name, profile_pic, bio
+    FROM users
+    WHERE full_name LIKE ? OR email LIKE ? OR user_id LIKE ?
+    LIMIT 20
+  `).bind(queryParam, queryParam, queryParam).all();
+  
+  return c.json(results);
+});
+
 app.get('/api/users/:idOrUserId', optionalUser, async (c) => {
   const db = c.env.DB;
   const param = c.req.param('idOrUserId');
@@ -637,26 +657,6 @@ app.post('/api/stories/:id/comments', requireUser, checkBan, async (c) => {
   ).bind(storyId).run();
 
   return c.json({ success: true, message: 'Comment posted successfully', status: 'approved' });
-});
-
-// GET /api/users/search
-app.get('/api/users/search', async (c) => {
-  const db = c.env.DB;
-  const q = c.req.query('q') || '';
-  
-  if (q.trim().length < 2) {
-    return c.json([]);
-  }
-  
-  const queryParam = `%${q.trim()}%`;
-  const { results } = await db.prepare(`
-    SELECT id, user_id, full_name, profile_pic, bio
-    FROM users
-    WHERE full_name LIKE ? OR email LIKE ? OR user_id LIKE ?
-    LIMIT 20
-  `).bind(queryParam, queryParam, queryParam).all();
-  
-  return c.json(results);
 });
 
 // GET /api/users/:idOrUserId/comments
