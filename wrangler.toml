@@ -1,6 +1,6 @@
 # wrangler.toml — Cloudflare Workers + Assets configuration for Midnight Stories
 
-name = "midnight-stories"
+name = "mid-night-stories-logins"
 main = "src/worker.js"
 compatibility_date = "2026-07-15"
 compatibility_flags = ["nodejs_compat"]
