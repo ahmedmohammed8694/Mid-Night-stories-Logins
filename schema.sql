@@ -17,12 +17,16 @@ DROP TABLE IF EXISTS categories;
 -- Create Tables
 CREATE TABLE users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT UNIQUE,
   full_name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT,
   google_id TEXT,
+  dob TEXT,
+  phone_number TEXT,
   bio TEXT,
   profile_pic TEXT,
+  privacy_settings TEXT DEFAULT '{"show_phone":false,"show_email":false}',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -137,6 +141,7 @@ CREATE INDEX idx_stories_created ON stories(created_at);
 CREATE INDEX idx_comments_story ON comments(story_id);
 CREATE INDEX idx_reports_resolved ON reports(resolved);
 CREATE INDEX idx_banned_identifier ON banned_identifiers(identifier);
+CREATE UNIQUE INDEX idx_users_user_id ON users(user_id);
 
 -- Seed Categories
 INSERT INTO categories (name, slug) VALUES ('Childhood', 'childhood');
