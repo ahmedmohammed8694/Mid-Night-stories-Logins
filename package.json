@@ -1,0 +1,19 @@
+{
+  "name": "midnight-stories",
+  "version": "1.0.0",
+  "description": "Anonymous Life Stories Platform — share personal stories safely and anonymously",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:init": "wrangler d1 execute midnight-stories-db --remote --file=schema.sql"
+  },
+  "dependencies": {
+    "hono": "^4.4.2",
+    "bcryptjs": "^2.4.3",
+    "otplib": "^12.0.1",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "wrangler": "^3.60.3"
+  }
+}

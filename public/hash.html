@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bcrypt Generator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+</head>
+<body>
+  <div id="result">Hashing...</div>
+  <script>
+    try {
+      // bcryptjs exports as dcodeIO.bcrypt
+      const bcrypt = dcodeIO.bcrypt;
+      const hash = bcrypt.hashSync('Admin@2026!', 12);
+      document.getElementById('result').innerText = hash;
+      console.log('Hash generated:', hash);
+    } catch (e) {
+      document.getElementById('result').innerText = 'Error: ' + e.message;
+    }
+  </script>
+</body>
+</html>

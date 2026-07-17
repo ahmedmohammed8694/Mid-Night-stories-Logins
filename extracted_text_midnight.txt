@@ -1,0 +1,79 @@
+
+Midnight Stories
+Every story deserves to be heard, even the ones told in whispers.
+Implementation Plan — Version 1.01
+UI/UX enhancement pass: dynamic interface, typography & colour research, competitor research, LGBTQ+ story category, and US/India support resources.
+
+Table of Contents
+
+
+
+1. What's New in v1.01
+v1.0 delivered the core platform: anonymous submissions, moderation queue, comments, likes, sharing, and the safety pipeline. v1.01 is a focused enhancement pass — it does not change the core architecture. It adds:
+Full rebrand to “Midnight Stories” with the new tagline, applied site-wide.
+Research-driven font pairing and colour palette (dark, whisper-quiet aesthetic).
+Dynamic UI/UX: scroll animations, micro-interactions, skeleton loading, dark theme.
+A new LGBTQ+ story category on the main feed/results page.
+A permanent Support & Resources page with verified US and India helplines.
+A companion AI agent prompt (see the accompanying file) that a coding agent can run against the existing codebase to execute this plan.
+Scope note
+This is additive polish on top of an already-working site. Nothing here should touch or weaken existing moderation, rate-limiting, or reporting logic — treat any conflict as a stop-and-flag situation, not something to silently override.
+2. Research Tasks (Do Before Building)
+2.1 Competitor & design research
+Search and review 5–8 sites in the anonymous story-sharing / peer-support / confession-community space. For each, capture: navigation structure, how sensitive content is presented, visual cues for anonymity, feed/card layout, and category structure. Summarize patterns worth adapting vs. avoiding. Never copy layouts, copy, or art directly — use only as inspiration.
+2.2 Typography research
+Search current best-practice font pairings for emotionally sensitive, editorial, text-heavy websites. Shortlist 2–3 heading/body pairings, favoring free/open web fonts (e.g. Google Fonts) for cost and licensing simplicity. Confirm readability at small sizes since this is a reading-heavy site.
+2.3 Colour scheme research
+Search current palette guidance for a nighttime, low-glare, emotionally calm theme fitting “Midnight Stories.” Shortlist 2–3 palettes covering background, surface, primary/secondary accent, and success/error states. Verify WCAG AA contrast for body text and buttons before finalizing.
+Deliverable for this section: a one-page research summary (competitor notes + font shortlist + palette shortlist with hex codes and contrast check) reviewed by a human before any code is written.
+3. Branding Application
+Element
+Update
+Site name
+“Midnight Stories” in header/logo, browser tab title, meta tags.
+Tagline
+“Every story deserves to be heard, even the ones told in whispers.” — header subtext, About page, social share preview card.
+Design tokens
+Chosen font pairing and colour palette applied via CSS variables / design-token file, not hardcoded per component.
+Social preview
+Update Open Graph / Twitter card template with new name, tagline, and palette.
+4. Dynamic UI/UX Enhancements
+Enhancement
+Detail
+Scroll-in animations
+Fade/slide-in for story cards as they enter viewport; respects prefers-reduced-motion.
+Expand/collapse
+Smooth transition for “read more” / story detail expansion.
+Micro-interactions
+Subtle animated feedback on like/share/report actions.
+Dark theme
+Dark “Midnight” theme as default, with toggle if a light mode is kept.
+Skeleton loading
+Skeleton placeholders for the story feed instead of blank screen/spinner.
+Accessibility check
+Every new animation has a reduced-motion fallback; contrast and keyboard nav re-verified after theme change.
+5. LGBTQ+ Story Category
+Add “LGBTQ+” as a first-class filterable category on the feed/results page, alongside existing categories.
+Same moderation standard as every other category — no lower or higher bar, no separate weaker/stronger review path.
+Visually distinguish with a subtle tag/badge; never expose or imply identity of the anonymous poster.
+Update Community Guidelines to explicitly confirm this category is welcome and held to the same guidelines as all others.
+6. Support & Resources Page (US + India)
+Add a permanent, one-click-reachable “Support & Resources” page (linked from the footer of every page, not gated behind search or login). Suggested starting content — verify all numbers/hours before publishing, and re-verify periodically, since helplines change over time:
+United States
+988 Suicide & Crisis Lifeline — call or text 988, available 24/7.
+The Trevor Project (LGBTQ+ youth) — 1-866-488-7386, 24/7, also available via chat/text.
+India
+Tele-MANAS — Government of India 24/7 mental health helpline — 14416 or 1-800-891-4416.
+Vandrevala Foundation crisis helpline — 24/7 phone/text/chat support — confirm current number before publishing.
+LGBTQ+-affirmative option, e.g. The Humsafar Trust or iCall — confirm current contact details before publishing.
+Label the page clearly as peer support, not emergency response, with a one-line note to contact local emergency services for an immediate crisis.
+7. Rollout Plan
+Complete research tasks (Section 2) and get sign-off on font, colour, and competitor findings.
+Apply branding (Section 3) across the site in a single, reviewable change.
+Implement UI/UX enhancements (Section 4) incrementally, one enhancement per commit/PR.
+Add the LGBTQ+ category (Section 5) and update Community Guidelines in the same change.
+Publish the Support & Resources page (Section 6) only after a human has verified every phone number and set of hours.
+Bump version marker to v1.01 site-wide and publish a CHANGELOG entry summarizing all of the above.
+Spot-check accessibility (contrast, reduced motion, screen reader labels, keyboard nav) after every visual change, not just at the end.
+8. Companion File
+A ready-to-use AI agent prompt implementing everything in this plan is provided separately (“Midnight_Stories_AI_Agent_Prompt.md”). Paste it into your coding agent from inside the project repository so it has full context on the existing codebase before making changes.

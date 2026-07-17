@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-page="submit">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Share Your Story — Midnight Stories</title>
+  <meta name="description" content="Share your personal story anonymously. Every story deserves to be heard, even the ones told in whispers.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <header class="header">
+      <div class="header__inner">
+        <a href="/" class="header__logo">
+          <div class="header__logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+              <path d="M60 20c0 22-18 40-40 40-2 0-5 0-7-.5 7 13.5 21 22.5 37 22.5 24.8 0 45-20.2 45-45 0-16-8.5-30-22-37 .5 2 .5 5 .5 7z"/>
+            </svg>
+          </div>
+          <span class="header__logo-text">Midnight Stories</span>
+        </a>
+        <nav class="header__nav">
+          <a href="/" class="nav-link">Browse</a>
+          <a href="/submit" class="nav-link active">Share Story</a>
+          <a href="/resources" class="nav-link">Resources</a>
+          <a href="/about" class="nav-link">About</a>
+        </nav>
+        <div class="header__actions">
+          <button class="btn-3d-toggle" id="toggle3D" aria-label="Toggle 3D card style">✦ 3D</button>
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
+          <button class="mobile-menu-toggle" id="mobileMenuBtn" aria-label="Open menu">☰</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mobile Nav -->
+    <div class="mobile-nav" id="mobileNav">
+      <button class="mobile-nav__close" id="mobileNavClose">✕</button>
+      <a href="/" class="nav-link">Browse Stories</a>
+      <a href="/submit" class="nav-link active">Share Your Story</a>
+      <a href="/resources" class="nav-link">Crisis Resources</a>
+      <a href="/about" class="nav-link">About</a>
+    </div>
+
+    <!-- Main Content -->
+    <main class="page-content" style="padding-top:0;">
+      <!-- Page hero -->
+      <div class="page-hero" style="min-height:260px;">
+        <div class="page-hero__bg" style="background-image:url('https://images.unsplash.com/photo-1455540716830-ca53abe6e1d7?auto=format&fit=crop&w=1400&q=80');"></div>
+        <div class="container page-hero__content">
+          <h1 class="page-hero__title">Share Your Story</h1>
+          <p class="page-hero__subtitle">Your words are anonymous. Your truth matters.</p>
+        </div>
+      </div>
+      <div class="container container--narrow" style="padding-top:32px;">
+
+        <!-- Submission Form -->
+        <form id="storyForm" class="card card--no-hover" style="padding: 32px;">
+          <!-- Title -->
+          <div class="form-group">
+            <label class="form-label">Title <span class="form-label__optional">(optional)</span></label>
+            <input type="text" class="form-input" id="storyTitle" placeholder="Give your story a title..." maxlength="200">
+            <p class="form-hint">A title helps readers connect, but it's completely optional.</p>
+          </div>
+
+          <!-- Category -->
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select class="form-select" id="storyCategory">
+              <option value="">Choose a category...</option>
+            </select>
+          </div>
+
+          <!-- Body -->
+          <div class="form-group">
+            <label class="form-label">Your Story</label>
+            <textarea class="form-textarea" id="storyBody" placeholder="Write your story here. Take your time. There's no wrong way to share..." minlength="50" required></textarea>
+            <div class="flex justify-between mt-16" style="gap: 16px;">
+              <p class="form-hint" id="charCount">0 characters (minimum 50)</p>
+              <p class="form-hint" id="wordCount">0 words</p>
+            </div>
+            <!-- PII Warning -->
+            <div class="pii-warning hidden" id="piiWarning">
+              <span class="pii-warning__icon">⚠️</span>
+              <div>
+                <strong>Personal information detected</strong>
+                <p style="margin-top: 4px;" id="piiDetails">Your story may contain personal identifiable information. For your safety, we recommend removing it before submitting.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Image Upload -->
+          <div class="form-group">
+            <label class="form-label">Photo <span class="form-label__optional">(optional)</span></label>
+            <div class="file-dropzone" id="fileDropzone">
+              <div class="file-dropzone__icon">📷</div>
+              <p class="file-dropzone__text">Drop an image here or click to browse</p>
+              <p class="file-dropzone__hint">JPG, PNG, or WebP — max 5MB. Avoid photos of identifiable people.</p>
+              <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp" style="display:none;">
+            </div>
+            <div class="file-preview hidden" id="filePreview">
+              <img class="file-preview__image" id="previewImage" src="" alt="Preview">
+              <div class="file-preview__info">
+                <p class="file-preview__name" id="fileName"></p>
+                <p class="file-preview__size" id="fileSize"></p>
+              </div>
+              <button type="button" class="btn btn--ghost btn--sm" id="removeFile">✕ Remove</button>
+            </div>
+          </div>
+
+          <!-- Age Confirmation -->
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="ageConfirm" required>
+              <span>I confirm I am 18 years or older and agree to the <a href="/guidelines" target="_blank">Community Guidelines</a> and <a href="/terms" target="_blank">Terms of Service</a>.</span>
+            </label>
+          </div>
+
+          <!-- Submit Actions -->
+          <div style="display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap;">
+            <button type="button" class="btn btn--ghost" onclick="window.location.href='/'">Cancel</button>
+            <button type="submit" class="btn btn--primary btn--lg" id="submitBtn">
+              ✍️ Submit Your Story
+            </button>
+          </div>
+        </form>
+
+        <!-- Success Card (Hidden by default) -->
+        <div class="card card--no-hover hidden" id="successCard">
+          <div class="token-card">
+            <div class="token-card__icon">✅</div>
+            <h2 class="token-card__title">Story Submitted!</h2>
+            <p class="token-card__message" id="successMessage">Your story has been submitted and is awaiting review.</p>
+            <div class="token-card__token" id="submitterToken"></div>
+            <p class="token-card__warning">⚠️ Save this token! It's the only way to edit or delete your story later. If you lose it, we cannot recover it.</p>
+            <div class="mt-24" style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+              <button class="btn btn--secondary" onclick="navigator.clipboard.writeText(document.getElementById('submitterToken').textContent).then(() => showToast('Token copied!', 'success'))">📋 Copy Token</button>
+              <a href="/" class="btn btn--primary">📖 Browse Stories</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer__grid">
+        <div>
+          <div class="footer__brand">
+            <div class="footer__brand-name">Midnight Stories</div>
+            <p class="footer__brand-desc">A safe, anonymous platform for sharing personal experiences. Every story deserves to be heard, even the ones told in whispers.</p>
+          </div>
+        </div>
+        <div>
+          <h4 class="footer__heading">Navigate</h4>
+          <ul class="footer__links">
+            <li><a href="/" class="footer__link">Browse Stories</a></li>
+            <li><a href="/submit" class="footer__link">Share a Story</a></li>
+            <li><a href="/resources" class="footer__link">Crisis Resources</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer__heading">Legal</h4>
+          <ul class="footer__links">
+            <li><a href="/terms" class="footer__link">Terms of Service</a></li>
+            <li><a href="/privacy" class="footer__link">Privacy Policy</a></li>
+            <li><a href="/guidelines" class="footer__link">Community Guidelines</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer__heading">Support</h4>
+          <ul class="footer__links">
+            <li><a href="/resources" class="footer__link">Crisis Helplines</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <span>© 2026 Midnight Stories.</span>
+        <span>Every story deserves to be heard, even the ones told in whispers.</span>
+      </div>
+    </footer>
+
+    <!-- Crisis Banner -->
+    <div class="crisis-banner" id="crisisBanner">
+      <span class="crisis-banner__text">⚠️ This is peer support, NOT crisis intervention.</span>
+      <a href="/resources" class="crisis-banner__link">Get help now →</a>
+      <button class="crisis-banner__close" id="crisisBannerClose">✕</button>
+    </div>
+  </div>
+
+  <!-- Crisis Intervention Modal -->
+  <div class="modal-overlay" id="crisisModal">
+    <div class="modal">
+      <div class="modal__header">
+        <div class="modal__icon">💛</div>
+        <h2 class="modal__title">We Care About You</h2>
+        <p class="modal__description">It sounds like you may be going through a very difficult time. Before you submit, please know that help is available right now.</p>
+      </div>
+      <div class="modal__body">
+        <div class="card card--flat card--no-hover" style="background: var(--accent-warm-glow); border-color: rgba(245, 158, 11, 0.2); margin-bottom: 12px; padding: 16px;">
+          <strong style="color: var(--accent-warm);">🆘 988 Suicide & Crisis Lifeline</strong>
+          <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">Call or text <strong>988</strong> — available 24/7</p>
+        </div>
+        <div class="card card--flat card--no-hover" style="background: var(--accent-secondary-glow); border-color: rgba(6, 182, 212, 0.2); margin-bottom: 12px; padding: 16px;">
+          <strong style="color: var(--accent-secondary);">💬 Crisis Text Line</strong>
+          <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">Text <strong>HOME</strong> to <strong>741741</strong></p>
+        </div>
+        <p style="font-size: 14px; color: var(--text-tertiary); text-align: center; margin-top: 16px;">
+          You are not alone. People care about you.
+        </p>
+      </div>
+      <div class="modal__footer">
+        <a href="/resources" class="btn btn--primary">View All Resources</a>
+        <button class="btn btn--secondary" id="crisisModalContinue">Continue Submitting</button>
+        <button class="btn btn--ghost" id="crisisModalClose">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/submit.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+# wrangler.toml — Cloudflare Workers + Assets configuration for Midnight Stories
+
+name = "midnight-stories"
+main = "src/worker.js"
+compatibility_date = "2026-07-15"
+compatibility_flags = ["nodejs_compat"]
+
+# ── Serve static files from public/ directory automatically ──
+[assets]
+directory = "public"
+
+# ── Cloudflare D1 SQLite Database ──
+[[d1_databases]]
+binding = "DB"
+database_name = "midnight-stories-db"
+database_id = "0a711700-3884-4e8d-afb1-ac99ad290743"
+
+# ── Cloudflare R2 Object Storage (for uploaded images) ──
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "midnight-stories-images"

@@ -1,0 +1,262 @@
+
+Anonymous Life Stories Platform
+A Complete A–Z Guide to Building, Launching, and Running the Site
+Covers: concept, safety architecture, tech stack, database design, moderation pipeline, legal requirements, build phases, deployment, and ongoing operations.
+
+Table of Contents
+Table of Contents2
+1. Concept Overview3
+2. Non-Negotiable Safety & Trust Considerations3
+2.1 Photo uploads are the highest-risk feature3
+2.2 Text content needs layered moderation, not just a report button3
+2.3 Crisis and wellbeing messaging3
+2.4 No-login means no accountability by default — compensate for it4
+2.5 Consider a narrower launch scope4
+3. Feature Specification4
+3.1 Public-facing site4
+3.2 Admin interface5
+4. Recommended Technology Stack5
+5. System Architecture (High Level)6
+6. Legal & Policy Requirements6
+7. Content Moderation Pipeline (Detail)7
+8. Data Model (Core Tables)8
+9. Step-by-Step Build Plan (Phased, A→Z)8
+Phase 1 — Foundations (Week 1)8
+Phase 2 — Core submission & moderation (Weeks 2–3)8
+Phase 3 — Community features (Week 4)8
+Phase 4 — Photo upload (Week 5, only once moderation is proven)9
+Phase 5 — Hardening & polish (Week 6)9
+Phase 6 — Launch9
+10. Deployment / Publishing Checklist9
+11. Ongoing Operations After Launch9
+12. Crisis & Wellbeing Resources to Embed10
+13. Summary10
+
+
+1. Concept Overview
+You want to build a site where anonymous visitors can post personal stories — including sensitive material like childhood trauma — without creating an account, optionally attach photos, and let other anonymous visitors like, comment, and share. An admin panel controls the whole thing.
+This is a real and valuable format (similar in spirit to sites like PostSecret, r/confession-style communities, or peer-support forums). It can genuinely help people feel heard. But the combination of (a) no login, (b) sensitive personal disclosures, and (c) open photo uploads means the moderation and safety layer is not optional polish — it is the core of the product. A site like this without strong moderation will be misused within days.
+Read this before building
+Because posts can describe self-harm, abuse, or crisis, and because anyone can upload a photo without identifying themselves, you are legally and ethically responsible for what ends up published and hosted on your servers. Sections 2, 6, and 7 below are not optional extras — build them first, not last.
+2. Non-Negotiable Safety & Trust Considerations
+2.1 Photo uploads are the highest-risk feature
+Anonymous, unauthenticated photo upload is the single riskiest feature on this list. Recommended approach:
+Require every image to pass automated moderation AND a human review queue before it becomes publicly visible (see Section 7).
+Strip EXIF/metadata (GPS location, device ID) from every uploaded image automatically on the server — never trust the client to do this.
+Run every image through an image-safety/CSAM-detection API (e.g. hashing against known-image databases via a provider like Thorn/Hive/Microsoft PhotoDNA, accessed through your hosting/cloud provider's trust & safety tooling) before it is stored or shown to anyone. Treat this as mandatory infrastructure, not optional.
+Consider disallowing photos of identifiable human faces entirely at launch (only allow illustrative/symbolic images), and revisit later once moderation capacity is proven.
+Set a hard file-size/type allowlist (jpg, png, webp only) and re-encode every upload server-side (never store the raw uploaded bytes) to strip embedded exploits/metadata.
+2.2 Text content needs layered moderation, not just a report button
+Pre-publish automated screening (keyword/toxicity/PII classifiers) for every text post and comment.
+A human moderation queue for anything flagged, plus random spot-checks of unflagged content.
+An easy, prominent 'Report' control on every post/comment, routed to the same admin queue.
+Rate limiting and abuse controls, since there's no login to hold accountable (see Section 2.4).
+2.3 Crisis and wellbeing messaging
+Display a visible, permanent banner: this platform is peer support, not therapy or crisis intervention, with a link to crisis resources.
+Detect likely crisis language (active suicidal intent, imminent self-harm) in submitted posts and, instead of publishing immediately, show the poster an interstitial with crisis line information before/alongside submission.
+Never let the site become a way to broadcast an active crisis publicly without also surfacing help — this protects the poster, not just other users.
+2.4 No-login means no accountability by default — compensate for it
+IP-based and device-fingerprint-based rate limiting (e.g. N posts per hour) even though users aren't identified to each other.
+CAPTCHA or equivalent bot-defense (e.g. Cloudflare Turnstile) on submission forms.
+Store minimal internal metadata (hashed IP, timestamp) for abuse investigation and legal compliance — never display this publicly, and disclose in your Privacy Policy that you retain it.
+Age gate: a simple 'I am 18 or older' / 'I am 13+' confirmation, with an accompanying policy on what happens if a minor is the subject or author of a post (see Section 6).
+2.5 Consider a narrower launch scope
+A phased launch is strongly recommended: launch text-only stories first, prove out your moderation pipeline and moderator capacity in practice, then add photo upload once you trust the pipeline. This is reflected in the phased build plan in Section 9.
+3. Feature Specification
+3.1 Public-facing site
+Feature
+Details
+Submit a story
+Anonymous form: title (optional), body text, category/tag, optional single photo, 'I am 18+' checkbox, crisis-language check before submit.
+Browse stories
+Feed sorted by newest / most liked / most discussed; category filters (e.g. childhood, family, loss, recovery).
+Story detail page
+Full story, like button, comment thread, share buttons (copy link / social), report button.
+Comments
+Anonymous, moderated the same way as stories; nested replies optional for v2.
+Like/react
+Simple like counter, IP/cookie-limited to one like per story to prevent trivial abuse.
+Share
+Generates a shareable link + social preview card (title + excerpt, no photo of a real person by default).
+Report
+One-click report on any story or comment, reason dropdown, goes straight to admin queue.
+Crisis banner
+Persistent, dismissible-but-reappearing footer/banner linking to helplines.
+Static pages
+About, Community Guidelines, Terms of Service, Privacy Policy, Contact/Report abuse.
+3.2 Admin interface
+Feature
+Details
+Login (admin only)
+Username/password + MFA (TOTP) for anyone with admin access — this is the one place login is essential.
+Moderation queue
+List of pending/flagged stories, comments, and images with approve / reject / edit / ban-submitter-IP actions.
+Image review
+Thumbnail grid of pending photo uploads with one-click approve/reject; shows automated scan results.
+Reported content queue
+Separate queue for user-submitted reports, with reason and report count.
+Content management
+Edit or unpublish any live story/comment; bulk actions.
+Category/tag management
+Add/edit/remove categories used in submission and filtering.
+Abuse controls
+View/manage rate-limit rules, IP/device bans, banned keyword list.
+Analytics dashboard
+Submissions per day, moderation queue size/age, top stories, traffic.
+Audit log
+Every admin action logged with timestamp and admin identity, for accountability.
+Static page editor
+Edit Terms, Guidelines, About, crisis-resource links without a code deploy.
+4. Recommended Technology Stack
+This can be built by one developer in a few weeks using a conventional, well-supported stack. Recommendation below optimizes for low cost, fast build time, and mature moderation/security tooling.
+Layer
+Recommendation
+Why
+Frontend
+Next.js (React) or plain server-rendered templates (Django/Rails)
+Server-rendered pages are simpler to make fast, SEO-friendly, and easy to moderate before render.
+Backend/API
+Node.js + Express/Fastify, or Django (Python), or Rails
+Any is fine; Django/Rails give you an admin scaffold and auth out of the box, saving time on the admin panel.
+Database
+PostgreSQL
+Relational integrity for stories/comments/reports/moderation state; mature and cheap to host.
+File/image storage
+S3-compatible object storage (AWS S3, Cloudflare R2, or Backblaze B2)
+Never store user-uploaded files on your app server; use signed URLs and re-encode on upload.
+Image moderation
+Provider's Trust & Safety / content-moderation API (e.g. AWS Rekognition Moderation, Google Vision SafeSearch) plus a CSAM-hash-matching service
+Automated first pass before any human sees the image.
+Text moderation
+OpenAI/Anthropic moderation endpoint or Perspective API (toxicity scoring) as a pre-filter, human review for anything flagged
+Cheap automated triage before your moderators spend time.
+Bot/abuse protection
+Cloudflare (proxy + Turnstile CAPTCHA + rate limiting + WAF)
+Free/cheap tier covers most of what a no-login site needs.
+Hosting
+Vercel/Render/Fly.io for app, managed Postgres (Neon/Supabase/RDS)
+Low-ops managed hosting; avoid self-managing servers at first.
+Email (admin alerts)
+Postmark or SES
+For moderation-queue alerts and admin notifications only — not user accounts.
+Monitoring
+Sentry (errors) + simple uptime monitor (UptimeRobot)
+Catch failures fast on a site with no users to complain to you directly.
+5. System Architecture (High Level)
+Request flow for a story submission:
+Visitor loads the submission form (Cloudflare Turnstile challenge embedded).
+On submit, the backend validates input, strips/re-encodes any image, runs automated text + image moderation checks.
+If automated checks pass with high confidence and no crisis-language flags: story is queued as 'pending' (not yet public).
+If automated checks flag anything, or on random sample, or always at launch: story sits in the admin moderation queue.
+Admin reviews and approves/rejects/edits via the admin panel.
+Approved stories become publicly visible in the feed and detail page.
+Reported content (post-publish) is pulled back into the moderation queue automatically.
+Recommendation: at launch, route 100% of submissions through human review before publish (no auto-publish), until you have real volume data and trust in your automated filters.
+6. Legal & Policy Requirements
+These are documents and decisions you need before you publish, not after. This is general information, not legal advice — have an actual lawyer review final documents, especially given the sensitive subject matter and open uploads.
+Document/Decision
+Why it's needed
+Terms of Service
+Sets rules for use, disclaims that the platform is not a medical/therapy service, reserves right to remove content and ban abusive IPs.
+Privacy Policy
+Discloses what you collect (even anonymously — IP hashes, cookies, uploaded images/metadata), how long you retain it, and who can access it. Required by law in most jurisdictions (GDPR in EU/UK, CCPA in California, etc.) if you have any EU/UK/CA visitors.
+Community Guidelines
+Defines what's allowed (no identifying info about third parties, no photos of minors, no harassment, no illegal content) — this is what your moderators enforce against.
+Cookie/consent banner
+Required if you use any tracking cookies/analytics for EU/UK visitors.
+DMCA / copyright takedown process
+Needed if you're US-hosted and want safe-harbor protection for user-uploaded content.
+Mandatory reporting research
+If your jurisdiction imposes reporting obligations on platform operators for disclosed child abuse, understand them before launch — this varies by country/state, so check local requirements.
+Minors & photo policy
+Decide and clearly state: no photos of anyone under 18, no identifying photos of third parties without consent, and what you do if such content appears.
+Data retention & deletion policy
+State how long stories/images/logs are kept and how someone can request removal despite the anonymity of the poster (e.g. a private 'my post' link/token given at submission time).
+Hosting jurisdiction
+Choose a hosting region/provider consistent with your target audience's privacy expectations and your own compliance capacity.
+7. Content Moderation Pipeline (Detail)
+7.1 Automated layer
+Text: run submitted text through a toxicity/moderation classifier; flag hate speech, harassment, doxxing patterns (phone numbers, addresses, full names of third parties), and explicit crisis language.
+Images: strip metadata, re-encode, run SafeSearch-style content classification, run CSAM-hash matching before storage.
+PII scrub: regex-based detection of emails, phone numbers, addresses, full names in text submissions, with a warning to the poster before submission completes.
+7.2 Human layer
+A queue-based admin view showing pending items oldest-first, with one-click approve/reject and a free-text rejection reason (for your own records, not shown publicly).
+A separate escalation path for anything indicating imminent danger to the poster or a named third party — define an internal escalation procedure in advance (who is notified, what resources are provided).
+At least one trained moderator reviewing daily; for anything beyond a hobby-scale site, budget for a small moderation team or a moderation-as-a-service vendor.
+7.3 Post-publish safety net
+Visible report button everywhere; reports re-open the item in the queue and temporarily hide it if reports exceed a threshold.
+Periodic re-sampling of already-published content as classifiers and guidelines evolve.
+8. Data Model (Core Tables)
+Table
+Key Fields
+stories
+id, title, body, category_id, image_url (nullable), status (pending/approved/rejected/removed), submitter_token (private, for edit/delete link), ip_hash, created_at
+comments
+id, story_id, body, status, ip_hash, created_at
+categories
+id, name, slug
+likes
+id, story_id, ip_hash or device_fingerprint, created_at (unique constraint on story+fingerprint)
+reports
+id, target_type (story/comment), target_id, reason, reporter_ip_hash, created_at, resolved (bool)
+moderation_log
+id, target_type, target_id, admin_id, action, reason, created_at
+admin_users
+id, email, password_hash, mfa_secret, role, created_at
+banned_identifiers
+id, ip_hash or fingerprint, reason, created_at, expires_at
+The submitter_token field matters: since there's no login, give each poster a private one-time link/token at submission time so they can later edit or delete their own story without an account. Make clear this token is the only way to manage their post — if lost, it's gone.
+9. Step-by-Step Build Plan (Phased, A→Z)
+Phase 1 — Foundations (Week 1)
+Register domain name; set up DNS through Cloudflare.
+Choose and provision hosting (app host + managed Postgres + object storage bucket).
+Set up project repo, choose framework, scaffold basic app + database connection.
+Draft Terms of Service, Privacy Policy, Community Guidelines (use a lawyer or a solid template service, then customize for this use case).
+Phase 2 — Core submission & moderation (Weeks 2–3)
+Build story submission form (text-only first — hold off on photo upload).
+Implement database schema from Section 8.
+Wire up automated text moderation + PII scrub + crisis-language detection.
+Build the admin login (with MFA) and the moderation queue UI.
+Build public feed + story detail page, gated to show only 'approved' stories.
+Add rate limiting, Turnstile/CAPTCHA, and IP hashing.
+Phase 3 — Community features (Week 4)
+Add comments (same moderation path as stories).
+Add likes, share links with social preview cards.
+Add the report button and reported-content admin queue.
+Add the crisis-resources banner and static pages (About, Guidelines, Terms, Privacy, Contact).
+Phase 4 — Photo upload (Week 5, only once moderation is proven)
+Add image upload with server-side re-encoding and EXIF stripping.
+Integrate image content-safety scanning and CSAM-hash matching before any image is stored.
+Add the image-review grid to the admin panel.
+Soft-launch photo upload to a small share of traffic before opening fully.
+Phase 5 — Hardening & polish (Week 6)
+Security review: input validation, XSS/CSRF protection, dependency audit.
+Load-test the submission and feed endpoints.
+Set up monitoring (Sentry) and uptime alerts.
+Mobile-responsive pass and accessibility check (contrast, screen-reader labels — important given the emotional subject matter).
+Phase 6 — Launch
+Final legal review of all policy pages.
+Recruit at least one more trusted moderator besides yourself, and define an escalation procedure for crisis content.
+Soft-launch to a small group, watch the moderation queue closely for a week.
+Public launch.
+10. Deployment / Publishing Checklist
+Domain purchased and DNS pointed at your host through Cloudflare (enables CAPTCHA, WAF, rate limiting, and free TLS).
+Production database provisioned with automated daily backups.
+Object storage bucket created with correct public/private access rules (images should be served via CDN, never directly exposing your bucket's write access).
+Environment variables/secrets (DB credentials, storage keys, moderation API keys) stored in your host's secret manager — never committed to the repo.
+HTTPS enforced everywhere; HSTS enabled.
+Admin panel restricted (IP allowlist optional, MFA mandatory, separate subdomain e.g. admin.yoursite.com).
+Automated backups tested by doing a real restore at least once before launch.
+Legal pages published and linked from every page's footer.
+Analytics configured privacy-consciously (e.g. Plausible/Fathom rather than tools requiring heavy personal-data collection), with a cookie banner if needed.
+A monitored abuse/report contact email, checked daily.
+11. Ongoing Operations After Launch
+Daily: clear the moderation queue; nothing should sit pending for more than 24 hours.
+Weekly: review reported-content trends, adjust banned-keyword lists and rate limits as abuse patterns emerge.
+Monthly: spot-check a sample of already-published content against current guidelines; review analytics and hosting costs.
+Ongoing: keep dependencies patched, rotate admin credentials/API keys periodically, keep a written incident-response plan for a data breach or a viral moderation failure.
+Budget: expect ongoing costs mainly from moderator time, not infrastructure — infra for a small-to-medium site like this typically runs tens of dollars/month; the human moderation cost is the real budget line.
+12. Crisis & Wellbeing Resources to Embed
+Include a permanent, easy-to-find resources page and footer banner. Use locally-relevant, currently active helplines for your target audience's country/region (verify numbers periodically, as they do change) — for example, a general crisis/suicide helpline, a child-abuse helpline, and a domestic-violence helpline appropriate to your primary audience's location. Make clear on this page that the site itself does not monitor for emergencies in real time.
+13. Summary
+The technical build here is genuinely achievable by a solo developer or small team in about 4–6 weeks using standard, well-documented tools. The harder and more important part is the trust & safety layer — moderation, legal pages, and a real human process for handling disclosures of abuse or crisis. Build in that order: safety and moderation infrastructure first, community features second, photo upload last and only once you trust the pipeline.

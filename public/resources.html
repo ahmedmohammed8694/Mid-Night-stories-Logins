@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-page="resources">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crisis & Support Resources — Midnight Stories</title>
+  <meta name="description" content="If you're in crisis or need immediate help, these resources are available 24/7. You are not alone.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+</head>
+<body>
+  <div class="page-wrapper">
+    <header class="header">
+      <div class="header__inner">
+        <a href="/" class="header__logo">
+          <div class="header__logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+              <path d="M60 20c0 22-18 40-40 40-2 0-5 0-7-.5 7 13.5 21 22.5 37 22.5 24.8 0 45-20.2 45-45 0-16-8.5-30-22-37 .5 2 .5 5 .5 7z"/>
+            </svg>
+          </div>
+          <span class="header__logo-text">Midnight Stories</span>
+        </a>
+        <nav class="header__nav">
+          <a href="/" class="nav-link">Browse</a>
+          <a href="/submit" class="nav-link">Share Story</a>
+          <a href="/resources" class="nav-link active">Resources</a>
+          <a href="/about" class="nav-link">About</a>
+        </nav>
+        <div class="header__actions">
+          <button class="btn-3d-toggle" id="toggle3D" aria-label="Toggle 3D card style">✦ 3D</button>
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
+          <a href="/submit" class="btn btn--primary btn--sm">✍️ Share Your Story</a>
+          <button class="mobile-menu-toggle" id="mobileMenuBtn" aria-label="Open menu">☰</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="mobile-nav" id="mobileNav">
+      <button class="mobile-nav__close" id="mobileNavClose">✕</button>
+      <a href="/" class="nav-link">Browse Stories</a>
+      <a href="/submit" class="nav-link">Share Your Story</a>
+      <a href="/resources" class="nav-link active">Crisis Resources</a>
+      <a href="/about" class="nav-link">About</a>
+    </div>
+
+    <main class="page-content" style="padding-top:0;">
+      <!-- Page hero -->
+      <div class="page-hero">
+        <div class="page-hero__bg" style="background-image:url('https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1400&q=80');"></div>
+        <div class="container page-hero__content">
+          <h1 class="page-hero__title">You Are Not Alone</h1>
+          <p class="page-hero__subtitle">Help is available right now — free, confidential, and 24/7.</p>
+        </div>
+      </div>
+      <div class="container" style="padding-top:40px;">
+
+        <div class="card card--flat card--no-hover mb-32" style="background: var(--accent-warm-glow); border: 1px solid rgba(245, 158, 11, 0.2); padding: 20px; text-align: center;">
+          <p style="font-size: 15px; color: var(--accent-warm);">
+            <strong>⚠️ Important:</strong> This platform is a peer-support community. We are NOT a crisis service, therapy provider, or emergency response team. We do not monitor submissions in real time. If you are in immediate danger, please contact local emergency services (911 in the US, 112 in India) or one of the resources below.
+          </p>
+        </div>
+
+        <div class="resource-grid" id="resourceGrid">
+          <!-- United States Resources -->
+          <div class="card resource-card">
+            <div class="resource-card__icon">🇺🇸</div>
+            <h2 class="resource-card__category">United States Support</h2>
+            <div class="resource-item">
+              <p class="resource-item__name">988 Suicide & Crisis Lifeline</p>
+              <p class="resource-item__contact"><a href="tel:988">Call or text 988</a></p>
+              <p class="resource-item__meta">Available 24/7 • Free & confidential</p>
+            </div>
+            <div class="resource-item">
+              <p class="resource-item__name">The Trevor Project (LGBTQ+ Youth)</p>
+              <p class="resource-item__contact"><a href="tel:18664887386">1-866-488-7386</a></p>
+              <p class="resource-item__meta">Available 24/7 • Call, text, or chat via website</p>
+            </div>
+            <div class="resource-item">
+              <p class="resource-item__name">Crisis Text Line</p>
+              <p class="resource-item__contact">Text HOME to 741741</p>
+              <p class="resource-item__meta">Available 24/7 • Free text-based support</p>
+            </div>
+            <div class="resource-item">
+              <p class="resource-item__name">National Domestic Violence Hotline</p>
+              <p class="resource-item__contact"><a href="tel:18007997233">1-800-799-7233</a> or Text START to 88788</p>
+              <p class="resource-item__meta">Available 24/7 • Confidential</p>
+            </div>
+          </div>
+
+          <!-- India Resources -->
+          <div class="card resource-card">
+            <div class="resource-card__icon">🇮🇳</div>
+            <h2 class="resource-card__category">India Support</h2>
+            <div class="resource-item">
+              <p class="resource-item__name">Tele-MANAS (Govt Mental Health Helpline)</p>
+              <p class="resource-item__contact"><a href="tel:14416">14416</a> or <a href="tel:18008914416">1-800-891-4416</a></p>
+              <p class="resource-item__meta">Available 24/7 • Free Government Initiative</p>
+            </div>
+            <div class="resource-item">
+              <p class="resource-item__name">Vandrevala Foundation Helpline</p>
+              <p class="resource-item__contact"><a href="tel:9999666555">9999 666 555</a></p>
+              <p class="resource-item__meta">Available 24/7 • Free phone and chat support</p>
+            </div>
+            <div class="resource-item">
+              <p class="resource-item__name">iCall (TISS Mental Health Helpline)</p>
+              <p class="resource-item__contact"><a href="tel:9152987821">9152987821</a></p>
+              <p class="resource-item__meta">Mon-Sat 10 AM to 8 PM • LGBTQ+-affirmative support</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card--no-hover mt-32" style="text-align: center; padding: 32px;">
+          <h3 style="font-size: 20px; margin-bottom: 12px;">Don't see your country?</h3>
+          <p style="color: var(--text-secondary); margin-bottom: 16px;">The International Association for Suicide Prevention maintains a directory of crisis centres worldwide.</p>
+          <a href="https://www.iasp.info/resources/Crisis_Centres/" target="_blank" rel="noopener" class="btn btn--primary">Find Help in Your Country →</a>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__grid">
+        <div>
+          <div class="footer__brand">
+            <div class="footer__brand-name">Midnight Stories</div>
+            <p class="footer__brand-desc">A safe, anonymous platform for sharing personal experiences. Every story deserves to be heard, even the ones told in whispers.</p>
+          </div>
+        </div>
+        <div>
+          <h4 class="footer__heading">Navigate</h4>
+          <ul class="footer__links">
+            <li><a href="/" class="footer__link">Browse Stories</a></li>
+            <li><a href="/submit" class="footer__link">Share a Story</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer__heading">Legal</h4>
+          <ul class="footer__links">
+            <li><a href="/terms" class="footer__link">Terms of Service</a></li>
+            <li><a href="/privacy" class="footer__link">Privacy Policy</a></li>
+            <li><a href="/guidelines" class="footer__link">Community Guidelines</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer__heading">Support</h4>
+          <ul class="footer__links">
+            <li><a href="/resources" class="footer__link">Crisis Helplines</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <span>© 2026 Midnight Stories. All rights reserved.</span>
+        <span>Every story deserves to be heard, even the ones told in whispers.</span>
+      </div>
+    </footer>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script src="/js/app.js"></script>
+</body>
+</html>

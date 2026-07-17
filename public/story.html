@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-page="story">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Story — Midnight Stories</title>
+  <meta name="description" content="Read this anonymous story. Every story deserves to be heard, even the ones told in whispers.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <header class="header">
+      <div class="header__inner">
+        <a href="/" class="header__logo">
+          <div class="header__logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+              <path d="M60 20c0 22-18 40-40 40-2 0-5 0-7-.5 7 13.5 21 22.5 37 22.5 24.8 0 45-20.2 45-45 0-16-8.5-30-22-37 .5 2 .5 5 .5 7z"/>
+            </svg>
+          </div>
+          <span class="header__logo-text">Midnight Stories</span>
+        </a>
+        <nav class="header__nav">
+          <a href="/" class="nav-link">Browse</a>
+          <a href="/submit" class="nav-link">Share Story</a>
+          <a href="/resources" class="nav-link">Resources</a>
+          <a href="/about" class="nav-link">About</a>
+        </nav>
+        <div class="header__actions">
+          <button class="btn-3d-toggle" id="toggle3D" aria-label="Toggle 3D card style">✦ 3D</button>
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
+          <a href="/submit" class="btn btn--primary btn--sm">✍️ Share Your Story</a>
+          <button class="mobile-menu-toggle" id="mobileMenuBtn" aria-label="Open menu">☰</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mobile Nav -->
+    <div class="mobile-nav" id="mobileNav">
+      <button class="mobile-nav__close" id="mobileNavClose">✕</button>
+      <a href="/" class="nav-link">Browse Stories</a>
+      <a href="/submit" class="nav-link">Share Your Story</a>
+      <a href="/resources" class="nav-link">Crisis Resources</a>
+      <a href="/about" class="nav-link">About</a>
+    </div>
+
+    <!-- Main Content -->
+    <main class="page-content" style="padding-top:0;">
+      <!-- Page hero -->
+      <div class="page-hero">
+        <div class="page-hero__bg" style="background-image:url('https://images.unsplash.com/photo-1437419764061-2473afe69fc2?auto=format&fit=crop&w=1600&q=80');"></div>
+        <div class="container page-hero__content">
+          <a href="/" class="btn btn--secondary btn--sm mb-16" style="backdrop-filter: blur(8px);">← Back to Stories</a>
+          <h1 class="page-hero__title">Midnight Story</h1>
+          <p class="page-hero__subtitle">Every story deserves to be heard, even the ones told in whispers.</p>
+        </div>
+      </div>
+      <div class="container" style="padding-top:40px;">
+
+        <!-- Loading Skeleton -->
+        <div id="storyLoading" class="story-detail">
+          <div class="skeleton skeleton--text" style="width: 120px; height: 24px; margin-bottom: 16px;"></div>
+          <div class="skeleton skeleton--title" style="height: 40px; margin-bottom: 16px;"></div>
+          <div class="skeleton skeleton--text" style="width: 200px; margin-bottom: 32px;"></div>
+          <div class="skeleton" style="height: 200px; margin-bottom: 16px;"></div>
+          <div class="skeleton skeleton--text" style="margin-bottom: 8px;"></div>
+          <div class="skeleton skeleton--text" style="margin-bottom: 8px;"></div>
+          <div class="skeleton skeleton--text" style="width: 70%;"></div>
+        </div>
+
+        <!-- Story Content -->
+        <article class="story-detail hidden" id="storyContent">
+          <div class="story-detail__header">
+            <span class="story-detail__category" id="storyCategory"></span>
+            <h1 class="story-detail__title" id="storyTitle"></h1>
+            <div class="story-detail__meta">
+              <span class="story-detail__meta-item" id="storyDate">📅 <span></span></span>
+              <span class="story-detail__meta-item" id="storyLikes">❤️ <span></span> likes</span>
+              <span class="story-detail__meta-item" id="storyComments">💬 <span></span> comments</span>
+            </div>
+          </div>
+
+          <!-- Story Image -->
+          <img class="story-detail__image hidden" id="storyImage" src="" alt="">
+
+          <!-- Story Body -->
+          <div class="story-detail__body" id="storyBody"></div>
+
+          <!-- Actions -->
+          <div class="story-detail__actions">
+            <button class="like-btn" id="likeBtn">
+              <span class="like-btn__icon">🤍</span>
+              <span id="likeBtnCount">0</span>
+            </button>
+
+            <div class="share-sheet">
+              <button class="share-btn" id="shareCopyBtn" title="Copy link">🔗</button>
+              <button class="share-btn" id="shareTwitterBtn" title="Share on Twitter">𝕏</button>
+              <button class="share-btn" id="shareFbBtn" title="Share on Facebook">f</button>
+            </div>
+
+            <button class="btn btn--ghost btn--sm" id="reportBtn" style="margin-left: auto;">🚩 Report</button>
+          </div>
+
+          <!-- Comments Section -->
+          <section class="comments-section">
+            <h2 class="comments-section__title">
+              Comments <span class="comments-section__count" id="commentCount">0</span>
+            </h2>
+
+            <!-- Comment Form -->
+            <form class="comment-form" id="commentForm">
+              <div class="form-group" style="margin-bottom: 12px;">
+                <textarea class="form-textarea comment-form__textarea" id="commentBody" placeholder="Share your thoughts anonymously... Be kind." minlength="5" required></textarea>
+              </div>
+              <div style="display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn btn--primary btn--sm" id="commentSubmitBtn">💬 Post Comment</button>
+              </div>
+            </form>
+
+            <!-- Comments List -->
+            <div id="commentsList"></div>
+
+            <div class="empty-state hidden" id="noComments" style="padding: 40px 24px;">
+              <div class="empty-state__icon">💬</div>
+              <h3 class="empty-state__title">No comments yet</h3>
+              <p class="empty-state__description">Be the first to share your thoughts.</p>
+            </div>
+          </section>
+        </article>
+
+        <!-- 404 State -->
+        <div class="empty-state hidden" id="storyNotFound">
+          <div class="empty-state__icon">😔</div>
+          <h3 class="empty-state__title">Story not found</h3>
+          <p class="empty-state__description">This story may have been removed or is still awaiting review.</p>
+          <a href="/" class="btn btn--primary mt-24">Browse Stories</a>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer__grid">
+        <div>
+          <div class="footer__brand">
+            <div class="footer__brand-name">Midnight Stories</div>
+            <p class="footer__brand-desc">A safe, anonymous platform for sharing personal experiences. Every story deserves to be heard, even the ones told in whispers.</p>
+          </div>
+        </div>
+        <div>
+          <h4 class="footer__heading">Navigate</h4>
+          <ul class="footer__links">
+            <li><a href="/" class="footer__link">Browse Stories</a></li>
+            <li><a href="/submit" class="footer__link">Share a Story</a></li>
+            <li><a href="/resources" class="footer__link">Crisis Resources</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer__heading">Legal</h4>
+          <ul class="footer__links">
+            <li><a href="/terms" class="footer__link">Terms of Service</a></li>
+            <li><a href="/privacy" class="footer__link">Privacy Policy</a></li>
+            <li><a href="/guidelines" class="footer__link">Community Guidelines</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer__heading">Support</h4>
+          <ul class="footer__links">
+            <li><a href="/resources" class="footer__link">Crisis Helplines</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <span>© 2026 Midnight Stories.</span>
+        <span>Every story deserves to be heard, even the ones told in whispers.</span>
+      </div>
+    </footer>
+
+    <!-- Crisis Banner -->
+    <div class="crisis-banner" id="crisisBanner">
+      <span class="crisis-banner__text">⚠️ This is peer support, NOT crisis intervention.</span>
+      <a href="/resources" class="crisis-banner__link">Get help now →</a>
+      <button class="crisis-banner__close" id="crisisBannerClose">✕</button>
+    </div>
+  </div>
+
+  <!-- Report Modal -->
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal">
+      <div class="modal__header">
+        <div class="modal__icon">🚩</div>
+        <h2 class="modal__title">Report Content</h2>
+        <p class="modal__description">Help us keep this community safe. Select a reason for your report.</p>
+      </div>
+      <div class="modal__body">
+        <div class="report-reasons" id="reportReasons">
+          <label class="report-reason">
+            <input type="radio" name="report_reason" value="Harassment or bullying">
+            Harassment or bullying
+          </label>
+          <label class="report-reason">
+            <input type="radio" name="report_reason" value="Contains personal information (doxxing)">
+            Contains personal information (doxxing)
+          </label>
+          <label class="report-reason">
+            <input type="radio" name="report_reason" value="Spam or commercial content">
+            Spam or commercial content
+          </label>
+          <label class="report-reason">
+            <input type="radio" name="report_reason" value="Inappropriate or explicit content">
+            Inappropriate or explicit content
+          </label>
+          <label class="report-reason">
+            <input type="radio" name="report_reason" value="Promoting self-harm or violence">
+            Promoting self-harm or violence
+          </label>
+          <label class="report-reason">
+            <input type="radio" name="report_reason" value="Other">
+            Other
+          </label>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--danger" id="reportSubmitBtn" disabled>Submit Report</button>
+        <button class="btn btn--ghost" id="reportCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/story.js"></script>
+</body>
+</html>

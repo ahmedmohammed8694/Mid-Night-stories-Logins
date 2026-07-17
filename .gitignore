@@ -1,0 +1,8 @@
+node_modules/
+.env
+.env.*
+data/
+*.db
+*.log
+.DS_Store
+C:\Users\Mohammed Ahmed\.gemini\antigravity-ide\scratch/

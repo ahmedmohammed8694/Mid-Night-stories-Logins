@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-page="home">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Midnight Stories — Share Your Story, Be Heard</title>
+  <meta name="description" content="A safe, anonymous platform where you can share your personal story and connect with others who understand. Every story deserves to be heard, even the ones told in whispers.">
+  <meta property="og:title" content="Midnight Stories">
+  <meta property="og:description" content="Every story deserves to be heard, even the ones told in whispers. Share your story anonymously.">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <header class="header" id="header">
+      <div class="header__inner">
+        <a href="/" class="header__logo">
+          <div class="header__logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+              <path d="M60 20c0 22-18 40-40 40-2 0-5 0-7-.5 7 13.5 21 22.5 37 22.5 24.8 0 45-20.2 45-45 0-16-8.5-30-22-37 .5 2 .5 5 .5 7z"/>
+            </svg>
+          </div>
+          <span class="header__logo-text">Midnight Stories</span>
+        </a>
+        <nav class="header__nav" id="mainNav">
+          <a href="/" class="nav-link active">Browse</a>
+          <a href="/submit" class="nav-link">Share Story</a>
+          <a href="/resources" class="nav-link">Resources</a>
+          <a href="/about" class="nav-link">About</a>
+        </nav>
+        <div class="header__actions">
+          <button class="btn-3d-toggle" id="toggle3D" aria-label="Toggle 3D card style">✦ 3D</button>
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
+          <a href="/submit" class="btn btn--primary btn--sm">✍️ Share Your Story</a>
+          <button class="mobile-menu-toggle" id="mobileMenuBtn" aria-label="Open menu">☰</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mobile Nav -->
+    <div class="mobile-nav" id="mobileNav">
+      <button class="mobile-nav__close" id="mobileNavClose">✕</button>
+      <a href="/" class="nav-link active">Browse Stories</a>
+      <a href="/submit" class="nav-link">Share Your Story</a>
+      <a href="/resources" class="nav-link">Crisis Resources</a>
+      <a href="/about" class="nav-link">About</a>
+      <a href="/guidelines" class="nav-link">Guidelines</a>
+      <a href="/admin" class="nav-link">Admin</a>
+    </div>
+
+    <!-- Main Content -->
+    <main class="page-content">
+      <div class="container">
+        <!-- Hero -->
+        <!-- Slideshow Hero -->
+        <section class="hero" id="hero">
+          <div class="slideshow-slide active" style="background-image: url('https://images.unsplash.com/photo-1436891620584-47fd0e565afb?auto=format&fit=crop&w=1600&q=80')"></div>
+          <div class="slideshow-slide" style="background-image: url('https://images.unsplash.com/photo-1488866022504-f2584929ca5f?auto=format&fit=crop&w=1600&q=80')"></div>
+          <div class="slideshow-slide" style="background-image: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1600&q=80')"></div>
+          <div class="slideshow-slide" style="background-image: url('https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1600&q=80')"></div>
+          <div class="hero__overlay"></div>
+          <div class="hero__content">
+            <h1 class="hero__title">Midnight Stories</h1>
+            <p class="hero__subtitle">Every story deserves to be heard, even the ones told in whispers.</p>
+            <div class="hero__actions">
+              <a href="/submit" class="btn btn--primary btn--lg">✍️ Share Your Story</a>
+              <a href="#stories" class="btn btn--secondary btn--lg">📖 Read Stories</a>
+            </div>
+          </div>
+        </section>
+
+        <!-- Community Stats Bar -->
+        <div class="community-stats" id="communityStats">
+          <div class="community-stat">
+            <span class="community-stat__icon">🌍</span>
+            <span class="community-stat__value" id="statVisitors">—</span>
+            <span class="community-stat__label">Visitors</span>
+          </div>
+          <div class="community-stat__divider"></div>
+          <div class="community-stat">
+            <span class="community-stat__icon">❤️</span>
+            <span class="community-stat__value" id="statLikes">—</span>
+            <span class="community-stat__label">Total Likes</span>
+          </div>
+          <div class="community-stat__divider"></div>
+          <div class="community-stat">
+            <span class="community-stat__icon">📖</span>
+            <span class="community-stat__value" id="statStories">—</span>
+            <span class="community-stat__label">Stories Shared</span>
+          </div>
+          <div class="community-stat__divider"></div>
+          <div class="community-stat">
+            <span class="community-stat__icon">💬</span>
+            <span class="community-stat__value" id="statComments">—</span>
+            <span class="community-stat__label">Comments</span>
+          </div>
+        </div>
+
+        <!-- Controls Bar -->
+        <section class="controls-bar" id="stories">
+          <div class="controls-bar__left" id="categoryFilters">
+            <button class="filter-chip active" data-category="all">All Stories</button>
+            <!-- Categories will be loaded dynamically -->
+          </div>
+          <div class="controls-bar__right">
+            <div class="search-box">
+              <span class="search-box__icon">🔍</span>
+              <input type="text" class="search-box__input" id="searchInput" placeholder="Search stories...">
+            </div>
+            <select class="sort-select" id="sortSelect">
+              <option value="newest">Newest First</option>
+              <option value="liked">Most Liked</option>
+              <option value="discussed">Most Discussed</option>
+            </select>
+          </div>
+        </section>
+
+        <!-- Story Grid -->
+        <div class="story-grid" id="storyGrid">
+          <!-- Stories loaded dynamically -->
+          <div class="card skeleton skeleton--card"></div>
+          <div class="card skeleton skeleton--card"></div>
+          <div class="card skeleton skeleton--card"></div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state hidden" id="emptyState">
+          <div class="empty-state__icon">📝</div>
+          <h3 class="empty-state__title">No stories yet</h3>
+          <p class="empty-state__description">Be the first to share your story. Your experience could help someone else feel less alone.</p>
+          <a href="/submit" class="btn btn--primary mt-24">Share Your Story</a>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination hidden" id="pagination"></div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer__grid">
+        <div>
+          <div class="footer__brand">
+            <div class="footer__brand-name">Midnight Stories</div>
+            <p class="footer__brand-desc">A safe, anonymous platform for sharing personal experiences. Every story deserves to be heard, even the ones told in whispers.</p>
+          </div>
+        </div>
+        <div>
+          <h4 class="footer__heading">Navigate</h4>
+          <ul class="footer__links">
+            <li><a href="/" class="footer__link">Browse Stories</a></li>
+            <li><a href="/submit" class="footer__link">Share a Story</a></li>
+            <li><a href="/resources" class="footer__link">Crisis Resources</a></li>
+            <li><a href="/about" class="footer__link">About</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer__heading">Legal</h4>
+          <ul class="footer__links">
+            <li><a href="/terms" class="footer__link">Terms of Service</a></li>
+            <li><a href="/privacy" class="footer__link">Privacy Policy</a></li>
+            <li><a href="/guidelines" class="footer__link">Community Guidelines</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer__heading">Support</h4>
+          <ul class="footer__links">
+            <li><a href="/resources" class="footer__link">Crisis Helplines</a></li>
+            <li><a href="/guidelines" class="footer__link">Reporting Abuse</a></li>
+            <li><a href="/admin" class="footer__link">Admin Panel</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <span>© 2026 Midnight Stories. All rights reserved.</span>
+        <span>Every story deserves to be heard, even the ones told in whispers.</span>
+      </div>
+    </footer>
+
+    <!-- Crisis Banner -->
+    <div class="crisis-banner" id="crisisBanner">
+      <span class="crisis-banner__text">⚠️ This is peer support, NOT crisis intervention. If you're in danger:</span>
+      <a href="/resources" class="crisis-banner__link">Get help now →</a>
+      <button class="crisis-banner__close" id="crisisBannerClose">✕</button>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/feed.js"></script>
+</body>
+</html>
