@@ -416,6 +416,23 @@ function initAuthLayout() {
       </nav>
       <div class="header__actions" style="display: flex; align-items: center; gap: 16px;">
         <button class="theme-toggle" id="themeToggle" style="background: none; border: none; font-size: 1.1rem; cursor: pointer;" aria-label="Toggle theme">🌙</button>
+        ${token ? `
+          <div class="header__notif-container" style="position: relative;">
+            <button id="notifBellBtn" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; position: relative; padding: 4px; display: flex; align-items: center; justify-content: center; color: inherit;">
+              🔔
+              <span id="notifBadge" style="display: none; position: absolute; top: -2px; right: -2px; background: #ef4444; color: white; font-size: 0.65rem; border-radius: 50%; min-width: 15px; height: 15px; line-height: 15px; text-align: center; font-weight: bold; padding: 0 3px;">0</span>
+            </button>
+            <div id="notifDropdown" style="display: none; position: absolute; right: 0; top: 48px; background: #181818; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; width: 320px; z-index: 1001; box-shadow: 0 8px 32px rgba(0,0,0,0.6); padding: 12px; max-height: 400px; overflow-y: auto;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                <span style="font-weight: bold; font-size: 0.95rem;">Notifications</span>
+                <button id="markAllReadBtn" style="background: none; border: none; color: var(--primary, #5c6ac4); font-size: 0.75rem; cursor: pointer; font-family: inherit;">Mark all read</button>
+              </div>
+              <div id="notifList" style="display: flex; flex-direction: column; gap: 8px;">
+                <p style="text-align: center; opacity: 0.5; padding: 12px; font-size: 0.85rem;">No new notifications</p>
+              </div>
+            </div>
+          </div>
+        ` : ''}
         ${authSection}
         <button class="mobile-menu-toggle" id="mobileMenuBtn" aria-label="Open menu" style="display: none;">☰</button>
       </div>
@@ -429,6 +446,8 @@ function initAuthLayout() {
     avatarBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       avatarDropdown.style.display = avatarDropdown.style.display === 'none' ? 'block' : 'none';
+      const notifDropdown = document.getElementById('notifDropdown');
+      if (notifDropdown) notifDropdown.style.display = 'none';
     });
     document.addEventListener('click', () => {
       avatarDropdown.style.display = 'none';
@@ -454,6 +473,185 @@ function initAuthLayout() {
   }
 }
 
+// ── Notifications Widget Logic ──
+let notificationPollInterval = null;
+
+function initNotifications() {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  const bellBtn = document.getElementById('notifBellBtn');
+  const notifDropdown = document.getElementById('notifDropdown');
+  const notifList = document.getElementById('notifList');
+  const markAllReadBtn = document.getElementById('markAllReadBtn');
+  const badge = document.getElementById('notifBadge');
+
+  if (!bellBtn) return;
+
+  // Add styles
+  const style = document.createElement('style');
+  style.textContent = `
+    .notif-item:hover { background: rgba(255,255,255,0.08) !important; }
+    .notif-item img { display: block; }
+  `;
+  document.head.appendChild(style);
+
+  // Toggle dropdown
+  bellBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isShowing = notifDropdown.style.display === 'block';
+    notifDropdown.style.display = isShowing ? 'none' : 'block';
+    const avatarDropdown = document.getElementById('avatarDropdown');
+    if (avatarDropdown) avatarDropdown.style.display = 'none';
+    if (!isShowing) {
+      fetchNotifications();
+    }
+  });
+
+  document.addEventListener('click', () => {
+    if (notifDropdown) notifDropdown.style.display = 'none';
+  });
+
+  if (notifDropdown) {
+    notifDropdown.addEventListener('click', (e) => e.stopPropagation());
+  }
+
+  // Mark all read
+  if (markAllReadBtn) {
+    markAllReadBtn.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/notifications/read', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          fetchNotifications();
+        }
+      } catch (err) { console.error(err); }
+    });
+  }
+
+  // Initial fetch and start interval
+  fetchNotifications();
+  if (notificationPollInterval) clearInterval(notificationPollInterval);
+  notificationPollInterval = setInterval(fetchNotifications, 10000);
+
+  async function fetchNotifications() {
+    try {
+      const res = await fetch('/api/notifications', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return;
+      const notifications = await res.json();
+      
+      const unreadCount = notifications.filter(n => !n.is_read).length;
+      if (unreadCount > 0) {
+        badge.textContent = unreadCount;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+
+      renderNotifList(notifications);
+    } catch (err) {
+      console.error('Failed to load notifications:', err);
+    }
+  }
+
+  function renderNotifList(notifications) {
+    if (notifications.length === 0) {
+      notifList.innerHTML = `<p style="text-align: center; opacity: 0.5; padding: 12px; font-size: 0.85rem;">No new notifications</p>`;
+      return;
+    }
+
+    notifList.innerHTML = notifications.map(n => {
+      const isUnread = !n.is_read;
+      const bg = isUnread ? 'rgba(255,255,255,0.04)' : 'transparent';
+      const border = isUnread ? 'border-left: 3px solid var(--primary, #5c6ac4);' : '';
+      const nameChar = n.actor_name ? n.actor_name.charAt(0).toUpperCase() : '👤';
+      const avatarHtml = n.actor_pic 
+        ? `<img src="${n.actor_pic}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">` 
+        : nameChar;
+
+      let msg = '';
+      let typeLabel = '';
+      if (n.type === 'like') {
+        msg = `liked your story.`;
+        typeLabel = '❤️';
+      } else if (n.type === 'comment') {
+        msg = `commented: "${n.content}"`;
+        typeLabel = '💬';
+      } else if (n.type === 'follow') {
+        msg = `started following you.`;
+        typeLabel = '👤';
+      } else if (n.type === 'chat_request') {
+        msg = `sent you a chat request.`;
+        typeLabel = '✉️';
+      } else if (n.type === 'chat_accepted') {
+        msg = `accepted your chat request.`;
+        typeLabel = '✅';
+      } else if (n.type === 'chat_declined') {
+        msg = `declined your chat request.`;
+        typeLabel = '❌';
+      } else if (n.type === 'chat_message') {
+        msg = `sent a message: "${n.content}"`;
+        typeLabel = '💬';
+      }
+
+      return `
+        <div class="notif-item" onclick="handleNotifClick(${JSON.stringify(n).replace(/"/g, '&quot;')})" style="display: flex; align-items: flex-start; gap: 10px; padding: 10px; border-radius: 8px; cursor: pointer; transition: background 0.2s; background: ${bg}; ${border}">
+          <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; font-weight: bold; overflow: hidden; flex-shrink: 0;">
+            ${avatarHtml}
+          </div>
+          <div style="flex: 1; min-width: 0; font-size: 0.82rem;">
+            <div style="color: #fff; font-weight: 600; margin-bottom: 2px;">
+              ${escapeHtml(n.actor_name)} <span style="font-weight: normal; opacity: 0.85;">${escapeHtml(msg)}</span>
+            </div>
+            <div style="font-size: 0.72rem; opacity: 0.5; display: flex; align-items: center; gap: 6px;">
+              <span>${typeLabel}</span>
+              <span>${formatRelativeTime(n.created_at)}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+async function handleNotifClick(n) {
+  const token = localStorage.getItem('token');
+  try {
+    await fetch(`/api/notifications/${n.id}/read`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+  } catch (err) { console.error(err); }
+
+  if (n.type === 'like' || n.type === 'comment') {
+    window.location.href = `/story.html?id=${n.target_id}`;
+  } else if (n.type === 'follow') {
+    window.location.href = `/profile.html?id=${n.actor_user_id || n.actor_id}`;
+  } else if (n.type === 'chat_request' || n.type === 'chat_accepted' || n.type === 'chat_declined' || n.type === 'chat_message') {
+    window.location.href = `/chat.html`;
+  }
+}
+
+function formatRelativeTime(dateStr) {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+
+  if (diffSec < 60) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return date.toLocaleDateString();
+}
+
 // ── Initialize Shared Components ──
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
@@ -462,6 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initMobileNav();
   initScrollObserver();
   init3DStyle();
+  initNotifications();
 
   // Load community stats (only fires if the stats bar is on the page)
   loadCommunityStats();

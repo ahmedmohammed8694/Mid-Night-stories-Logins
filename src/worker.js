@@ -62,6 +62,17 @@ function generateUserId() {
   return result;
 }
 
+async function createNotification(db, userId, actorId, type, targetId, content) {
+  if (Number(userId) === Number(actorId)) return;
+  try {
+    await db.prepare(
+      'INSERT INTO notifications (user_id, actor_id, type, target_id, content) VALUES (?, ?, ?, ?, ?)'
+    ).bind(Number(userId), actorId ? Number(actorId) : null, type, targetId ? Number(targetId) : null, content || null).run();
+  } catch (e) {
+    console.error('Failed to create notification:', e);
+  }
+}
+
 const app = new Hono();
 
 // ── In-Memory Rate Limiting ──
@@ -524,6 +535,9 @@ app.post('/api/stories/:id/like', requireUser, checkBan, async (c) => {
 
   await db.prepare('INSERT INTO likes (user_id, story_id) VALUES (?, ?)').bind(user.id, storyId).run();
   await db.prepare('UPDATE stories SET likes_count = likes_count + 1 WHERE id = ?').bind(storyId).run();
+  if (story.user_id) {
+    await createNotification(db, story.user_id, user.id, 'like', storyId, 'liked your story');
+  }
   const updated = await db.prepare('SELECT likes_count FROM stories WHERE id = ?').bind(storyId).first();
   return c.json({ liked: true, likes_count: updated.likes_count });
 });
@@ -696,6 +710,10 @@ app.post('/api/stories/:id/comments', requireUser, checkBan, async (c) => {
   await db.prepare(
     'UPDATE stories SET comment_count = comment_count + 1 WHERE id = ?'
   ).bind(storyId).run();
+
+  if (story && story.user_id) {
+    await createNotification(db, story.user_id, user.id, 'comment', storyId, commentText.trim());
+  }
 
   return c.json({ success: true, message: 'Comment posted successfully', status: 'approved' });
 });
@@ -876,6 +894,14 @@ app.post('/api/messages', requireUser, rateLimit('message', 30), async (c) => {
   // Update last message time
   await db.prepare('UPDATE conversations SET last_message_at = datetime("now") WHERE id = ?').bind(convId).run();
 
+  // Dispatch notifications
+  if (status === 'accepted') {
+    await createNotification(db, receiverId, senderId, 'chat_message', convId, body.trim());
+  } else if (!conv) {
+    // If conversation was just created via message, dispatch chat request notification
+    await createNotification(db, receiverId, senderId, 'chat_request', convId, 'sent you a chat request');
+  }
+
   return c.json({
     success: true,
     message: {
@@ -920,6 +946,9 @@ app.post('/api/conversations', requireUser, async (c) => {
     await db.prepare('UPDATE conversations SET status = "pending", initiated_by_id = ?, last_message_at = datetime("now") WHERE id = ?')
       .bind(senderId, conv.id).run();
     
+    // Notify receiver
+    await createNotification(db, receiverId, senderId, 'chat_request', conv.id, 'sent you a chat request');
+
     // Retrieve updated
     conv = await db.prepare(`
       SELECT c.*, 
@@ -939,6 +968,9 @@ app.post('/api/conversations', requireUser, async (c) => {
   
   const newConvId = result.meta.last_row_id;
   
+  // Notify receiver
+  await createNotification(db, receiverId, senderId, 'chat_request', newConvId, 'sent you a chat request');
+
   const newConv = await db.prepare(`
     SELECT c.*, 
            u.id as other_id, u.user_id as other_user_id, u.full_name as other_name, u.profile_pic as other_pic, u.bio as other_bio
@@ -1021,6 +1053,11 @@ app.post('/api/conversations/:id/accept', requireUser, async (c) => {
       return c.json({ error: 'Waiting for the other user to accept.' }, 400);
     }
     await db.prepare('UPDATE conversations SET status = "accepted" WHERE id = ?').bind(convId).run();
+    await createNotification(db, conv.initiated_by_id, user.id, 'chat_accepted', convId, 'accepted your chat request');
+  } else if (conv.status === 'declined') {
+    // If declined and receiver accepts again, update to accepted and notify initiator
+    await db.prepare('UPDATE conversations SET status = "accepted" WHERE id = ?').bind(convId).run();
+    await createNotification(db, conv.initiated_by_id, user.id, 'chat_accepted', convId, 'accepted your chat request');
   }
 
   return c.json({ success: true, status: 'accepted' });
@@ -1040,6 +1077,7 @@ app.post('/api/conversations/:id/decline', requireUser, async (c) => {
   }
 
   await db.prepare('UPDATE conversations SET status = "declined" WHERE id = ?').bind(convId).run();
+  await createNotification(db, conv.initiated_by_id, user.id, 'chat_declined', convId, 'declined your chat request');
 
   return c.json({ success: true, status: 'declined' });
 });
@@ -1106,7 +1144,48 @@ app.post('/api/users/:id/follow', requireUser, async (c) => {
   }
 
   await db.prepare('INSERT INTO follows (follower_id, following_id) VALUES (?, ?)').bind(loggedInUser.id, targetId).run();
+  await createNotification(db, targetId, loggedInUser.id, 'follow', loggedInUser.id, 'started following you');
   return c.json({ following: true });
+});
+
+// GET /api/notifications - Get notifications
+app.get('/api/notifications', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const userId = Number(user.id);
+
+  const { results: notifications } = await db.prepare(`
+    SELECT n.*, 
+           u.full_name as actor_name, u.profile_pic as actor_pic, u.user_id as actor_user_id
+    FROM notifications n
+    LEFT JOIN users u ON u.id = n.actor_id
+    WHERE n.user_id = ?
+    ORDER BY n.created_at DESC
+    LIMIT 50
+  `).bind(userId).all();
+
+  return c.json(notifications);
+});
+
+// POST /api/notifications/read - Mark all as read
+app.post('/api/notifications/read', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const userId = Number(user.id);
+
+  await db.prepare('UPDATE notifications SET is_read = 1 WHERE user_id = ?').bind(userId).run();
+  return c.json({ success: true });
+});
+
+// POST /api/notifications/:id/read - Mark single as read
+app.post('/api/notifications/:id/read', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const userId = Number(user.id);
+  const notifId = parseInt(c.req.param('id'));
+
+  await db.prepare('UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?').bind(notifId, userId).run();
+  return c.json({ success: true });
 });
 
 // Stats public block fallback

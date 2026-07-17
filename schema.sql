@@ -189,3 +189,17 @@ CREATE TABLE IF NOT EXISTS messages (
   body TEXT NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  actor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  type TEXT NOT NULL CHECK(type IN ('like', 'comment', 'follow', 'chat_request', 'chat_accepted', 'chat_declined', 'chat_message')),
+  target_id INTEGER,
+  content TEXT,
+  is_read INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
