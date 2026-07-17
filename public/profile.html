@@ -493,6 +493,7 @@
             <div class="tab" data-tab="liked" id="tabLiked">Liked Stories</div>
             <div class="tab" data-tab="comments" id="tabComments">My Comments</div>
             <div class="tab" data-tab="following" id="tabFollowing">Following</div>
+            <div class="tab" data-tab="followers" id="tabFollowers">Followers</div>
           </div>
         </div>
 
@@ -510,6 +511,10 @@
 
         <div id="followingContainer" class="search-results-grid" style="display: none;">
           <p>Loading following...</p>
+        </div>
+
+        <div id="followersContainer" class="search-results-grid" style="display: none;">
+          <p>Loading followers...</p>
         </div>
 
       </div>
@@ -914,6 +919,42 @@
       }
     }
 
+    async function loadFollowers() {
+      const container = document.getElementById('followersContainer');
+      container.innerHTML = '<p>Loading followers...</p>';
+
+      try {
+        const res = await fetch(`/api/users/${resolvedUser.id}/followers`);
+        const users = await res.json();
+
+        if (!users || users.length === 0) {
+          container.innerHTML = '<p style="padding: 10px;">No followers yet.</p>';
+          return;
+        }
+
+        container.innerHTML = users.map(u => {
+          const avatarChar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '👤';
+          const avatarHtml = u.profile_pic 
+            ? `<img src="${u.profile_pic}" alt="${u.full_name}">` 
+            : `<span>${avatarChar}</span>`;
+          const bioText = u.bio ? `<div class="search-result-bio">${escapeHtml(u.bio)}</div>` : '';
+
+          return `
+            <div class="search-result-item" onclick="window.location.href='/profile.html?id=${encodeURIComponent(u.user_id || u.id)}'">
+              <div class="search-result-avatar">${avatarHtml}</div>
+              <div class="search-result-info">
+                <div class="search-result-name">${escapeHtml(u.full_name)}</div>
+                <div class="search-result-tag">${escapeHtml(u.user_id || `ID: ${u.id}`)}</div>
+                ${bioText}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        container.innerHTML = '<p>Failed to load followers.</p>';
+      }
+    }
+
     async function deleteComment(commentId) {
       if (!confirm('Are you sure you want to delete this comment?')) return;
 
@@ -943,6 +984,7 @@
       document.getElementById('likedContainer').style.display = 'none';
       document.getElementById('commentsContainer').style.display = 'none';
       document.getElementById('followingContainer').style.display = 'none';
+      document.getElementById('followersContainer').style.display = 'none';
       
       // Remove active class from all tabs
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -950,7 +992,7 @@
       // Show and activate target
       document.getElementById(activeTabId).classList.add('active');
       const container = document.getElementById(containerToShowId);
-      if (containerToShowId === 'followingContainer' || containerToShowId === 'commentsContainer') {
+      if (containerToShowId === 'followingContainer' || containerToShowId === 'followersContainer' || containerToShowId === 'commentsContainer') {
         container.style.display = 'flex';
       } else {
         container.style.display = 'block';
@@ -973,6 +1015,10 @@
 
     document.getElementById('tabFollowing').addEventListener('click', () => {
       switchTab('tabFollowing', 'followingContainer', loadFollowing);
+    });
+
+    document.getElementById('tabFollowers').addEventListener('click', () => {
+      switchTab('tabFollowers', 'followersContainer', loadFollowers);
     });
 
     loadProfile();
