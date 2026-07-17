@@ -395,7 +395,7 @@ app.get('/api/stories', optionalUser, async (c) => {
   });
 });
 
-app.post('/api/stories', requireUser, checkBan, rateLimit('story', 5), async (c) => {
+app.post('/api/stories', optionalUser, checkBan, rateLimit('story', 5), async (c) => {
   const db = c.env.DB;
   const user = c.get('user');
 
@@ -445,7 +445,7 @@ app.post('/api/stories', requireUser, checkBan, rateLimit('story', 5), async (c)
 
   const result = await db.prepare(
     'INSERT INTO stories (user_id, title, content, category_id, image_url, status) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(user.id, title ? title.trim() : null, modResult.redactedText, categoryIdStr ? parseInt(categoryIdStr) : null, imageUrl, 'approved').run();
+  ).bind(user ? user.id : null, title ? title.trim() : null, modResult.redactedText, categoryIdStr ? parseInt(categoryIdStr) : null, imageUrl, 'approved').run();
 
   return c.json({ id: result.meta.last_row_id, status: 'approved', message: 'Your story has been published.' }, 201);
 });
@@ -637,6 +637,26 @@ app.post('/api/stories/:id/comments', requireUser, checkBan, async (c) => {
   ).bind(storyId).run();
 
   return c.json({ success: true, message: 'Comment posted successfully', status: 'approved' });
+});
+
+// GET /api/users/search
+app.get('/api/users/search', async (c) => {
+  const db = c.env.DB;
+  const q = c.req.query('q') || '';
+  
+  if (q.trim().length < 2) {
+    return c.json([]);
+  }
+  
+  const queryParam = `%${q.trim()}%`;
+  const { results } = await db.prepare(`
+    SELECT id, user_id, full_name, profile_pic, bio
+    FROM users
+    WHERE full_name LIKE ? OR email LIKE ? OR user_id LIKE ?
+    LIMIT 20
+  `).bind(queryParam, queryParam, queryParam).all();
+  
+  return c.json(results);
 });
 
 // GET /api/users/:idOrUserId/comments

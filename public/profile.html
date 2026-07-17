@@ -227,19 +227,104 @@
     .search-box {
       margin-bottom: 2rem;
       display: flex;
-      gap: 10px;
+      align-items: center;
+      background: var(--bg-input);
+      border: 1px solid var(--border-card);
+      border-radius: 30px;
+      padding: 4px 6px 4px 16px;
+      transition: all var(--transition-base);
+    }
+    .search-box:focus-within {
+      border-color: var(--page-accent);
+      box-shadow: 0 0 20px var(--page-accent-glow);
     }
     .search-box input {
       flex: 1;
-      background: var(--bg-input);
-      border: 1px solid var(--border-card);
-      border-radius: 8px;
-      padding: 10px 15px;
+      background: transparent;
+      border: none;
       color: white;
       font-family: inherit;
+      font-size: 0.95rem;
+      outline: none;
+      padding: 8px 0;
     }
     .search-box button {
-      padding: 10px 20px;
+      flex-shrink: 0;
+      border-radius: 30px;
+      padding: 8px 24px;
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    /* Search Results Grid */
+    .search-results-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .search-result-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: all var(--transition-base);
+      cursor: pointer;
+    }
+    .search-result-item:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-glow);
+    }
+    .search-result-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--primary, #5c6ac4);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1.25rem;
+      overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.05);
+    }
+    .search-result-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .search-result-info {
+      flex: 1;
+    }
+    .search-result-name {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 4px;
+    }
+    .search-result-tag {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+    .search-result-bio {
+      font-size: 0.85rem;
+      color: var(--text-tertiary);
+      margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 400px;
     }
   </style>
 </head>
@@ -252,9 +337,15 @@
       <div class="container container--narrow">
         
         <!-- Search User by ID -->
-        <div class="search-box">
+        <form class="search-box" id="profileSearchForm" onsubmit="event.preventDefault(); handleProfileSearch();">
           <input type="text" id="searchInput" placeholder="Find user by User ID (e.g., USER_X7Y9Z2)...">
-          <button id="searchBtn" class="btn btn--secondary btn--sm">Find Profile</button>
+          <button type="submit" id="searchBtn" class="btn btn--secondary btn--sm">Find Profile</button>
+        </form>
+
+        <!-- Search Results -->
+        <div id="searchResults" style="display: none; margin-bottom: 2rem;">
+          <h2 style="font-family: 'Fraunces', serif; margin-bottom: 15px; font-size: 1.5rem;">Matching Users</h2>
+          <div id="searchResultsGrid" class="search-results-grid"></div>
         </div>
 
         <div class="profile-card">
@@ -541,12 +632,48 @@
       });
     });
 
-    // Find User search button
-    document.getElementById('searchBtn').addEventListener('click', () => {
+    // Find User search functionality
+    async function handleProfileSearch() {
       const query = document.getElementById('searchInput').value.trim();
       if (!query) return;
-      window.location.href = `/profile.html?id=${encodeURIComponent(query)}`;
-    });
+
+      const resultsDiv = document.getElementById('searchResults');
+      const grid = document.getElementById('searchResultsGrid');
+      
+      try {
+        const res = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
+        const users = await res.json();
+
+        grid.innerHTML = '';
+        resultsDiv.style.display = 'block';
+
+        if (!users || users.length === 0) {
+          grid.innerHTML = '<p style="opacity: 0.8; padding: 10px;">No matching users found.</p>';
+          return;
+        }
+
+        grid.innerHTML = users.map(u => {
+          const avatarChar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '👤';
+          const avatarHtml = u.profile_pic 
+            ? `<img src="${u.profile_pic}" alt="${u.full_name}">` 
+            : `<span>${avatarChar}</span>`;
+          const bioText = u.bio ? `<div class="search-result-bio">${escapeHtml(u.bio)}</div>` : '';
+
+          return `
+            <div class="search-result-item" onclick="window.location.href='/profile.html?id=${encodeURIComponent(u.user_id || u.id)}'">
+              <div class="search-result-avatar">${avatarHtml}</div>
+              <div class="search-result-info">
+                <div class="search-result-name">${escapeHtml(u.full_name)}</div>
+                <div class="search-result-tag">${escapeHtml(u.user_id || `ID: ${u.id}`)}</div>
+                ${bioText}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        grid.innerHTML = '<p style="color: var(--accent-rose); padding: 10px;">Error performing search.</p>';
+      }
+    }
 
     // Toggle edit block
     function toggleEditMode(edit) {
