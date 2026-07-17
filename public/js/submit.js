@@ -123,6 +123,8 @@
       });
     }
 
+    let cropper = null;
+
     function handleFile(file) {
       const allowed = ['image/jpeg', 'image/png', 'image/webp'];
       if (!allowed.includes(file.type)) {
@@ -134,17 +136,51 @@
         return;
       }
 
-      selectedFile = file;
       const reader = new FileReader();
-      reader.onload = (e) => {
-        if (previewImage) previewImage.src = e.target.result;
+      reader.onload = (event) => {
+        const cropperModal = document.getElementById('cropperModal');
+        const cropperImage = document.getElementById('cropperImage');
+        cropperImage.src = event.target.result;
+        cropperModal.style.display = 'flex';
+
+        if (cropper) cropper.destroy();
+        cropper = new Cropper(cropperImage, {
+          aspectRatio: 16 / 9,
+          viewMode: 1,
+          autoCropArea: 1,
+        });
+
+        document.getElementById('cropperConfirmBtn').onclick = () => {
+          const canvas = cropper.getCroppedCanvas({
+            width: 800,
+            height: 450
+          });
+
+          canvas.toBlob((blob) => {
+            if (!blob) return;
+
+            selectedFile = new File([blob], file.name, { type: 'image/jpeg' });
+
+            if (previewImage) previewImage.src = canvas.toDataURL('image/jpeg');
+            if (fileName) fileName.textContent = file.name;
+            if (fileSize) fileSize.textContent = `${(selectedFile.size / 1024).toFixed(1)} KB`;
+            if (preview) preview.classList.remove('hidden');
+            dropzone.style.display = 'none';
+
+            cropperModal.style.display = 'none';
+            cropper.destroy();
+            cropper = null;
+          }, 'image/jpeg');
+        };
+
+        document.getElementById('cropperCancelBtn').onclick = () => {
+          cropperModal.style.display = 'none';
+          cropper.destroy();
+          cropper = null;
+          fileInput.value = '';
+        };
       };
       reader.readAsDataURL(file);
-
-      if (fileName) fileName.textContent = file.name;
-      if (fileSize) fileSize.textContent = `${(file.size / 1024).toFixed(1)} KB`;
-      if (preview) preview.classList.remove('hidden');
-      dropzone.style.display = 'none';
     }
   }
 
