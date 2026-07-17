@@ -469,6 +469,11 @@
               <input type="text" id="editName" required placeholder="Your Display Name">
             </div>
 
+            <div class="form-group">
+              <label for="editUserId">User Name (Custom User ID)</label>
+              <input type="text" id="editUserId" required placeholder="Custom User ID" pattern="^[a-zA-Z0-9_]{3,20}$" title="3-20 characters, alphanumeric and underscores only">
+            </div>
+
             <div class="form-group" style="margin-bottom: 20px;">
               <label>Profile Picture</label>
               <div style="display: flex; align-items: center; gap: 15px;">
@@ -855,6 +860,7 @@
         
         // Fill form fields
         document.getElementById('editName').value = resolvedUser.full_name;
+        document.getElementById('editUserId').value = resolvedUser.user_id || '';
         document.getElementById('editDob').value = resolvedUser.dob || '';
         document.getElementById('editPhone').value = resolvedUser.phone_number || '';
         document.getElementById('editBio').value = resolvedUser.bio || '';
@@ -872,6 +878,7 @@
       
       const payload = {
         full_name: document.getElementById('editName').value.trim(),
+        user_id: document.getElementById('editUserId').value.trim() || null,
         dob: document.getElementById('editDob').value || null,
         phone_number: document.getElementById('editPhone').value.trim() || null,
         bio: document.getElementById('editBio').value.trim() || null
@@ -894,9 +901,11 @@
           showToast('Profile updated successfully!');
           // Update cached user fields
           currentUser.full_name = payload.full_name;
+          currentUser.user_id = data.user_id || payload.user_id;
           localStorage.setItem('user', JSON.stringify(currentUser));
           toggleEditMode(false);
-          loadProfile();
+          // Redirect to profile page with new username
+          window.location.href = `/profile.html?id=${encodeURIComponent(currentUser.user_id)}`;
         }
       } catch (err) {
         alert('An error occurred while saving profile.');
