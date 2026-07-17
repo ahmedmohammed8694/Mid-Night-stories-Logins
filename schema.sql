@@ -170,3 +170,22 @@ CREATE TABLE IF NOT EXISTS blocks (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(blocker_id, blocked_id)
 );
+
+CREATE TABLE IF NOT EXISTS conversations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_one_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_two_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  initiated_by_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'accepted', 'declined')),
+  last_message_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_one_id, user_two_id)
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  receiver_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

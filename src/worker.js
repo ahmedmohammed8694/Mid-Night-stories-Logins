@@ -821,6 +821,160 @@ app.post('/api/users/:id/unblock', requireUser, async (c) => {
   return c.json({ blocked: false, message: 'User unblocked successfully.' });
 });
 
+// ═════════════════════════════════════════════════════════
+// ██  DIRECT MESSAGES (CHAT) API
+// ═════════════════════════════════════════════════════════
+
+// POST /api/messages - Send a message
+app.post('/api/messages', requireUser, rateLimit('message', 30), async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const { receiver_id, body } = await c.req.json();
+  
+  const receiverId = parseInt(receiver_id);
+  if (isNaN(receiverId)) return c.json({ error: 'Receiver ID is required.' }, 400);
+  if (!body || body.trim().length < 1) return c.json({ error: 'Message body cannot be empty.' }, 400);
+  if (user.id === receiverId) return c.json({ error: 'You cannot message yourself.' }, 400);
+
+  // Check block status
+  const blockCheck1 = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(user.id, receiverId).first();
+  const blockCheck2 = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(receiverId, user.id).first();
+  if (blockCheck1 || blockCheck2) {
+    return c.json({ error: 'Action blocked by safety preferences.' }, 403);
+  }
+
+  const userOneId = Math.min(user.id, receiverId);
+  const userTwoId = Math.max(user.id, receiverId);
+
+  // Find or create conversation
+  let conv = await db.prepare('SELECT * FROM conversations WHERE user_one_id = ? AND user_two_id = ?')
+    .bind(userOneId, userTwoId).first();
+
+  let convId;
+  let status = 'pending';
+  if (!conv) {
+    const result = await db.prepare(
+      'INSERT INTO conversations (user_one_id, user_two_id, initiated_by_id, status) VALUES (?, ?, ?, ?)'
+    ).bind(userOneId, userTwoId, user.id, 'pending').run();
+    convId = result.meta.last_row_id;
+  } else {
+    convId = conv.id;
+    status = conv.status;
+    // If conversation is pending and receiver replies, automatically accept
+    if (conv.status === 'pending' && conv.initiated_by_id !== user.id) {
+      await db.prepare('UPDATE conversations SET status = "accepted" WHERE id = ?').bind(convId).run();
+      status = 'accepted';
+    }
+  }
+
+  // Insert message
+  const msgResult = await db.prepare(
+    'INSERT INTO messages (conversation_id, sender_id, receiver_id, body) VALUES (?, ?, ?, ?)'
+  ).bind(convId, user.id, receiverId, body.trim()).run();
+
+  // Update last message time
+  await db.prepare('UPDATE conversations SET last_message_at = datetime("now") WHERE id = ?').bind(convId).run();
+
+  return c.json({
+    success: true,
+    message: {
+      id: msgResult.meta.last_row_id,
+      conversation_id: convId,
+      sender_id: user.id,
+      receiver_id: receiverId,
+      body: body.trim(),
+      created_at: new Date().toISOString()
+    },
+    conversation_status: status
+  }, 201);
+});
+
+// GET /api/conversations - List conversations
+app.get('/api/conversations', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+
+  const { results: conversations } = await db.prepare(`
+    SELECT c.*, 
+           u.id as other_id, u.user_id as other_user_id, u.full_name as other_name, u.profile_pic as other_pic, u.bio as other_bio,
+           (SELECT body FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
+           (SELECT created_at FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message_time
+    FROM conversations c
+    JOIN users u ON u.id = CASE WHEN c.user_one_id = ? THEN c.user_two_id ELSE c.user_one_id END
+    WHERE c.user_one_id = ? OR c.user_two_id = ?
+    ORDER BY c.last_message_at DESC
+  `).bind(user.id, user.id, user.id).all();
+
+  return c.json(conversations);
+});
+
+// GET /api/conversations/:id/messages - Get messages
+app.get('/api/conversations/:id/messages', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const convId = parseInt(c.req.param('id'));
+
+  const conv = await db.prepare('SELECT * FROM conversations WHERE id = ?').bind(convId).first();
+  if (!conv) return c.json({ error: 'Conversation not found.' }, 404);
+
+  if (conv.user_one_id !== user.id && conv.user_two_id !== user.id) {
+    return c.json({ error: 'Unauthorized.' }, 403);
+  }
+
+  const { results: messages } = await db.prepare(`
+    SELECT * FROM messages 
+    WHERE conversation_id = ? 
+    ORDER BY created_at ASC
+  `).bind(convId).all();
+
+  return c.json({
+    conversation: conv,
+    messages
+  });
+});
+
+// POST /api/conversations/:id/accept - Accept request
+app.post('/api/conversations/:id/accept', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const convId = parseInt(c.req.param('id'));
+
+  const conv = await db.prepare('SELECT * FROM conversations WHERE id = ?').bind(convId).first();
+  if (!conv) return c.json({ error: 'Conversation not found.' }, 404);
+
+  if (conv.user_one_id !== user.id && conv.user_two_id !== user.id) {
+    return c.json({ error: 'Unauthorized.' }, 403);
+  }
+
+  if (conv.status === 'pending') {
+    if (conv.initiated_by_id === user.id) {
+      return c.json({ error: 'Waiting for the other user to accept.' }, 400);
+    }
+    await db.prepare('UPDATE conversations SET status = "accepted" WHERE id = ?').bind(convId).run();
+  }
+
+  return c.json({ success: true, status: 'accepted' });
+});
+
+// POST /api/conversations/:id/decline - Decline/Delete conversation
+app.post('/api/conversations/:id/decline', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const convId = parseInt(c.req.param('id'));
+
+  const conv = await db.prepare('SELECT * FROM conversations WHERE id = ?').bind(convId).first();
+  if (!conv) return c.json({ error: 'Conversation not found.' }, 404);
+
+  if (conv.user_one_id !== user.id && conv.user_two_id !== user.id) {
+    return c.json({ error: 'Unauthorized.' }, 403);
+  }
+
+  await db.prepare('DELETE FROM messages WHERE conversation_id = ?').bind(convId).run();
+  await db.prepare('DELETE FROM conversations WHERE id = ?').bind(convId).run();
+
+  return c.json({ success: true, message: 'Conversation deleted.' });
+});
+
 // DELETE /api/comments/:id
 app.delete('/api/comments/:id', requireUser, async (c) => {
   const db = c.env.DB;

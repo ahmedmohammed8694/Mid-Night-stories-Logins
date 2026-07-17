@@ -437,6 +437,7 @@
 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                   <button id="followBtn" class="btn btn--primary btn--sm" style="display: none;">Follow</button>
+                  <button id="messageBtn" class="btn btn--secondary btn--sm" style="display: none;">✉️ Message</button>
                   <button id="blockBtn" class="btn btn--rose btn--sm" style="display: none;">Block</button>
                   <button id="editProfileBtn" class="btn btn--secondary btn--sm" style="display: none;">Edit Profile</button>
                 </div>
@@ -638,6 +639,7 @@
           document.getElementById('profileEmail').textContent = user.email || 'Not set';
           document.getElementById('profilePhone').textContent = user.phone_number || 'Not set';
           document.getElementById('editProfileBtn').style.display = 'inline-block';
+          document.getElementById('messageBtn').style.display = 'none';
           document.getElementById('blockBtn').style.display = 'none';
           document.getElementById('uploadOverlay').style.display = 'flex';
           document.getElementById('tabBlocked').style.display = 'block';
@@ -661,19 +663,27 @@
           document.getElementById('tabBlocked').style.display = 'none';
           document.getElementById('uploadOverlay').style.display = 'none';
           
-          // Show follow & block buttons
+          // Show follow & block & message buttons
           const followBtn = document.getElementById('followBtn');
           const blockBtn = document.getElementById('blockBtn');
+          const messageBtn = document.getElementById('messageBtn');
           
           blockBtn.style.display = 'inline-block';
           blockBtn.textContent = user.is_blocked ? 'Unblock' : 'Block';
 
           if (user.is_blocked) {
             followBtn.style.display = 'none';
+            messageBtn.style.display = 'none';
           } else {
             followBtn.style.display = 'inline-block';
             followBtn.textContent = user.is_following ? 'Unfollow' : 'Follow';
+            messageBtn.style.display = 'inline-block';
           }
+
+          messageBtn.onclick = () => {
+            if (!token) return window.location.href = '/login.html';
+            window.location.href = `/chat.html?userId=${user.id}`;
+          };
           
           // Bind follow action
           followBtn.onclick = async () => {
