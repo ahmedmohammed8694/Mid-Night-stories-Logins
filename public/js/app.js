@@ -346,45 +346,105 @@ async function loadCommunityStats() {
   }
 }
 
-// ── Auth UI Management ──
-function initAuth() {
+// ── Auth UI Management & Global Layout ──
+function initAuthLayout() {
+  const header = document.querySelector('header.header');
+  if (!header) return;
+
   const token = localStorage.getItem('token');
-  const user = JSON.parse(localStorage.getItem('user'));
-  
-  const guestEls = document.querySelectorAll('.guest-only');
-  const authEls = document.querySelectorAll('.auth-only');
-  
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const path = window.location.pathname;
+
+  let authSection = '';
   if (token && user) {
-    guestEls.forEach(el => el.style.display = 'none');
-    authEls.forEach(el => el.style.display = 'inline-block');
-    
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/';
-      });
-    }
+    const avatarChar = user.full_name ? user.full_name.charAt(0).toUpperCase() : '👤';
+    const profilePicHtml = user.profile_pic 
+      ? `<img src="${user.profile_pic}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` 
+      : avatarChar;
+
+    authSection = `
+      <div class="header__avatar-container" style="position: relative; cursor: pointer; display: flex; align-items: center;">
+        <div class="header__avatar" id="avatarBtn" style="width: 38px; height: 38px; border-radius: 50%; background: var(--primary, #5c6ac4); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; overflow: hidden; border: 2px solid rgba(255,255,255,0.1);">
+          ${profilePicHtml}
+        </div>
+        <div class="header__dropdown" id="avatarDropdown" style="display: none; position: absolute; right: 0; top: 48px; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; width: 180px; z-index: 1000; box-shadow: 0 4px 16px rgba(0,0,0,0.6); padding: 6px 0;">
+          <a href="/profile.html" style="display: block; padding: 10px 16px; color: #fff; text-decoration: none; font-size: 0.9rem; transition: background 0.2s;">My Profile</a>
+          <a href="/profile.html?edit=true" style="display: block; padding: 10px 16px; color: #fff; text-decoration: none; font-size: 0.9rem; transition: background 0.2s;">Update Profile</a>
+          <button id="logoutBtn" style="display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; color: #ff5e5e; font-size: 0.9rem; cursor: pointer; font-family: inherit; transition: background 0.2s;">Logout</button>
+        </div>
+      </div>
+    `;
   } else {
-    guestEls.forEach(el => el.style.display = 'inline-block');
-    authEls.forEach(el => el.style.display = 'none');
+    authSection = `
+      <a href="/login.html" class="btn btn--secondary btn--sm guest-only">Login</a>
+      <a href="/signup.html" class="btn btn--primary btn--sm guest-only">Sign Up</a>
+    `;
+  }
+
+  header.innerHTML = `
+    <div class="header__inner" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+      <a href="/" class="header__logo" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;">
+        <div class="header__logo-icon" style="width: 28px; height: 28px;">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="fill: currentColor; width: 100%; height: 100%;">
+            <path d="M60 20c0 22-18 40-40 40-2 0-5 0-7-.5 7 13.5 21 22.5 37 22.5 24.8 0 45-20.2 45-45 0-16-8.5-30-22-37 .5 2 .5 5 .5 7z"/>
+          </svg>
+        </div>
+        <span class="header__logo-text" style="font-weight: bold; font-size: 1.15rem; letter-spacing: 0.5px;">Midnight Stories</span>
+      </a>
+      <nav class="header__nav" style="display: flex; gap: 24px; align-items: center; margin-left: auto; margin-right: 24px;">
+        <a href="/" class="nav-link ${path === '/' || path === '/index.html' ? 'active' : ''}">Browse</a>
+        <a href="/submit.html" class="nav-link ${path === '/submit.html' ? 'active' : ''}">Share Story</a>
+        <a href="/resources.html" class="nav-link ${path === '/resources.html' ? 'active' : ''}">Resources</a>
+        <a href="/about.html" class="nav-link ${path === '/about.html' ? 'active' : ''}">About</a>
+      </nav>
+      <div class="header__actions" style="display: flex; align-items: center; gap: 16px;">
+        <button class="theme-toggle" id="themeToggle" style="background: none; border: none; font-size: 1.1rem; cursor: pointer;" aria-label="Toggle theme">🌙</button>
+        ${authSection}
+        <button class="mobile-menu-toggle" id="mobileMenuBtn" aria-label="Open menu" style="display: none;">☰</button>
+      </div>
+    </div>
+  `;
+
+  // Dropdown Toggle
+  const avatarBtn = document.getElementById('avatarBtn');
+  const avatarDropdown = document.getElementById('avatarDropdown');
+  if (avatarBtn && avatarDropdown) {
+    avatarBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      avatarDropdown.style.display = avatarDropdown.style.display === 'none' ? 'block' : 'none';
+    });
+    document.addEventListener('click', () => {
+      avatarDropdown.style.display = 'none';
+    });
+  }
+
+  // Bind Logout
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/';
+    });
+  }
+
+  // Bind Theme Toggle in dynamically loaded DOM
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    themeToggle.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+    themeToggle.addEventListener('click', toggleTheme);
   }
 }
 
 // ── Initialize Shared Components ──
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
-  initAuth();
+  initAuthLayout();
   initCrisisBanner();
   initMobileNav();
   initScrollObserver();
   init3DStyle();
-
-  const themeToggle = document.getElementById('themeToggle');
-  if (themeToggle) {
-    themeToggle.addEventListener('click', toggleTheme);
-  }
 
   // Load community stats (only fires if the stats bar is on the page)
   loadCommunityStats();
