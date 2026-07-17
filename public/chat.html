@@ -417,16 +417,15 @@
       });
     }
 
+    let lastMessagesCount = 0;
+
     async function selectConversation(conv) {
       activeConversation = conv;
       renderConversations();
       
-      const chatPane = document.getElementById('chatPane');
-      chatPane.innerHTML = `
-        <div style="flex:1; display:flex; align-items:center; justify-content:center;">
-          <p>Loading messages...</p>
-        </div>
-      `;
+      // Render the structure frame once
+      renderChatLayout(conv);
+      lastMessagesCount = 0;
 
       if (messagePollInterval) clearInterval(messagePollInterval);
       await loadMessages();
@@ -441,19 +440,50 @@
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
-        activeConversation.status = data.conversation.status;
-        renderChatWindow(data.conversation, data.messages);
+
+        // If status changed or conversation is new, update layout widgets
+        if (data.conversation.status !== activeConversation.status) {
+          activeConversation.status = data.conversation.status;
+          updateChatHeader(data.conversation);
+          updateChatBottomBar(data.conversation);
+        }
+
+        renderMessagesOnly(data.messages);
       } catch (err) {
         console.error('Failed to load messages:', err);
       }
     }
 
-    function renderChatWindow(conversation, messages) {
+    function renderChatLayout(conversation) {
       const chatPane = document.getElementById('chatPane');
       chatPane.innerHTML = '';
 
+      // 1. Header Frame
       const headerDiv = document.createElement('div');
       headerDiv.className = 'chat-header';
+      headerDiv.id = 'chatHeader';
+      chatPane.appendChild(headerDiv);
+
+      updateChatHeader(conversation);
+
+      // 2. Messages Frame
+      const messagesArea = document.createElement('div');
+      messagesArea.className = 'messages-area';
+      messagesArea.id = 'chatMessagesArea';
+      messagesArea.innerHTML = '<p style="text-align: center; opacity: 0.4; padding: 20px;">Loading messages...</p>';
+      chatPane.appendChild(messagesArea);
+
+      // 3. Bottom Action Bar (Input or Request Banner)
+      const bottomBar = document.createElement('div');
+      bottomBar.id = 'chatBottomBar';
+      chatPane.appendChild(bottomBar);
+
+      updateChatBottomBar(conversation);
+    }
+
+    function updateChatHeader(conversation) {
+      const headerDiv = document.getElementById('chatHeader');
+      if (!headerDiv) return;
 
       let statusText = '';
       let statusColor = '';
@@ -485,29 +515,13 @@
           <button class="btn btn--secondary btn--sm" onclick="deleteConversationPermanently(${conversation.id})" style="border-color: rgba(255,94,94,0.3); color: #ff5e5e;">Delete Chat</button>
         </div>
       `;
-      chatPane.appendChild(headerDiv);
+    }
 
-      const messagesArea = document.createElement('div');
-      messagesArea.className = 'messages-area';
-      
-      if (messages.length === 0) {
-        messagesArea.innerHTML = `<p style="text-align: center; opacity: 0.4; padding: 20px;">No messages yet.</p>`;
-      } else {
-        messages.forEach(m => {
-          const isSent = Number(m.sender_id) === Number(currentUser.id);
-          const row = document.createElement('div');
-          row.className = `msg-row ${isSent ? 'sent' : 'received'}`;
-          row.innerHTML = `
-            <div class="msg-bubble">
-              <div>${escapeHtml(m.body)}</div>
-              <span class="msg-time">${new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-            </div>
-          `;
-          messagesArea.appendChild(row);
-        });
-      }
-      chatPane.appendChild(messagesArea);
-      setTimeout(() => { messagesArea.scrollTop = messagesArea.scrollHeight; }, 50);
+    function updateChatBottomBar(conversation) {
+      const bottomBar = document.getElementById('chatBottomBar');
+      if (!bottomBar) return;
+
+      bottomBar.innerHTML = '';
 
       if (conversation.status === 'pending') {
         const isInitiator = Number(conversation.initiated_by_id) === Number(currentUser.id);
@@ -523,13 +537,13 @@
           requestDiv.innerHTML = `
             <div class="request-banner-title">Chat Request</div>
             <div class="request-banner-desc">${escapeHtml(conversation.other_name)} wants to communicate.</div>
-            <div style="display: flex; gap: 12px;">
+            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 10px;">
               <button class="btn btn--primary btn--sm" onclick="acceptChat(${conversation.id})">Accept Request</button>
               <button class="btn btn--secondary btn--sm" onclick="declineChat(${conversation.id})" style="border-color: rgba(255,94,94,0.3); color: #ff5e5e;">Decline</button>
             </div>
           `;
         }
-        chatPane.appendChild(requestDiv);
+        bottomBar.appendChild(requestDiv);
       } else if (conversation.status === 'declined') {
         const requestDiv = document.createElement('div');
         requestDiv.className = 'request-banner';
@@ -546,12 +560,12 @@
           requestDiv.innerHTML = `
             <div class="request-banner-title" style="color: #ef4444;">Chat Request Declined</div>
             <div class="request-banner-desc">You declined this chat request.</div>
-            <div style="display: flex; gap: 12px;">
+            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 10px;">
               <button class="btn btn--primary btn--sm" onclick="acceptChat(${conversation.id})">Accept Chat</button>
             </div>
           `;
         }
-        chatPane.appendChild(requestDiv);
+        bottomBar.appendChild(requestDiv);
       } else {
         const inputBar = document.createElement('div');
         inputBar.className = 'chat-input-bar';
@@ -561,8 +575,40 @@
             <button type="submit" class="btn btn--primary" style="border-radius: 30px; padding: 10px 24px;">Send</button>
           </form>
         `;
-        chatPane.appendChild(inputBar);
+        bottomBar.appendChild(inputBar);
+        setTimeout(() => {
+          const input = document.getElementById('chatMessageInput');
+          if (input) input.focus();
+        }, 50);
       }
+    }
+
+    function renderMessagesOnly(messages) {
+      const messagesArea = document.getElementById('chatMessagesArea');
+      if (!messagesArea) return;
+
+      // Avoid reflow if no new messages exist
+      if (messages.length === lastMessagesCount && messagesArea.innerHTML !== '') return;
+      lastMessagesCount = messages.length;
+
+      if (messages.length === 0) {
+        messagesArea.innerHTML = `<p style="text-align: center; opacity: 0.4; padding: 20px;">No messages yet.</p>`;
+        return;
+      }
+
+      messagesArea.innerHTML = messages.map(m => {
+        const isSent = Number(m.sender_id) === Number(currentUser.id);
+        return `
+          <div class="msg-row ${isSent ? 'sent' : 'received'}">
+            <div class="msg-bubble">
+              <div>${escapeHtml(m.body)}</div>
+              <span class="msg-time">${new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      setTimeout(() => { messagesArea.scrollTop = messagesArea.scrollHeight; }, 50);
     }
 
     async function sendMessage() {
