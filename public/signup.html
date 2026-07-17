@@ -21,6 +21,7 @@
       <h2 style="text-align:center; margin-bottom: 2rem;">Join Midnight Stories</h2>
       <form id="signupForm" class="auth-form">
         <input type="text" id="fullname" class="auth-input" placeholder="Full Name" required>
+        <input type="text" id="userid" class="auth-input" placeholder="Custom User ID (optional, e.g. USER_XYZ)" pattern="^[a-zA-Z0-9_]{3,20}$" title="3-20 characters, alphanumeric and underscores only">
         <input type="email" id="email" class="auth-input" placeholder="Email Address" required>
         <input type="tel" id="phone" class="auth-input" placeholder="Phone Number (optional)">
         <div style="display:flex; flex-direction:column; gap: 4px;">
@@ -48,6 +49,7 @@
     document.getElementById('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const full_name = document.getElementById('fullname').value;
+      const user_id = document.getElementById('userid').value.trim() || null;
       const email = document.getElementById('email').value;
       const phone_number = document.getElementById('phone').value.trim() || null;
       const dob = document.getElementById('dob').value || null;
@@ -57,7 +59,7 @@
         const res = await fetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ full_name, email, password, phone_number, dob })
+          body: JSON.stringify({ full_name, email, password, phone_number, dob, user_id })
         });
         const data = await res.json();
         if (res.ok) {

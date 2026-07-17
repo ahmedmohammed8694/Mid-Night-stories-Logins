@@ -176,7 +176,7 @@ app.get('/uploads/:filename', async (c) => {
 // ═════════════════════════════════════════════════════════
 app.post('/api/auth/signup', async (c) => {
   const db = c.env.DB;
-  const { full_name, email, password, phone_number, dob } = await c.req.json();
+  const { full_name, email, password, phone_number, dob, user_id } = await c.req.json();
 
   if (!full_name || !email || !password) {
     return c.json({ error: 'Name, email, and password are required.' }, 400);
@@ -188,7 +188,23 @@ app.post('/api/auth/signup', async (c) => {
   const existing = await db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
   if (existing) return c.json({ error: 'Email already in use.' }, 400);
 
-  const customUserId = generateUserId();
+  let customUserId = user_id ? user_id.trim() : '';
+  if (customUserId) {
+    // Validate User ID format (alphanumeric and underscores only, between 3 and 20 characters)
+    const userIdRegex = /^[a-zA-Z0-9_]{3,20}$/;
+    if (!userIdRegex.test(customUserId)) {
+      return c.json({ error: 'User ID must be 3-20 characters and contain only letters, numbers, or underscores.' }, 400);
+    }
+
+    // Check if User ID is already taken
+    const existingId = await db.prepare('SELECT id FROM users WHERE user_id = ?').bind(customUserId).first();
+    if (existingId) {
+      return c.json({ error: 'User ID is already in use.' }, 400);
+    }
+  } else {
+    customUserId = generateUserId();
+  }
+
   const passwordHash = await bcrypt.hash(password, 10);
   const result = await db.prepare(
     'INSERT INTO users (user_id, full_name, email, password_hash, phone_number, dob) VALUES (?, ?, ?, ?, ?, ?)'
