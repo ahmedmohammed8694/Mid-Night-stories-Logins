@@ -176,10 +176,10 @@ app.get('/uploads/:filename', async (c) => {
 // ═════════════════════════════════════════════════════════
 app.post('/api/auth/signup', async (c) => {
   const db = c.env.DB;
-  const { full_name, email, password } = await c.req.json();
+  const { full_name, email, password, phone_number, dob } = await c.req.json();
 
   if (!full_name || !email || !password) {
-    return c.json({ error: 'All fields are required.' }, 400);
+    return c.json({ error: 'Name, email, and password are required.' }, 400);
   }
   if (password.length < 6) {
     return c.json({ error: 'Password must be at least 6 characters.' }, 400);
@@ -191,8 +191,8 @@ app.post('/api/auth/signup', async (c) => {
   const customUserId = generateUserId();
   const passwordHash = await bcrypt.hash(password, 10);
   const result = await db.prepare(
-    'INSERT INTO users (user_id, full_name, email, password_hash) VALUES (?, ?, ?, ?)'
-  ).bind(customUserId, full_name, email, passwordHash).run();
+    'INSERT INTO users (user_id, full_name, email, password_hash, phone_number, dob) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(customUserId, full_name, email, passwordHash, phone_number || null, dob || null).run();
 
   const userId = result.meta.last_row_id;
   const token = await signJWT({ id: userId, email }, getUserJwtSecret(c));

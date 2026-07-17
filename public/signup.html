@@ -22,6 +22,11 @@
       <form id="signupForm" class="auth-form">
         <input type="text" id="fullname" class="auth-input" placeholder="Full Name" required>
         <input type="email" id="email" class="auth-input" placeholder="Email Address" required>
+        <input type="tel" id="phone" class="auth-input" placeholder="Phone Number (optional)">
+        <div style="display:flex; flex-direction:column; gap: 4px;">
+          <label style="font-size:0.85rem; opacity:0.8; margin-left:4px;">Date of Birth</label>
+          <input type="date" id="dob" class="auth-input" required>
+        </div>
         <input type="password" id="password" class="auth-input" placeholder="Password (min 6 chars)" required minlength="6">
         <button type="submit" class="auth-btn btn-primary">Create Account</button>
       </form>
@@ -34,7 +39,7 @@
       </a>
 
       <div class="auth-links">
-        Already have an account? <a href="/login">Login</a>
+        Already have an account? <a href="/login.html">Login</a>
       </div>
     </div>
   </div>
@@ -44,13 +49,15 @@
       e.preventDefault();
       const full_name = document.getElementById('fullname').value;
       const email = document.getElementById('email').value;
+      const phone_number = document.getElementById('phone').value.trim() || null;
+      const dob = document.getElementById('dob').value || null;
       const password = document.getElementById('password').value;
 
       try {
         const res = await fetch('/api/auth/signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ full_name, email, password })
+          body: JSON.stringify({ full_name, email, password, phone_number, dob })
         });
         const data = await res.json();
         if (res.ok) {
