@@ -53,6 +53,15 @@ async function verifyJWT(token, secret) {
   return decoded;
 }
 
+function generateUserId() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = 'USER_';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 const app = new Hono();
 
 // ── In-Memory Rate Limiting ──
@@ -179,15 +188,16 @@ app.post('/api/auth/signup', async (c) => {
   const existing = await db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
   if (existing) return c.json({ error: 'Email already in use.' }, 400);
 
+  const customUserId = generateUserId();
   const passwordHash = await bcrypt.hash(password, 10);
   const result = await db.prepare(
-    'INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)'
-  ).bind(full_name, email, passwordHash).run();
+    'INSERT INTO users (user_id, full_name, email, password_hash) VALUES (?, ?, ?, ?)'
+  ).bind(customUserId, full_name, email, passwordHash).run();
 
   const userId = result.meta.last_row_id;
   const token = await signJWT({ id: userId, email }, getUserJwtSecret(c));
 
-  return c.json({ token, user: { id: userId, full_name, email } }, 201);
+  return c.json({ token, user: { id: userId, user_id: customUserId, full_name, email } }, 201);
 });
 
 app.post('/api/auth/login', async (c) => {
@@ -205,13 +215,13 @@ app.post('/api/auth/login', async (c) => {
   if (!isMatch) return c.json({ error: 'Invalid credentials.' }, 401);
 
   const token = await signJWT({ id: user.id, email: user.email }, getUserJwtSecret(c));
-  return c.json({ token, user: { id: user.id, full_name: user.full_name, email: user.email } });
+  return c.json({ token, user: { id: user.id, user_id: user.user_id, full_name: user.full_name, email: user.email } });
 });
 
 app.get('/api/auth/me', requireUser, async (c) => {
   const db = c.env.DB;
   const userPayload = c.get('user');
-  const user = await db.prepare('SELECT id, full_name, email, profile_pic FROM users WHERE id = ?').bind(userPayload.id).first();
+  const user = await db.prepare('SELECT id, user_id, full_name, email, profile_pic, dob, phone_number, bio, privacy_settings FROM users WHERE id = ?').bind(userPayload.id).first();
   return c.json(user);
 });
 
@@ -256,14 +266,17 @@ app.get('/api/auth/google/callback', async (c) => {
 
   let user = await db.prepare('SELECT * FROM users WHERE email = ?').bind(profile.email).first();
   let userId;
+  let user_id;
 
   if (!user) {
+    user_id = generateUserId();
     const insert = await db.prepare(
-      'INSERT INTO users (full_name, email, google_id, profile_pic) VALUES (?, ?, ?, ?)'
-    ).bind(profile.name, profile.email, profile.id, profile.picture).run();
+      'INSERT INTO users (user_id, full_name, email, google_id, profile_pic) VALUES (?, ?, ?, ?, ?)'
+    ).bind(user_id, profile.name, profile.email, profile.id, profile.picture).run();
     userId = insert.meta.last_row_id;
   } else {
     userId = user.id;
+    user_id = user.user_id;
     if (!user.google_id) {
       await db.prepare('UPDATE users SET google_id = ? WHERE id = ?').bind(profile.id, userId).run();
     }
@@ -480,14 +493,23 @@ app.post('/api/stories/:id/like', requireUser, checkBan, async (c) => {
 // ═════════════════════════════════════════════════════════
 // ██  USER PROFILES & SOCIAL CAPABILITIES
 // ═════════════════════════════════════════════════════════
-app.get('/api/users/:id', optionalUser, async (c) => {
+app.get('/api/users/:idOrUserId', optionalUser, async (c) => {
   const db = c.env.DB;
-  const targetId = parseInt(c.req.param('id'));
+  const param = c.req.param('idOrUserId');
   const loggedInUser = c.get('user');
 
-  const user = await db.prepare('SELECT id, full_name, bio, profile_pic, created_at FROM users WHERE id = ?').bind(targetId).first();
+  let query = 'SELECT id, user_id, full_name, bio, profile_pic, dob, phone_number, email, privacy_settings, created_at FROM users WHERE ';
+  let user;
+
+  if (isNaN(param)) {
+    user = await db.prepare(query + 'user_id = ?').bind(param).first();
+  } else {
+    user = await db.prepare(query + 'id = ?').bind(parseInt(param)).first();
+  }
+
   if (!user) return c.json({ error: 'User not found.' }, 404);
 
+  const targetId = user.id;
   const followers = (await db.prepare('SELECT COUNT(*) as c FROM follows WHERE following_id = ?').bind(targetId).first()).c;
   const following = (await db.prepare('SELECT COUNT(*) as c FROM follows WHERE follower_id = ?').bind(targetId).first()).c;
 
@@ -499,7 +521,144 @@ app.get('/api/users/:id', optionalUser, async (c) => {
     user.is_following = !!isFollowing;
   }
 
+  // Privacy Protection logic
+  const isOwner = loggedInUser && loggedInUser.id === targetId;
+  if (!isOwner) {
+    user.email = undefined;
+    user.phone_number = undefined;
+  }
+
   return c.json(user);
+});
+
+// PUT /api/users/me - Update profile
+app.put('/api/users/me', requireUser, async (c) => {
+  const db = c.env.DB;
+  const userPayload = c.get('user');
+  const { full_name, bio, dob, phone_number } = await c.req.json();
+
+  if (!full_name || full_name.trim().length < 2) {
+    return c.json({ error: 'Full name must be at least 2 characters.' }, 400);
+  }
+
+  await db.prepare(
+    'UPDATE users SET full_name = ?, bio = ?, dob = ?, phone_number = ?, updated_at = datetime("now") WHERE id = ?'
+  ).bind(full_name.trim(), bio ? bio.trim() : null, dob || null, phone_number || null, userPayload.id).run();
+
+  return c.json({ success: true });
+});
+
+// POST /api/users/me/upload - Upload profile pic to R2
+app.post('/api/users/me/upload', requireUser, async (c) => {
+  const db = c.env.DB;
+  const userPayload = c.get('user');
+
+  try {
+    const formData = await c.req.formData();
+    const file = formData.get('profile_pic');
+
+    if (!file || !(file instanceof File)) {
+      return c.json({ error: 'No file uploaded.' }, 400);
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      return c.json({ error: 'Max file size is 5MB.' }, 400);
+    }
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      return c.json({ error: 'Only JPEG, PNG, and WebP are allowed.' }, 400);
+    }
+
+    if (!c.env.IMAGES) {
+      return c.json({ error: 'Storage bucket (R2) is not configured.' }, 500);
+    }
+
+    const ext = file.type.split('/')[1] || 'jpg';
+    const filename = `profile_${userPayload.id}_${Date.now()}.${ext}`;
+
+    await c.env.IMAGES.put(filename, await file.arrayBuffer(), {
+      httpMetadata: { contentType: file.type }
+    });
+
+    const profilePicUrl = `/uploads/${filename}`;
+    await db.prepare('UPDATE users SET profile_pic = ? WHERE id = ?').bind(profilePicUrl, userPayload.id).run();
+
+    return c.json({ success: true, profile_pic: profilePicUrl });
+  } catch (err) {
+    return c.json({ error: 'Failed to process file upload.' }, 500);
+  }
+});
+
+// POST /api/stories/:id/comments
+app.post('/api/stories/:id/comments', requireUser, checkBan, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const storyId = parseInt(c.req.param('id'));
+  const { content, body } = await c.req.json();
+  const commentText = content || body;
+
+  if (!commentText || commentText.trim().length < 1) {
+    return c.json({ error: 'Comment content cannot be empty.' }, 400);
+  }
+
+  // Moderate text for comments
+  let bannedKeywords = [];
+  try {
+    const setting = await db.prepare("SELECT value FROM settings WHERE key = 'banned_keywords'").first();
+    if (setting) bannedKeywords = JSON.parse(setting.value);
+  } catch (e) {}
+
+  const modResult = moderateText(commentText, bannedKeywords);
+  if (modResult.autoAction === 'reject') {
+    return c.json({ error: 'Your comment violates guidelines.' }, 400);
+  }
+
+  await db.prepare(
+    'INSERT INTO comments (story_id, user_id, content, status) VALUES (?, ?, ?, ?)'
+  ).bind(storyId, user.id, modResult.redactedText, 'approved').run();
+
+  return c.json({ success: true, message: 'Comment posted successfully', status: 'approved' });
+});
+
+// GET /api/users/:idOrUserId/comments
+app.get('/api/users/:idOrUserId/comments', async (c) => {
+  const db = c.env.DB;
+  const param = c.req.param('idOrUserId');
+
+  let user;
+  if (isNaN(param)) {
+    user = await db.prepare('SELECT id FROM users WHERE user_id = ?').bind(param).first();
+  } else {
+    user = await db.prepare('SELECT id FROM users WHERE id = ?').bind(parseInt(param)).first();
+  }
+
+  if (!user) return c.json({ error: 'User not found.' }, 404);
+
+  const { results: comments } = await db.prepare(`
+    SELECT cm.*, s.title as story_title
+    FROM comments cm
+    LEFT JOIN stories s ON cm.story_id = s.id
+    WHERE cm.user_id = ? AND cm.status = 'approved'
+    ORDER BY cm.created_at DESC
+  `).bind(user.id).all();
+
+  return c.json(comments);
+});
+
+// DELETE /api/comments/:id
+app.delete('/api/comments/:id', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const commentId = parseInt(c.req.param('id'));
+
+  const comment = await db.prepare('SELECT user_id FROM comments WHERE id = ?').bind(commentId).first();
+  if (!comment) return c.json({ error: 'Comment not found.' }, 404);
+
+  if (comment.user_id !== user.id) {
+    return c.json({ error: 'Unauthorized.' }, 403);
+  }
+
+  await db.prepare('UPDATE comments SET status = "removed" WHERE id = ?').bind(commentId).run();
+  return c.json({ success: true });
 });
 
 app.post('/api/users/:id/follow', requireUser, async (c) => {

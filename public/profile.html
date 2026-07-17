@@ -3,141 +3,694 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>User Profile - Midnight Stories</title>
+  <title>User Profile — Midnight Stories</title>
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    .profile-header { display: flex; align-items: center; gap: 20px; padding: 2rem; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 2rem; }
-    .avatar { width: 100px; height: 100px; border-radius: 50%; background: #5c6ac4; color: white; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
-    .profile-info h1 { margin: 0; }
-    .stats { display: flex; gap: 20px; margin-top: 10px; opacity: 0.8; }
-    
-    .tabs { display: flex; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
-    .tab { padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; opacity: 0.7; }
-    .tab.active { border-bottom: 2px solid var(--primary, #5c6ac4); opacity: 1; font-weight: bold; }
-    
-    .story-list { display: flex; flex-direction: column; gap: 15px; }
-    .story-item { padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; }
+    .profile-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 16px;
+      padding: 2.5rem;
+      margin-bottom: 2.5rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      position: relative;
+    }
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+    .avatar-wrapper {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 3px solid var(--page-accent);
+      overflow: hidden;
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      font-weight: bold;
+      color: white;
+    }
+    .avatar-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .avatar-upload-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      cursor: pointer;
+    }
+    .avatar-wrapper:hover .avatar-upload-overlay {
+      opacity: 1;
+    }
+    .profile-details {
+      flex: 1;
+      min-width: 250px;
+    }
+    .profile-details h1 {
+      margin: 0 0 5px 0;
+      font-family: 'Fraunces', serif;
+      font-size: 2.2rem;
+    }
+    .user-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+    }
+    .btn-copy {
+      background: none;
+      border: none;
+      color: var(--page-accent);
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .btn-copy:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    .bio-text {
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      margin-bottom: 15px;
+      max-width: 600px;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .meta-grid-edit {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .meta-label {
+      font-size: 0.8rem;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .meta-value {
+      font-size: 1rem;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+    .tabs-wrapper {
+      margin-bottom: 2rem;
+    }
+    .comments-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .comment-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .comment-card h4 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+    .comment-card h4 a {
+      color: var(--page-accent);
+      text-decoration: none;
+    }
+    .comment-card h4 a:hover {
+      text-decoration: underline;
+    }
+    .comment-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--text-tertiary);
+    }
+    .comment-delete {
+      color: var(--accent-rose);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .comment-delete:hover {
+      text-decoration: underline;
+    }
+    /* Edit Profile Form */
+    .edit-form {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .form-group label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .form-group input, .form-group textarea {
+      background: var(--bg-input);
+      border: 1px solid var(--border-card);
+      border-radius: 8px;
+      padding: 12px;
+      color: white;
+      font-family: inherit;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+      outline: none;
+      border-color: var(--page-accent);
+    }
+    /* Toast Alert */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1a1a1a;
+      border: 1px solid var(--border-card);
+      border-radius: 8px;
+      padding: 12px 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 9999;
+      color: white;
+    }
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    /* Search Box */
+    .search-box {
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 10px;
+    }
+    .search-box input {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border-card);
+      border-radius: 8px;
+      padding: 10px 15px;
+      color: white;
+      font-family: inherit;
+    }
+    .search-box button {
+      padding: 10px 20px;
+    }
   </style>
 </head>
 <body>
   <div class="page-wrapper">
-    <!-- Header Placeholder -->
-    <header class="header"><div class="header__inner"><a href="/" class="header__logo">Home</a></div></header>
+    <!-- Header dynamically injected by app.js -->
+    <header class="header"></header>
 
     <main class="page-content">
-      <div class="container">
+      <div class="container container--narrow">
         
-        <div class="profile-header">
-          <div class="avatar" id="avatar">👤</div>
-          <div class="profile-info">
-            <h1 id="userName">Loading...</h1>
-            <p id="userBio"></p>
-            <div class="stats">
-              <span id="followersCount">0 Followers</span>
-              <span id="followingCount">0 Following</span>
-            </div>
-            <button id="followBtn" class="btn btn--primary btn--sm" style="display:none; margin-top:10px;">Follow</button>
-          </div>
+        <!-- Search User by ID -->
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Find user by User ID (e.g., USER_X7Y9Z2)...">
+          <button id="searchBtn" class="btn btn--secondary btn--sm">Find Profile</button>
         </div>
 
-        <div class="tabs">
-          <div class="tab active" data-tab="stories">Stories Written</div>
-          <div class="tab" data-tab="liked">Liked Stories</div>
+        <div class="profile-card">
+          
+          <!-- View Profile Block -->
+          <div id="profileViewBlock">
+            <div class="profile-header">
+              <div class="avatar-wrapper" id="avatarContainer">
+                <span id="avatarText">👤</span>
+                <div class="avatar-upload-overlay" id="uploadOverlay" style="display: none;">Upload</div>
+              </div>
+              <input type="file" id="avatarFileInput" accept="image/jpeg,image/png,image/webp" style="display: none;">
+              
+              <div class="profile-details">
+                <h1 id="profileName">Loading...</h1>
+                
+                <div class="user-tag">
+                  <span id="profileUserId">USER_??????</span>
+                  <button class="btn-copy" id="copyIdBtn" aria-label="Copy User ID">📋 Copy</button>
+                </div>
+                
+                <p class="bio-text" id="profileBio">Loading details...</p>
+                
+                <div class="stats" style="display: flex; gap: 20px; font-weight: 500; font-size: 1rem;">
+                  <span id="followersCount">0 Followers</span>
+                  <span id="followingCount">0 Following</span>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                  <button id="followBtn" class="btn btn--primary btn--sm" style="display: none;">Follow</button>
+                  <button id="editProfileBtn" class="btn btn--secondary btn--sm" style="display: none;">Edit Profile</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="meta-grid">
+              <div class="meta-item">
+                <span class="meta-label">Age</span>
+                <span class="meta-value" id="profileAge">Not set</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Email (Private)</span>
+                <span class="meta-value" id="profileEmail">Hidden</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">Phone Number (Private)</span>
+                <span class="meta-value" id="profilePhone">Hidden</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Edit Profile Block -->
+          <form class="edit-form" id="profileEditForm" onsubmit="saveProfile(event)">
+            <h2 style="font-family: 'Fraunces', serif; margin-bottom: 20px;">Edit Profile Settings</h2>
+            
+            <div class="form-group">
+              <label for="editName">Full Name</label>
+              <input type="text" id="editName" required placeholder="Your Display Name">
+            </div>
+
+            <div class="form-group">
+              <label for="editDob">Date of Birth</label>
+              <input type="date" id="editDob">
+            </div>
+
+            <div class="form-group">
+              <label for="editPhone">Phone Number</label>
+              <input type="tel" id="editPhone" placeholder="+1234567890">
+            </div>
+
+            <div class="form-group">
+              <label for="editBio">Bio</label>
+              <textarea id="editBio" rows="4" maxlength="500" placeholder="Tell us about yourself..."></textarea>
+            </div>
+
+            <div style="display: flex; gap: 15px; margin-top: 10px;">
+              <button type="submit" class="btn btn--primary btn--sm">Save Changes</button>
+              <button type="button" id="cancelEditBtn" class="btn btn--secondary btn--sm">Cancel</button>
+            </div>
+          </form>
+
+        </div>
+
+        <!-- Activity Tabs -->
+        <div class="tabs-wrapper">
+          <div class="tabs">
+            <div class="tab active" data-tab="stories" id="tabStories">Stories Written</div>
+            <div class="tab" data-tab="comments" id="tabComments">My Comments</div>
+          </div>
         </div>
 
         <div id="storiesContainer" class="story-list">
           <p>Loading stories...</p>
         </div>
+
+        <div id="commentsContainer" class="comments-grid" style="display: none;">
+          <p>Loading comments...</p>
+        </div>
+
       </div>
     </main>
   </div>
 
+  <div class="toast" id="toastAlert">Copied to Clipboard!</div>
+
+  <script src="/js/app.js"></script>
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get('id');
+    const queryUserId = urlParams.get('id'); // Can be numeric database ID or string USER_XXXXXX
+    const isEditMode = urlParams.get('edit') === 'true';
+
     const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
     const token = localStorage.getItem('token');
-    
-    const targetUserId = userId || (currentUser ? currentUser.id : null);
 
-    if (!targetUserId) {
-      window.location.href = '/login';
+    let pageUserId = queryUserId || (currentUser ? currentUser.id : null);
+    let resolvedUser = null;
+
+    if (!pageUserId) {
+      window.location.href = '/login.html';
+    }
+
+    // Toast Functionality
+    function showToast(message) {
+      const toast = document.getElementById('toastAlert');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    // Calculate age helper
+    function getAge(dobString) {
+      if (!dobString) return 'Not set';
+      const today = new Date();
+      const birthDate = new Date(dobString);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
     }
 
     async function loadProfile() {
-      const res = await fetch(`/api/users/${targetUserId}`);
-      if (!res.ok) return alert('Profile not found');
-      
-      const user = await res.json();
-      document.getElementById('userName').innerText = user.full_name;
-      document.getElementById('userBio').innerText = user.bio || 'No bio provided.';
-      document.getElementById('followersCount').innerText = `${user.followers_count} Followers`;
-      document.getElementById('followingCount').innerText = `${user.following_count} Following`;
-      
-      if (user.profile_pic) {
-        document.getElementById('avatar').innerHTML = `<img src="${user.profile_pic}" style="width:100%; border-radius:50%">`;
-      } else {
-        document.getElementById('avatar').innerText = user.full_name.charAt(0).toUpperCase();
-      }
+      try {
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const res = await fetch(`/api/users/${pageUserId}`, { headers });
+        if (!res.ok) {
+          document.getElementById('profileName').textContent = 'Profile Not Found';
+          document.getElementById('profileBio').textContent = 'The specified user profile does not exist.';
+          return;
+        }
 
-      if (currentUser && currentUser.id != targetUserId) {
-        const followBtn = document.getElementById('followBtn');
-        followBtn.style.display = 'block';
-        followBtn.innerText = user.is_following ? 'Unfollow' : 'Follow';
-        
-        // Remove old event listeners
-        const newBtn = followBtn.cloneNode(true);
-        followBtn.parentNode.replaceChild(newBtn, followBtn);
-        
-        newBtn.addEventListener('click', async () => {
-          const fRes = await fetch(`/api/users/${targetUserId}/follow`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
+        const user = await res.json();
+        resolvedUser = user;
+
+        // Populate fields
+        document.getElementById('profileName').textContent = user.full_name;
+        document.getElementById('profileUserId').textContent = user.user_id || 'USER_GUEST';
+        document.getElementById('profileBio').textContent = user.bio || 'No bio provided.';
+        document.getElementById('followersCount').textContent = `${user.followers_count} Followers`;
+        document.getElementById('followingCount').textContent = `${user.following_count} Following`;
+
+        // Profile pic
+        if (user.profile_pic) {
+          document.getElementById('avatarContainer').innerHTML = `
+            <img src="${user.profile_pic}" alt="${user.full_name}">
+            <div class="avatar-upload-overlay" id="uploadOverlay">Change</div>
+          `;
+        } else {
+          document.getElementById('avatarContainer').innerHTML = `
+            <span id="avatarText">${user.full_name.charAt(0).toUpperCase()}</span>
+            <div class="avatar-upload-overlay" id="uploadOverlay">Upload</div>
+          `;
+        }
+
+        // Age
+        document.getElementById('profileAge').textContent = user.dob ? `${getAge(user.dob)} (${user.dob})` : 'Not set';
+
+        // Check if owner
+        const isOwner = currentUser && currentUser.id === user.id;
+
+        if (isOwner) {
+          // Show private fields
+          document.getElementById('profileEmail').textContent = user.email || 'Not set';
+          document.getElementById('profilePhone').textContent = user.phone_number || 'Not set';
+          document.getElementById('editProfileBtn').style.display = 'inline-block';
+          document.getElementById('uploadOverlay').style.display = 'flex';
+          
+          // Setup profile picture change listener
+          document.getElementById('avatarContainer').addEventListener('click', () => {
+            document.getElementById('avatarFileInput').click();
           });
-          if (fRes.ok) {
-            const data = await fRes.json();
-            newBtn.innerText = data.following ? 'Unfollow' : 'Follow';
-            loadProfile(); // reload stats
+
+          // Change tab label for self
+          document.getElementById('tabComments').textContent = 'My Comments';
+
+          if (isEditMode) {
+            toggleEditMode(true);
           }
+        } else {
+          // Hide private fields
+          document.getElementById('profileEmail').textContent = 'Hidden (Private)';
+          document.getElementById('profilePhone').textContent = 'Hidden (Private)';
+          document.getElementById('editProfileBtn').style.display = 'none';
+          document.getElementById('uploadOverlay').style.display = 'none';
+          
+          // Show follow button
+          const followBtn = document.getElementById('followBtn');
+          followBtn.style.display = 'inline-block';
+          followBtn.textContent = user.is_following ? 'Unfollow' : 'Follow';
+          
+          // Bind follow action
+          followBtn.onclick = async () => {
+            if (!token) return window.location.href = '/login.html';
+            const fRes = await fetch(`/api/users/${user.id}/follow`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (fRes.ok) {
+              const data = await fRes.json();
+              followBtn.textContent = data.following ? 'Unfollow' : 'Follow';
+              loadProfile();
+            }
+          };
+
+          // Change tab label for others
+          document.getElementById('tabComments').textContent = 'User Comments';
+        }
+
+        // Load activities
+        loadStories();
+        loadComments();
+
+      } catch (err) {
+        console.error('Error loading profile:', err);
+      }
+    }
+
+    // Avatar upload handler
+    document.getElementById('avatarFileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('profile_pic', file);
+
+      try {
+        const res = await fetch('/api/users/me/upload', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
         });
-      }
-      
-      loadStories('me');
-    }
 
-    async function loadStories(type) {
-      document.getElementById('storiesContainer').innerHTML = '<p>Loading...</p>';
-      
-      const endpoint = type === 'me' 
-        ? `/api/stories?feed=me&userId=${targetUserId}` 
-        : `/api/stories?feed=liked&userId=${targetUserId}`;
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Failed to upload image.');
+        } else {
+          showToast('Profile picture updated successfully!');
+          // Update cached user picture
+          currentUser.profile_pic = data.profile_pic;
+          localStorage.setItem('user', JSON.stringify(currentUser));
+          loadProfile();
+        }
+      } catch (err) {
+        alert('An error occurred during file upload.');
+      }
+    });
+
+    // Copy to clipboard User ID
+    document.getElementById('copyIdBtn').addEventListener('click', () => {
+      const idText = document.getElementById('profileUserId').textContent;
+      navigator.clipboard.writeText(idText).then(() => {
+        showToast('User ID copied to clipboard!');
+      });
+    });
+
+    // Find User search button
+    document.getElementById('searchBtn').addEventListener('click', () => {
+      const query = document.getElementById('searchInput').value.trim();
+      if (!query) return;
+      window.location.href = `/profile.html?id=${encodeURIComponent(query)}`;
+    });
+
+    // Toggle edit block
+    function toggleEditMode(edit) {
+      if (edit) {
+        document.getElementById('profileViewBlock').style.display = 'none';
+        document.getElementById('profileEditForm').style.display = 'flex';
         
-      const res = await fetch(endpoint, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
-      const data = await res.json();
-      
-      if (data.stories.length === 0) {
-        document.getElementById('storiesContainer').innerHTML = '<p>No stories found.</p>';
-        return;
+        // Fill form fields
+        document.getElementById('editName').value = resolvedUser.full_name;
+        document.getElementById('editDob').value = resolvedUser.dob || '';
+        document.getElementById('editPhone').value = resolvedUser.phone_number || '';
+        document.getElementById('editBio').value = resolvedUser.bio || '';
+      } else {
+        document.getElementById('profileViewBlock').style.display = 'block';
+        document.getElementById('profileEditForm').style.display = 'none';
       }
-
-      document.getElementById('storiesContainer').innerHTML = data.stories.map(s => `
-        <div class="story-item">
-          <h3>${s.title || 'Untitled'}</h3>
-          <p>${s.content.substring(0, 100)}...</p>
-          <small>❤️ ${s.likes_count}</small>
-        </div>
-      `).join('');
     }
 
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', (e) => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        e.target.classList.add('active');
-        const tabType = e.target.getAttribute('data-tab') === 'stories' ? 'me' : 'liked';
-        loadStories(tabType);
-      });
+    document.getElementById('editProfileBtn').addEventListener('click', () => toggleEditMode(true));
+    document.getElementById('cancelEditBtn').addEventListener('click', () => toggleEditMode(false));
+
+    async function saveProfile(e) {
+      e.preventDefault();
+      
+      const payload = {
+        full_name: document.getElementById('editName').value.trim(),
+        dob: document.getElementById('editDob').value || null,
+        phone_number: document.getElementById('editPhone').value.trim() || null,
+        bio: document.getElementById('editBio').value.trim() || null
+      };
+
+      try {
+        const res = await fetch('/api/users/me', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Failed to update profile.');
+        } else {
+          showToast('Profile updated successfully!');
+          // Update cached user fields
+          currentUser.full_name = payload.full_name;
+          localStorage.setItem('user', JSON.stringify(currentUser));
+          toggleEditMode(false);
+          loadProfile();
+        }
+      } catch (err) {
+        alert('An error occurred while saving profile.');
+      }
+    }
+
+    async function loadStories() {
+      const container = document.getElementById('storiesContainer');
+      container.innerHTML = '<p>Loading stories...</p>';
+
+      try {
+        // Query using resolvedUser.id to get the database integer id
+        const res = await fetch(`/api/stories?feed=me&userId=${resolvedUser.id}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        const data = await res.json();
+
+        if (!data.stories || data.stories.length === 0) {
+          container.innerHTML = '<p>No stories written yet.</p>';
+          return;
+        }
+
+        container.innerHTML = data.stories.map(s => `
+          <div class="story-item" style="cursor: pointer;" onclick="window.location.href='/story.html?id=${s.id}'">
+            <h3 style="font-family: 'Fraunces', serif;">${s.title || 'Untitled Story'}</h3>
+            <p style="color: var(--text-secondary); margin: 8px 0;">${s.content.substring(0, 150)}...</p>
+            <div style="font-size: 0.85rem; color: var(--text-tertiary);">
+              <span>❤️ ${s.likes_count} likes</span>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = '<p>Failed to load stories.</p>';
+      }
+    }
+
+    async function loadComments() {
+      const container = document.getElementById('commentsContainer');
+      container.innerHTML = '<p>Loading comments...</p>';
+
+      try {
+        const res = await fetch(`/api/users/${resolvedUser.id}/comments`);
+        const comments = await res.json();
+
+        if (!comments || comments.length === 0) {
+          container.innerHTML = '<p>No comments made yet.</p>';
+          return;
+        }
+
+        const isOwner = currentUser && currentUser.id === resolvedUser.id;
+
+        container.innerHTML = comments.map(c => `
+          <div class="comment-card" id="comment-card-${c.id}">
+            <h4>On story: <a href="/story.html?id=${c.story_id}">${c.story_title || 'Midnight Story'}</a></h4>
+            <p style="color: var(--text-secondary); line-height: 1.5;">"${c.content}"</p>
+            <div class="comment-meta">
+              <span>Posted: ${new Date(c.created_at).toLocaleString()}</span>
+              ${isOwner ? `<button class="comment-delete" onclick="deleteComment(${c.id})">Delete Comment</button>` : ''}
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = '<p>Failed to load comments.</p>';
+      }
+    }
+
+    async function deleteComment(commentId) {
+      if (!confirm('Are you sure you want to delete this comment?')) return;
+
+      try {
+        const res = await fetch(`/api/comments/${commentId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          showToast('Comment deleted successfully!');
+          const el = document.getElementById(`comment-card-${commentId}`);
+          if (el) el.remove();
+        } else {
+          const data = await res.json();
+          alert(data.error || 'Failed to delete comment.');
+        }
+      } catch (err) {
+        alert('An error occurred while deleting the comment.');
+      }
+    }
+
+    // Tabs toggle logic
+    document.getElementById('tabStories').addEventListener('click', (e) => {
+      document.getElementById('tabStories').classList.add('active');
+      document.getElementById('tabComments').classList.remove('active');
+      document.getElementById('storiesContainer').style.display = 'block';
+      document.getElementById('commentsContainer').style.display = 'none';
+    });
+
+    document.getElementById('tabComments').addEventListener('click', (e) => {
+      document.getElementById('tabStories').classList.remove('active');
+      document.getElementById('tabComments').classList.add('active');
+      document.getElementById('storiesContainer').style.display = 'none';
+      document.getElementById('commentsContainer').style.display = 'flex';
     });
 
     loadProfile();
