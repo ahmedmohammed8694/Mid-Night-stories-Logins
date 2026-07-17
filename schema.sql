@@ -162,3 +162,11 @@ INSERT INTO settings (key, value) VALUES ('rate_limit_comments_per_hour', '15');
 INSERT INTO settings (key, value) VALUES ('auto_hide_report_threshold', '3');
 INSERT INTO settings (key, value) VALUES ('require_manual_approval', 'false');
 INSERT INTO settings (key, value) VALUES ('banned_keywords', '["kill yourself","kys","end it all"]');
+
+CREATE TABLE IF NOT EXISTS blocks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  blocker_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  blocked_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(blocker_id, blocked_id)
+);

@@ -503,8 +503,15 @@ app.post('/api/stories/:id/like', requireUser, checkBan, async (c) => {
   const user = c.get('user');
   const storyId = parseInt(c.req.param('id'));
 
-  const story = await db.prepare('SELECT id FROM stories WHERE id = ? AND status = "approved"').bind(storyId).first();
+  const story = await db.prepare('SELECT id, user_id FROM stories WHERE id = ? AND status = "approved"').bind(storyId).first();
   if (!story) return c.json({ error: 'Story not found.' }, 404);
+
+  if (story.user_id) {
+    const blockCheck = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(story.user_id, user.id).first();
+    if (blockCheck) {
+      return c.json({ error: 'Action blocked by safety preferences.' }, 403);
+    }
+  }
 
   const existingLike = await db.prepare('SELECT id FROM likes WHERE user_id = ? AND story_id = ?').bind(user.id, storyId).first();
 
@@ -570,6 +577,16 @@ app.get('/api/users/:idOrUserId', optionalUser, async (c) => {
   if (loggedInUser) {
     const isFollowing = await db.prepare('SELECT id FROM follows WHERE follower_id = ? AND following_id = ?').bind(loggedInUser.id, targetId).first();
     user.is_following = !!isFollowing;
+
+    const blockCheck = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(loggedInUser.id, targetId).first();
+    user.is_blocked = !!blockCheck;
+
+    const blockedByCheck = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(targetId, loggedInUser.id).first();
+    user.is_blocked_by = !!blockedByCheck;
+
+    if (blockedByCheck) {
+      return c.json({ error: 'This profile is unavailable.' }, 403);
+    }
   }
 
   // Privacy Protection logic
@@ -644,6 +661,15 @@ app.post('/api/stories/:id/comments', requireUser, checkBan, async (c) => {
   const db = c.env.DB;
   const user = c.get('user');
   const storyId = parseInt(c.req.param('id'));
+  
+  const story = await db.prepare('SELECT user_id FROM stories WHERE id = ?').bind(storyId).first();
+  if (story && story.user_id) {
+    const blockCheck = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(story.user_id, user.id).first();
+    if (blockCheck) {
+      return c.json({ error: 'You cannot comment on this story because you are blocked by the author.' }, 403);
+    }
+  }
+
   const { content, body } = await c.req.json();
   const commentText = content || body;
 
@@ -749,6 +775,52 @@ app.get('/api/users/:idOrUserId/followers', async (c) => {
   return c.json(followers);
 });
 
+// GET /api/users/me/blocked
+app.get('/api/users/me/blocked', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  
+  const { results: blocked } = await db.prepare(`
+    SELECT u.id, u.user_id, u.full_name, u.profile_pic, u.bio
+    FROM blocks b
+    JOIN users u ON b.blocked_id = u.id
+    WHERE b.blocker_id = ?
+    ORDER BY b.created_at DESC
+  `).bind(user.id).all();
+  
+  return c.json(blocked);
+});
+
+// POST /api/users/:id/block
+app.post('/api/users/:id/block', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const blockedId = parseInt(c.req.param('id'));
+  
+  if (user.id === blockedId) {
+    return c.json({ error: 'You cannot block yourself.' }, 400);
+  }
+  
+  await db.prepare('INSERT OR IGNORE INTO blocks (blocker_id, blocked_id) VALUES (?, ?)').bind(user.id, blockedId).run();
+  
+  // Unfollow both ways automatically
+  await db.prepare('DELETE FROM follows WHERE (follower_id = ? AND following_id = ?) OR (follower_id = ? AND following_id = ?)')
+    .bind(user.id, blockedId, blockedId, user.id).run();
+    
+  return c.json({ blocked: true, message: 'User blocked successfully.' });
+});
+
+// POST /api/users/:id/unblock
+app.post('/api/users/:id/unblock', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const blockedId = parseInt(c.req.param('id'));
+  
+  await db.prepare('DELETE FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(user.id, blockedId).run();
+  
+  return c.json({ blocked: false, message: 'User unblocked successfully.' });
+});
+
 // DELETE /api/comments/:id
 app.delete('/api/comments/:id', requireUser, async (c) => {
   const db = c.env.DB;
@@ -774,6 +846,12 @@ app.post('/api/users/:id/follow', requireUser, async (c) => {
   const targetId = parseInt(c.req.param('id'));
 
   if (loggedInUser.id === targetId) return c.json({ error: 'You cannot follow yourself.' }, 400);
+
+  const blockCheck1 = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(loggedInUser.id, targetId).first();
+  const blockCheck2 = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(targetId, loggedInUser.id).first();
+  if (blockCheck1 || blockCheck2) {
+    return c.json({ error: 'Action blocked by safety preferences.' }, 403);
+  }
 
   const target = await db.prepare('SELECT id FROM users WHERE id = ?').bind(targetId).first();
   if (!target) return c.json({ error: 'User not found.' }, 404);
