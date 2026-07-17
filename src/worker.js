@@ -956,8 +956,26 @@ app.post('/api/conversations/:id/accept', requireUser, async (c) => {
   return c.json({ success: true, status: 'accepted' });
 });
 
-// POST /api/conversations/:id/decline - Decline/Delete conversation
+// POST /api/conversations/:id/decline - Decline conversation
 app.post('/api/conversations/:id/decline', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const convId = parseInt(c.req.param('id'));
+
+  const conv = await db.prepare('SELECT * FROM conversations WHERE id = ?').bind(convId).first();
+  if (!conv) return c.json({ error: 'Conversation not found.' }, 404);
+
+  if (conv.user_one_id !== user.id && conv.user_two_id !== user.id) {
+    return c.json({ error: 'Unauthorized.' }, 403);
+  }
+
+  await db.prepare('UPDATE conversations SET status = "declined" WHERE id = ?').bind(convId).run();
+
+  return c.json({ success: true, status: 'declined' });
+});
+
+// DELETE /api/conversations/:id - Permanently delete conversation
+app.delete('/api/conversations/:id', requireUser, async (c) => {
   const db = c.env.DB;
   const user = c.get('user');
   const convId = parseInt(c.req.param('id'));
@@ -972,7 +990,7 @@ app.post('/api/conversations/:id/decline', requireUser, async (c) => {
   await db.prepare('DELETE FROM messages WHERE conversation_id = ?').bind(convId).run();
   await db.prepare('DELETE FROM conversations WHERE id = ?').bind(convId).run();
 
-  return c.json({ success: true, message: 'Conversation deleted.' });
+  return c.json({ success: true, message: 'Conversation permanently deleted.' });
 });
 
 // DELETE /api/comments/:id

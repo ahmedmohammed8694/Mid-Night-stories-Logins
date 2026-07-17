@@ -9,7 +9,8 @@
     /* Chat Layout */
     .chat-layout {
       display: flex;
-      height: calc(100vh - 70px);
+      height: calc(100vh - var(--header-height, 72px));
+      margin-top: var(--header-height, 72px);
       background: var(--bg-body);
       border-top: 1px solid var(--border-card);
     }
@@ -22,31 +23,35 @@
       flex-direction: column;
       background: rgba(18, 18, 18, 0.4);
       backdrop-filter: blur(12px);
+      flex-shrink: 0;
     }
     .conversations-header {
-      padding: 20px;
+      padding: 16px;
       border-bottom: 1px solid var(--border-card);
     }
     .conversations-header h2 {
       font-family: var(--font-display, 'Fraunces', serif);
-      font-size: 1.4rem;
-      margin-bottom: 10px;
+      font-size: 1.3rem;
+      margin-bottom: 12px;
       color: white;
     }
     .chat-tabs {
       display: flex;
-      gap: 10px;
+      flex-wrap: wrap;
+      gap: 6px;
       border-bottom: 1px solid rgba(255,255,255,0.05);
       padding-bottom: 8px;
     }
     .chat-tab {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 600;
       color: var(--text-secondary);
       cursor: pointer;
-      padding: 6px 12px;
-      border-radius: 20px;
+      padding: 4px 8px;
+      border-radius: 12px;
       transition: all var(--transition-base);
+      display: flex;
+      align-items: center;
     }
     .chat-tab:hover {
       color: white;
@@ -58,13 +63,13 @@
     .conversations-list {
       flex: 1;
       overflow-y: auto;
-      padding: 10px;
+      padding: 8px;
     }
     .conv-item {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 12px;
+      padding: 10px 12px;
       border-radius: 12px;
       cursor: pointer;
       transition: all var(--transition-base);
@@ -79,8 +84,8 @@
       border-color: rgba(255, 255, 255, 0.08);
     }
     .conv-avatar {
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       background: var(--primary, #5c6ac4);
       color: white;
@@ -88,7 +93,7 @@
       align-items: center;
       justify-content: center;
       font-weight: bold;
-      font-size: 1.1rem;
+      font-size: 1rem;
       overflow: hidden;
       flex-shrink: 0;
     }
@@ -103,14 +108,14 @@
     }
     .conv-name {
       font-weight: 600;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       color: white;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .conv-preview {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-tertiary);
       white-space: nowrap;
       overflow: hidden;
@@ -120,10 +125,10 @@
     .conv-badge {
       background: var(--page-accent, #a78bfa);
       color: #000;
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       font-weight: bold;
-      padding: 2px 6px;
-      border-radius: 10px;
+      padding: 1px 4px;
+      border-radius: 6px;
       margin-left: 5px;
       text-transform: uppercase;
     }
@@ -151,12 +156,12 @@
     }
     .chat-header-name {
       font-family: var(--font-display, 'Fraunces', serif);
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       font-weight: bold;
       color: white;
     }
     .chat-header-tag {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-secondary);
       margin-top: 2px;
     }
@@ -286,8 +291,10 @@
         <div class="conversations-header">
           <h2>Direct Messages</h2>
           <div class="chat-tabs">
-            <span class="chat-tab active" id="tabActiveChats">Chats</span>
-            <span class="chat-tab" id="tabRequestsChats">Requests <span id="requestsCount" style="display: none; background: #f59e0b; color: black; font-size: 0.75rem; border-radius: 50%; width: 18px; height: 18px; line-height: 18px; text-align: center; font-weight: bold; margin-left: 4px;">0</span></span>
+            <span class="chat-tab active" id="tabActiveChats">Active</span>
+            <span class="chat-tab" id="tabRequestsChats">Requests <span id="requestsCount" style="display: none; background: #f59e0b; color: black; font-size: 0.72rem; border-radius: 50%; width: 16px; height: 16px; line-height: 16px; text-align: center; font-weight: bold; margin-left: 4px;">0</span></span>
+            <span class="chat-tab" id="tabSentChats">Sent</span>
+            <span class="chat-tab" id="tabDeclinedChats">Declined</span>
           </div>
         </div>
         <div class="conversations-list" id="convList">
@@ -316,12 +323,18 @@
 
     let allConversations = [];
     let activeConversation = null;
-    let activeTab = 'active'; // 'active' or 'requests'
+    let activeTab = 'active'; // 'active', 'requests', 'sent', 'declined'
     let messagePollInterval = null;
 
     // Load URL parameters (for redirection from profile)
     const urlParams = new URLSearchParams(window.location.search);
     const targetUserId = urlParams.get('userId');
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
 
     async function loadConversations() {
       try {
@@ -330,7 +343,6 @@
         });
         allConversations = await res.json();
         
-        // Update requests count
         const requests = allConversations.filter(c => c.status === 'pending' && c.initiated_by_id !== currentUser.id);
         const badge = document.getElementById('requestsCount');
         if (requests.length > 0) {
@@ -342,9 +354,7 @@
 
         renderConversations();
 
-        // If targetUserId was specified, try to find or open that chat!
         if (targetUserId) {
-          // Clear query params to prevent re-opening on reload
           window.history.replaceState({}, document.title, "/chat.html");
           openUserChat(parseInt(targetUserId));
         }
@@ -359,15 +369,17 @@
 
       let filtered = [];
       if (activeTab === 'active') {
-        // Show accepted ones, or pending ones initiated by current user
-        filtered = allConversations.filter(c => c.status === 'accepted' || (c.status === 'pending' && c.initiated_by_id === currentUser.id));
-      } else {
-        // Show pending requests received from others
+        filtered = allConversations.filter(c => c.status === 'accepted');
+      } else if (activeTab === 'requests') {
         filtered = allConversations.filter(c => c.status === 'pending' && c.initiated_by_id !== currentUser.id);
+      } else if (activeTab === 'sent') {
+        filtered = allConversations.filter(c => c.status === 'pending' && c.initiated_by_id === currentUser.id);
+      } else if (activeTab === 'declined') {
+        filtered = allConversations.filter(c => c.status === 'declined');
       }
 
       if (filtered.length === 0) {
-        container.innerHTML = `<p style="text-align: center; opacity: 0.5; padding: 20px;">No ${activeTab === 'active' ? 'chats' : 'requests'} found.</p>`;
+        container.innerHTML = `<p style="text-align: center; opacity: 0.5; padding: 20px;">No chats found here.</p>`;
         return;
       }
 
@@ -379,9 +391,14 @@
           : nameChar;
         
         const preview = c.last_message || 'No messages yet';
-        const statusBadge = c.status === 'pending' && c.initiated_by_id === currentUser.id 
-          ? `<span class="conv-badge">Sent</span>` 
-          : '';
+        let statusBadge = '';
+        if (c.status === 'pending') {
+          statusBadge = c.initiated_by_id === currentUser.id 
+            ? `<span class="conv-badge" style="background:#fbbf24; color:black;">Sent</span>` 
+            : `<span class="conv-badge" style="background:#f59e0b; color:black;">Req</span>`;
+        } else if (c.status === 'declined') {
+          statusBadge = `<span class="conv-badge" style="background:#ef4444; color:white;">Declined</span>`;
+        }
 
         const item = document.createElement('div');
         item.className = `conv-item ${isActive ? 'active' : ''}`;
@@ -404,7 +421,6 @@
       activeConversation = conv;
       renderConversations();
       
-      // Setup right pane loading state
       const chatPane = document.getElementById('chatPane');
       chatPane.innerHTML = `
         <div style="flex:1; display:flex; align-items:center; justify-content:center;">
@@ -412,12 +428,8 @@
         </div>
       `;
 
-      // Stop previous polling
       if (messagePollInterval) clearInterval(messagePollInterval);
-
       await loadMessages();
-
-      // Start short polling (fetch every 3 seconds for new messages)
       messagePollInterval = setInterval(loadMessages, 3000);
     }
 
@@ -429,10 +441,7 @@
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
-
-        // Refresh conversation status in memory
         activeConversation.status = data.conversation.status;
-
         renderChatWindow(data.conversation, data.messages);
       } catch (err) {
         console.error('Failed to load messages:', err);
@@ -443,31 +452,46 @@
       const chatPane = document.getElementById('chatPane');
       chatPane.innerHTML = '';
 
-      // 1. Header
       const headerDiv = document.createElement('div');
       headerDiv.className = 'chat-header';
+
+      let statusText = '';
+      let statusColor = '';
+      if (conversation.status === 'accepted') {
+        statusText = 'Accepted';
+        statusColor = '#34d399';
+      } else if (conversation.status === 'declined') {
+        statusText = 'Declined';
+        statusColor = '#ef4444';
+      } else {
+        statusText = 'Pending';
+        statusColor = '#fbbf24';
+      }
+
       headerDiv.innerHTML = `
         <div class="chat-header-user">
           <div class="conv-avatar" style="width: 40px; height: 40px; cursor: pointer;" onclick="window.location.href='/profile.html?id=${encodeURIComponent(conversation.other_user_id || conversation.other_id)}'">
             ${conversation.other_pic ? `<img src="${conversation.other_pic}">` : (conversation.other_name ? conversation.other_name.charAt(0).toUpperCase() : '👤')}
           </div>
           <div>
-            <div class="chat-header-name" style="cursor: pointer;" onclick="window.location.href='/profile.html?id=${encodeURIComponent(conversation.other_user_id || conversation.other_id)}'">${escapeHtml(conversation.other_name)}</div>
+            <div class="chat-header-name" style="cursor: pointer; display: flex; align-items: center; gap: 8px;" onclick="window.location.href='/profile.html?id=${encodeURIComponent(conversation.other_user_id || conversation.other_id)}'">
+              <span>${escapeHtml(conversation.other_name)}</span>
+              <span style="font-size: 0.72rem; font-weight: bold; background: ${statusColor}22; color: ${statusColor}; border: 1px solid ${statusColor}44; padding: 1px 6px; border-radius: 8px; text-transform: uppercase;">${statusText}</span>
+            </div>
             <div class="chat-header-tag">${escapeHtml(conversation.other_user_id || `ID: ${conversation.other_id}`)}</div>
           </div>
         </div>
         <div>
-          <button class="btn btn--secondary btn--sm" onclick="declineChat(${conversation.id})" style="border-color: rgba(255,94,94,0.3); color: #ff5e5e;">Delete Chat</button>
+          <button class="btn btn--secondary btn--sm" onclick="deleteConversationPermanently(${conversation.id})" style="border-color: rgba(255,94,94,0.3); color: #ff5e5e;">Delete Chat</button>
         </div>
       `;
       chatPane.appendChild(headerDiv);
 
-      // 2. Messages Area
       const messagesArea = document.createElement('div');
       messagesArea.className = 'messages-area';
       
       if (messages.length === 0) {
-        messagesArea.innerHTML = `<p style="text-align: center; opacity: 0.4; padding: 20px;">No messages yet. Say hello!</p>`;
+        messagesArea.innerHTML = `<p style="text-align: center; opacity: 0.4; padding: 20px;">No messages yet.</p>`;
       } else {
         messages.forEach(m => {
           const isSent = m.sender_id === currentUser.id;
@@ -483,26 +507,22 @@
         });
       }
       chatPane.appendChild(messagesArea);
-      
-      // Auto-scroll messages area to bottom
       setTimeout(() => { messagesArea.scrollTop = messagesArea.scrollHeight; }, 50);
 
-      // 3. Request Banner or Input bar
       if (conversation.status === 'pending') {
         const isInitiator = conversation.initiated_by_id === currentUser.id;
         const requestDiv = document.createElement('div');
+        requestDiv.className = 'request-banner';
         
         if (isInitiator) {
-          requestDiv.className = 'request-banner';
           requestDiv.innerHTML = `
             <div class="request-banner-title">Waiting for Acceptance</div>
-            <div class="request-banner-desc">Your chat request has been sent. You will be able to message each other once they accept your chat.</div>
+            <div class="request-banner-desc">Your chat request has been sent.</div>
           `;
         } else {
-          requestDiv.className = 'request-banner';
           requestDiv.innerHTML = `
             <div class="request-banner-title">Chat Request</div>
-            <div class="request-banner-desc">${escapeHtml(conversation.other_name)} wants to communicate with you. Accept this request to chat.</div>
+            <div class="request-banner-desc">${escapeHtml(conversation.other_name)} wants to communicate.</div>
             <div style="display: flex; gap: 12px;">
               <button class="btn btn--primary btn--sm" onclick="acceptChat(${conversation.id})">Accept Request</button>
               <button class="btn btn--secondary btn--sm" onclick="declineChat(${conversation.id})" style="border-color: rgba(255,94,94,0.3); color: #ff5e5e;">Decline</button>
@@ -510,8 +530,29 @@
           `;
         }
         chatPane.appendChild(requestDiv);
+      } else if (conversation.status === 'declined') {
+        const requestDiv = document.createElement('div');
+        requestDiv.className = 'request-banner';
+        requestDiv.style.background = 'rgba(239, 68, 68, 0.08)';
+        requestDiv.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+        
+        const isInitiator = conversation.initiated_by_id === currentUser.id;
+        if (isInitiator) {
+          requestDiv.innerHTML = `
+            <div class="request-banner-title" style="color: #ef4444;">Chat Request Declined</div>
+            <div class="request-banner-desc">Your chat request was declined by the user.</div>
+          `;
+        } else {
+          requestDiv.innerHTML = `
+            <div class="request-banner-title" style="color: #ef4444;">Chat Request Declined</div>
+            <div class="request-banner-desc">You declined this chat request.</div>
+            <div style="display: flex; gap: 12px;">
+              <button class="btn btn--primary btn--sm" onclick="acceptChat(${conversation.id})">Accept Chat</button>
+            </div>
+          `;
+        }
+        chatPane.appendChild(requestDiv);
       } else {
-        // Active chat input bar
         const inputBar = document.createElement('div');
         inputBar.className = 'chat-input-bar';
         inputBar.innerHTML = `
@@ -521,10 +562,6 @@
           </form>
         `;
         chatPane.appendChild(inputBar);
-        setTimeout(() => {
-          const input = document.getElementById('chatMessageInput');
-          if (input) input.focus();
-        }, 50);
       }
     }
 
@@ -532,25 +569,14 @@
       const input = document.getElementById('chatMessageInput');
       const body = input.value.trim();
       if (!body || !activeConversation) return;
-
       input.value = '';
-
       try {
         const res = await fetch('/api/messages', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            receiver_id: activeConversation.other_id,
-            body
-          })
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ receiver_id: activeConversation.other_id, body })
         });
-
-        const data = await res.json();
         if (res.ok) {
-          // If conversation ID was null (placeholder), refresh list and select it
           if (activeConversation.id === null) {
             await loadConversations();
             const matching = allConversations.find(c => c.other_id === activeConversation.other_id);
@@ -561,12 +587,8 @@
             loadMessages();
             loadConversations();
           }
-        } else {
-          alert(data.error || 'Failed to send message.');
         }
-      } catch (err) {
-        alert('An error occurred.');
-      }
+      } catch (err) { alert('An error occurred.'); }
     }
 
     async function acceptChat(convId) {
@@ -581,21 +603,31 @@
             activeConversation.status = 'accepted';
             loadMessages();
           }
-        } else {
-          const data = await res.json();
-          alert(data.error);
         }
-      } catch (err) {
-        alert('An error occurred.');
-      }
+      } catch (err) { alert('An error occurred.'); }
     }
 
     async function declineChat(convId) {
-      if (!confirm('Are you sure you want to decline or delete this chat? This will remove the request and all messages.')) return;
-      
       try {
         const res = await fetch(`/api/conversations/${convId}/decline`, {
           method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          await loadConversations();
+          if (activeConversation && activeConversation.id === convId) {
+            activeConversation.status = 'declined';
+            loadMessages();
+          }
+        }
+      } catch (err) { alert('An error occurred.'); }
+    }
+
+    async function deleteConversationPermanently(convId) {
+      if (!confirm('Are you sure you want to permanently delete this chat? This will remove all messages.')) return;
+      try {
+        const res = await fetch(`/api/conversations/${convId}`, {
+          method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
@@ -608,58 +640,34 @@
           `;
           if (messagePollInterval) clearInterval(messagePollInterval);
           loadConversations();
-        } else {
-          const data = await res.json();
-          alert(data.error);
         }
-      } catch (err) {
-        alert('An error occurred.');
-      }
+      } catch (err) { alert('An error occurred.'); }
     }
 
     async function openUserChat(userId) {
       const existing = allConversations.find(c => c.other_id === userId);
-      if (existing) {
-        selectConversation(existing);
-        return;
-      }
-
+      if (existing) { selectConversation(existing); return; }
       try {
         const res = await fetch(`/api/users/${userId}`);
         if (!res.ok) return;
         const otherUser = await res.json();
-
-        const placeholderConv = {
-          id: null,
-          other_id: otherUser.id,
-          other_user_id: otherUser.user_id,
-          other_name: otherUser.full_name,
-          other_pic: otherUser.profile_pic,
-          other_bio: otherUser.bio,
-          status: 'pending',
-          initiated_by_id: currentUser.id
-        };
-
+        const placeholderConv = { id: null, other_id: otherUser.id, other_name: otherUser.full_name, other_pic: otherUser.profile_pic, status: 'pending', initiated_by_id: currentUser.id };
         activeConversation = placeholderConv;
         renderChatWindow(placeholderConv, []);
-      } catch (err) {
-        console.error('Failed to initiate user chat:', err);
-      }
+      } catch (err) { console.error('Failed to initiate user chat:', err); }
     }
 
-    document.getElementById('tabActiveChats').addEventListener('click', () => {
-      activeTab = 'active';
-      document.getElementById('tabActiveChats').classList.add('active');
-      document.getElementById('tabRequestsChats').classList.remove('active');
+    function switchChatTab(tabId, tabName) {
+      activeTab = tabName;
+      document.querySelectorAll('.chat-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
       renderConversations();
-    });
+    }
 
-    document.getElementById('tabRequestsChats').addEventListener('click', () => {
-      activeTab = 'requests';
-      document.getElementById('tabActiveChats').classList.remove('active');
-      document.getElementById('tabRequestsChats').classList.add('active');
-      renderConversations();
-    });
+    document.getElementById('tabActiveChats').addEventListener('click', () => switchChatTab('tabActiveChats', 'active'));
+    document.getElementById('tabRequestsChats').addEventListener('click', () => switchChatTab('tabRequestsChats', 'requests'));
+    document.getElementById('tabSentChats').addEventListener('click', () => switchChatTab('tabSentChats', 'sent'));
+    document.getElementById('tabDeclinedChats').addEventListener('click', () => switchChatTab('tabDeclinedChats', 'declined'));
 
     loadConversations();
   </script>
