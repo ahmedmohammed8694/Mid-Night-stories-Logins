@@ -684,6 +684,31 @@ app.get('/api/users/:idOrUserId/comments', async (c) => {
   return c.json(comments);
 });
 
+// GET /api/users/:idOrUserId/following
+app.get('/api/users/:idOrUserId/following', async (c) => {
+  const db = c.env.DB;
+  const param = c.req.param('idOrUserId');
+  
+  let user;
+  if (isNaN(param)) {
+    user = await db.prepare('SELECT id FROM users WHERE user_id = ?').bind(param).first();
+  } else {
+    user = await db.prepare('SELECT id FROM users WHERE id = ?').bind(parseInt(param)).first();
+  }
+  
+  if (!user) return c.json({ error: 'User not found.' }, 404);
+  
+  const { results: following } = await db.prepare(`
+    SELECT u.id, u.user_id, u.full_name, u.profile_pic, u.bio
+    FROM follows f
+    JOIN users u ON f.following_id = u.id
+    WHERE f.follower_id = ?
+    ORDER BY f.created_at DESC
+  `).bind(user.id).all();
+  
+  return c.json(following);
+});
+
 // DELETE /api/comments/:id
 app.delete('/api/comments/:id', requireUser, async (c) => {
   const db = c.env.DB;
