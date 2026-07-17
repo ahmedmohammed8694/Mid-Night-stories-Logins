@@ -326,6 +326,55 @@
       text-overflow: ellipsis;
       max-width: 400px;
     }
+    /* Premium Tabs Style */
+    .tabs-wrapper {
+      margin-top: 2rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-card);
+    }
+    .tabs {
+      display: flex;
+      gap: 24px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+    /* Hide scrollbar for IE, Edge and Firefox */
+    .tabs {
+      -ms-overflow-style: none;  /* IE and Edge */
+      scrollbar-width: none;  /* Firefox */
+    }
+    .tab {
+      font-family: var(--font-primary);
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 8px 4px;
+      position: relative;
+      white-space: nowrap;
+      transition: color var(--transition-fast);
+    }
+    .tab:hover {
+      color: var(--text-primary);
+    }
+    .tab.active {
+      color: var(--page-accent);
+    }
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -9px; /* Align precisely with the border-bottom of tabs-wrapper */
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--page-gradient);
+      border-radius: 2px;
+      box-shadow: 0 0 10px var(--page-accent-glow);
+    }
   </style>
 </head>
 <body>
