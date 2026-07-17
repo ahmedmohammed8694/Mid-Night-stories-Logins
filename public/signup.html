@@ -55,6 +55,20 @@
       const dob = document.getElementById('dob').value || null;
       const password = document.getElementById('password').value;
 
+      if (dob) {
+        const today = new Date();
+        const birthDate = new Date(dob);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        if (age < 18) {
+          alert('You must be 18 years or older to create an account.');
+          return;
+        }
+      }
+
       try {
         const res = await fetch('/api/auth/signup', {
           method: 'POST',

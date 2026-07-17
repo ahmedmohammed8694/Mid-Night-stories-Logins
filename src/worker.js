@@ -181,6 +181,21 @@ app.post('/api/auth/signup', async (c) => {
   if (!full_name || !email || !password) {
     return c.json({ error: 'Name, email, and password are required.' }, 400);
   }
+  if (!dob) {
+    return c.json({ error: 'Date of birth is required.' }, 400);
+  }
+  
+  const today = new Date();
+  const birthDate = new Date(dob);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  if (age < 18) {
+    return c.json({ error: 'You must be 18 years or older to create an account.' }, 400);
+  }
+
   if (password.length < 6) {
     return c.json({ error: 'Password must be at least 6 characters.' }, 400);
   }
