@@ -832,19 +832,20 @@ app.post('/api/messages', requireUser, rateLimit('message', 30), async (c) => {
   const { receiver_id, body } = await c.req.json();
   
   const receiverId = parseInt(receiver_id);
+  const senderId = Number(user.id);
   if (isNaN(receiverId)) return c.json({ error: 'Receiver ID is required.' }, 400);
   if (!body || body.trim().length < 1) return c.json({ error: 'Message body cannot be empty.' }, 400);
-  if (user.id === receiverId) return c.json({ error: 'You cannot message yourself.' }, 400);
+  if (senderId === receiverId) return c.json({ error: 'You cannot message yourself.' }, 400);
 
   // Check block status
-  const blockCheck1 = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(user.id, receiverId).first();
-  const blockCheck2 = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(receiverId, user.id).first();
+  const blockCheck1 = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(senderId, receiverId).first();
+  const blockCheck2 = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(receiverId, senderId).first();
   if (blockCheck1 || blockCheck2) {
     return c.json({ error: 'Action blocked by safety preferences.' }, 403);
   }
 
-  const userOneId = Math.min(user.id, receiverId);
-  const userTwoId = Math.max(user.id, receiverId);
+  const userOneId = Math.min(senderId, receiverId);
+  const userTwoId = Math.max(senderId, receiverId);
 
   // Find or create conversation
   let conv = await db.prepare('SELECT * FROM conversations WHERE user_one_id = ? AND user_two_id = ?')
@@ -855,13 +856,13 @@ app.post('/api/messages', requireUser, rateLimit('message', 30), async (c) => {
   if (!conv) {
     const result = await db.prepare(
       'INSERT INTO conversations (user_one_id, user_two_id, initiated_by_id, status) VALUES (?, ?, ?, ?)'
-    ).bind(userOneId, userTwoId, user.id, 'pending').run();
+    ).bind(userOneId, userTwoId, senderId, 'pending').run();
     convId = result.meta.last_row_id;
   } else {
     convId = conv.id;
     status = conv.status;
     // If conversation is pending and receiver replies, automatically accept
-    if (conv.status === 'pending' && conv.initiated_by_id !== user.id) {
+    if (conv.status === 'pending' && Number(conv.initiated_by_id) !== senderId) {
       await db.prepare('UPDATE conversations SET status = "accepted" WHERE id = ?').bind(convId).run();
       status = 'accepted';
     }
@@ -870,7 +871,7 @@ app.post('/api/messages', requireUser, rateLimit('message', 30), async (c) => {
   // Insert message
   const msgResult = await db.prepare(
     'INSERT INTO messages (conversation_id, sender_id, receiver_id, body) VALUES (?, ?, ?, ?)'
-  ).bind(convId, user.id, receiverId, body.trim()).run();
+  ).bind(convId, senderId, receiverId, body.trim()).run();
 
   // Update last message time
   await db.prepare('UPDATE conversations SET last_message_at = datetime("now") WHERE id = ?').bind(convId).run();
@@ -880,7 +881,7 @@ app.post('/api/messages', requireUser, rateLimit('message', 30), async (c) => {
     message: {
       id: msgResult.meta.last_row_id,
       conversation_id: convId,
-      sender_id: user.id,
+      sender_id: senderId,
       receiver_id: receiverId,
       body: body.trim(),
       created_at: new Date().toISOString()
@@ -893,6 +894,7 @@ app.post('/api/messages', requireUser, rateLimit('message', 30), async (c) => {
 app.get('/api/conversations', requireUser, async (c) => {
   const db = c.env.DB;
   const user = c.get('user');
+  const userId = Number(user.id);
 
   const { results: conversations } = await db.prepare(`
     SELECT c.*, 
@@ -903,7 +905,7 @@ app.get('/api/conversations', requireUser, async (c) => {
     JOIN users u ON u.id = CASE WHEN c.user_one_id = ? THEN c.user_two_id ELSE c.user_one_id END
     WHERE c.user_one_id = ? OR c.user_two_id = ?
     ORDER BY c.last_message_at DESC
-  `).bind(user.id, user.id, user.id).all();
+  `).bind(userId, userId, userId).all();
 
   return c.json(conversations);
 });

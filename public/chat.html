@@ -343,7 +343,7 @@
         });
         allConversations = await res.json();
         
-        const requests = allConversations.filter(c => c.status === 'pending' && c.initiated_by_id !== currentUser.id);
+        const requests = allConversations.filter(c => c.status === 'pending' && Number(c.initiated_by_id) !== Number(currentUser.id));
         const badge = document.getElementById('requestsCount');
         if (requests.length > 0) {
           badge.textContent = requests.length;
@@ -371,9 +371,9 @@
       if (activeTab === 'active') {
         filtered = allConversations.filter(c => c.status === 'accepted');
       } else if (activeTab === 'requests') {
-        filtered = allConversations.filter(c => c.status === 'pending' && c.initiated_by_id !== currentUser.id);
+        filtered = allConversations.filter(c => c.status === 'pending' && Number(c.initiated_by_id) !== Number(currentUser.id));
       } else if (activeTab === 'sent') {
-        filtered = allConversations.filter(c => c.status === 'pending' && c.initiated_by_id === currentUser.id);
+        filtered = allConversations.filter(c => c.status === 'pending' && Number(c.initiated_by_id) === Number(currentUser.id));
       } else if (activeTab === 'declined') {
         filtered = allConversations.filter(c => c.status === 'declined');
       }
@@ -393,7 +393,7 @@
         const preview = c.last_message || 'No messages yet';
         let statusBadge = '';
         if (c.status === 'pending') {
-          statusBadge = c.initiated_by_id === currentUser.id 
+          statusBadge = Number(c.initiated_by_id) === Number(currentUser.id) 
             ? `<span class="conv-badge" style="background:#fbbf24; color:black;">Sent</span>` 
             : `<span class="conv-badge" style="background:#f59e0b; color:black;">Req</span>`;
         } else if (c.status === 'declined') {
@@ -494,7 +494,7 @@
         messagesArea.innerHTML = `<p style="text-align: center; opacity: 0.4; padding: 20px;">No messages yet.</p>`;
       } else {
         messages.forEach(m => {
-          const isSent = m.sender_id === currentUser.id;
+          const isSent = Number(m.sender_id) === Number(currentUser.id);
           const row = document.createElement('div');
           row.className = `msg-row ${isSent ? 'sent' : 'received'}`;
           row.innerHTML = `
@@ -510,7 +510,7 @@
       setTimeout(() => { messagesArea.scrollTop = messagesArea.scrollHeight; }, 50);
 
       if (conversation.status === 'pending') {
-        const isInitiator = conversation.initiated_by_id === currentUser.id;
+        const isInitiator = Number(conversation.initiated_by_id) === Number(currentUser.id);
         const requestDiv = document.createElement('div');
         requestDiv.className = 'request-banner';
         
@@ -536,7 +536,7 @@
         requestDiv.style.background = 'rgba(239, 68, 68, 0.08)';
         requestDiv.style.borderColor = 'rgba(239, 68, 68, 0.2)';
         
-        const isInitiator = conversation.initiated_by_id === currentUser.id;
+        const isInitiator = Number(conversation.initiated_by_id) === Number(currentUser.id);
         if (isInitiator) {
           requestDiv.innerHTML = `
             <div class="request-banner-title" style="color: #ef4444;">Chat Request Declined</div>
@@ -579,7 +579,7 @@
         if (res.ok) {
           if (activeConversation.id === null) {
             await loadConversations();
-            const matching = allConversations.find(c => c.other_id === activeConversation.other_id);
+            const matching = allConversations.find(c => Number(c.other_id) === Number(activeConversation.other_id));
             if (matching) {
               selectConversation(matching);
             }
@@ -645,7 +645,7 @@
     }
 
     async function openUserChat(userId) {
-      const existing = allConversations.find(c => c.other_id === userId);
+      const existing = allConversations.find(c => Number(c.other_id) === Number(userId));
       if (existing) { selectConversation(existing); return; }
       try {
         const res = await fetch(`/api/users/${userId}`);
