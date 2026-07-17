@@ -666,7 +666,16 @@
         if (res.ok) {
           await loadConversations();
           if (activeConversation && activeConversation.id === convId) {
+            // Update the local status first
             activeConversation.status = 'accepted';
+            // Find the refreshed conversation from the updated list
+            const refreshed = allConversations.find(c => c.id === convId);
+            const merged = refreshed ? { ...activeConversation, ...refreshed } : { ...activeConversation };
+            merged.status = 'accepted';
+            // Immediately redraw header badge and bottom bar (shows message input)
+            updateChatHeader(merged);
+            updateChatBottomBar(merged);
+            // Also refresh messages
             loadMessages();
           }
         }
@@ -683,6 +692,11 @@
           await loadConversations();
           if (activeConversation && activeConversation.id === convId) {
             activeConversation.status = 'declined';
+            const refreshed = allConversations.find(c => c.id === convId);
+            const merged = refreshed ? { ...activeConversation, ...refreshed } : { ...activeConversation };
+            merged.status = 'declined';
+            updateChatHeader(merged);
+            updateChatBottomBar(merged);
             loadMessages();
           }
         }

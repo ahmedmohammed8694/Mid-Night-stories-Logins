@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-page="admin">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Midnight Stories</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/css/admin.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+</head>
+<body>
+  <div class="page-wrapper">
+    <header class="header">
+      <div class="header__inner">
+        <a href="https://midnightstories.dpdns.org/" class="header__logo">
+          <div class="header__logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+              <path d="M60 20c0 22-18 40-40 40-2 0-5 0-7-.5 7 13.5 21 22.5 37 22.5 24.8 0 45-20.2 45-45 0-16-8.5-30-22-37 .5 2 .5 5 .5 7z"/>
+            </svg>
+          </div>
+          <span class="header__logo-text">Midnight Stories Admin</span>
+        </a>
+        <div class="header__actions">
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
+          <button class="btn btn--ghost btn--sm hidden" id="logoutBtn">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <div id="loginSection">
+      <div class="admin-login animate-slide-up">
+        <div class="admin-login__icon">🔐</div>
+        <h1 class="admin-login__title">Admin Login</h1>
+        <p class="admin-login__subtitle">Secure access to the moderation dashboard.</p>
+
+        <form class="card card--no-hover" id="loginForm" style="padding: 28px; text-align: left;">
+          <div class="form-group">
+            <label class="form-label">Username</label>
+            <input type="text" class="form-input" id="loginUsername" placeholder="Enter username" required autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-input" id="loginPassword" placeholder="Enter password" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn--primary" style="width: 100%;">Login</button>
+        </form>
+
+        <div class="card card--no-hover hidden" id="mfaStep" style="padding: 28px; text-align: left;">
+          <h3 style="text-align: center; margin-bottom: 16px;">Two-Factor Authentication</h3>
+          <p style="text-align: center; color: var(--text-secondary); margin-bottom: 24px;">Enter the 6-digit code from your authenticator app.</p>
+          <div class="form-group">
+            <input type="text" class="form-input" id="mfaCode" placeholder="000000" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 8px; font-family: monospace;" autocomplete="one-time-code">
+          </div>
+          <button class="btn btn--primary" id="mfaSubmitBtn" style="width: 100%;">Verify</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-layout hidden" id="dashboardSection">
+      <aside class="admin-sidebar">
+        <div class="admin-sidebar__section">
+          <p class="admin-sidebar__heading">Dashboard</p>
+          <button class="admin-nav-item active" data-panel="overview">
+            <span class="admin-nav-item__icon">📊</span> Overview
+          </button>
+        </div>
+        <div class="admin-sidebar__section">
+          <p class="admin-sidebar__heading">Moderation</p>
+          <button class="admin-nav-item" data-panel="stories-queue">
+            <span class="admin-nav-item__icon">📝</span> Stories Queue
+            <span class="admin-nav-item__badge hidden" id="pendingStoriesBadge">0</span>
+          </button>
+          <button class="admin-nav-item" data-panel="comments-queue">
+            <span class="admin-nav-item__icon">💬</span> Comments Queue
+            <span class="admin-nav-item__badge hidden" id="pendingCommentsBadge">0</span>
+          </button>
+          <button class="admin-nav-item" data-panel="reports">
+            <span class="admin-nav-item__icon">🚩</span> Reports
+            <span class="admin-nav-item__badge hidden" id="reportsBadge">0</span>
+          </button>
+        </div>
+        <div class="admin-sidebar__section">
+          <p class="admin-sidebar__heading">Management</p>
+          <button class="admin-nav-item" data-panel="categories">
+            <span class="admin-nav-item__icon">🏷️</span> Categories
+          </button>
+          <button class="admin-nav-item" data-panel="bans">
+            <span class="admin-nav-item__icon">🚫</span> Bans
+          </button>
+          <button class="admin-nav-item" data-panel="settings">
+            <span class="admin-nav-item__icon">⚙️</span> Settings
+          </button>
+        </div>
+        <div class="admin-sidebar__section">
+          <p class="admin-sidebar__heading">System</p>
+          <button class="admin-nav-item" data-panel="audit-log">
+            <span class="admin-nav-item__icon">📋</span> Audit Log
+          </button>
+          <button class="admin-nav-item" data-panel="users">
+            <span class="admin-nav-item__icon">👥</span> Users
+          </button>
+          <button class="admin-nav-item" data-panel="mfa-setup">
+            <span class="admin-nav-item__icon">🔑</span> MFA Setup
+          </button>
+        </div>
+      </aside>
+
+      <main class="admin-main">
+        <div class="admin-panel active" id="panel-overview">
+          <h1 class="admin-page-title">Dashboard Overview</h1>
+          <p class="admin-page-subtitle">Platform statistics and moderation status at a glance.</p>
+          <div class="stat-grid" id="statGrid">
+            <div class="stat-card">
+              <p class="stat-card__label">Total Stories</p>
+              <p class="stat-card__value stat-card__value--purple" id="statTotalStories">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-card__label">Total Users</p>
+              <p class="stat-card__value stat-card__value--cyan" id="statTotalUsers">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-card__label">Pending Review</p>
+              <p class="stat-card__value stat-card__value--amber" id="statPending">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-card__label">Published</p>
+              <p class="stat-card__value stat-card__value--emerald" id="statApproved">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-card__label">Rejected</p>
+              <p class="stat-card__value stat-card__value--rose" id="statRejected">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-card__label">Open Reports</p>
+              <p class="stat-card__value stat-card__value--amber" id="statReports">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-card__label">Total Comments</p>
+              <p class="stat-card__value stat-card__value--cyan" id="statComments">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-card__label">Pending Comments</p>
+              <p class="stat-card__value stat-card__value--amber" id="statPendingComments">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-card__label">Total Likes</p>
+              <p class="stat-card__value stat-card__value--rose" id="statLikes">—</p>
+            </div>
+            <div class="stat-card">
+              <p class="stat-card__label">Banned IPs</p>
+              <p class="stat-card__value stat-card__value--rose" id="statBans">—</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-panel" id="panel-stories-queue">
+          <h1 class="admin-page-title">Stories Moderation Queue</h1>
+          <p class="admin-page-subtitle">Review and moderate pending story submissions.</p>
+          <div class="mb-24 flex gap-12" style="gap: 8px;">
+            <button class="filter-chip active" data-queue-status="pending">Pending</button>
+            <button class="filter-chip" data-queue-status="approved">Approved</button>
+            <button class="filter-chip" data-queue-status="rejected">Rejected</button>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table" id="storiesQueueTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Title</th>
+                  <th>Preview</th>
+                  <th>Category</th>
+                  <th>Author</th>
+                  <th>Status</th>
+                  <th>Submitted</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="storiesQueueBody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state hidden" id="noStoriesQueue" style="padding: 40px;">
+            <div class="empty-state__icon">✅</div>
+            <h3 class="empty-state__title">Queue is clear!</h3>
+            <p class="empty-state__description">No stories matching this filter.</p>
+          </div>
+        </div>
+
+        <div class="admin-panel" id="panel-comments-queue">
+          <h1 class="admin-page-title">Comments Moderation Queue</h1>
+          <p class="admin-page-subtitle">Review and moderate pending comments.</p>
+          <div class="mb-24 flex gap-12" style="gap: 8px;">
+            <button class="filter-chip active" data-comment-status="pending">Pending</button>
+            <button class="filter-chip" data-comment-status="approved">Approved</button>
+            <button class="filter-chip" data-comment-status="rejected">Rejected</button>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table" id="commentsQueueTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Story</th>
+                  <th>Comment</th>
+                  <th>Author</th>
+                  <th>Status</th>
+                  <th>Submitted</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="commentsQueueBody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state hidden" id="noCommentsQueue" style="padding: 40px;">
+            <div class="empty-state__icon">✅</div>
+            <h3 class="empty-state__title">Queue is clear!</h3>
+            <p class="empty-state__description">No comments matching this filter.</p>
+          </div>
+        </div>
+
+        <div class="admin-panel" id="panel-reports">
+          <h1 class="admin-page-title">Reported Content</h1>
+          <p class="admin-page-subtitle">User-submitted reports of potentially problematic content.</p>
+          <div class="mb-24 flex gap-12" style="gap: 8px;">
+            <button class="filter-chip active" data-report-resolved="0">Open</button>
+            <button class="filter-chip" data-report-resolved="1">Resolved</button>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table" id="reportsTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Type</th>
+                  <th>Target</th>
+                  <th>Reason</th>
+                  <th>Reported</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="reportsBody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state hidden" id="noReports" style="padding: 40px;">
+            <div class="empty-state__icon">✅</div>
+            <h3 class="empty-state__title">No reports</h3>
+            <p class="empty-state__description">All clear — no reports to review.</p>
+          </div>
+        </div>
+
+        <div class="admin-panel" id="panel-users">
+          <h1 class="admin-page-title">User Management</h1>
+          <p class="admin-page-subtitle">View and manage registered users.</p>
+          <div class="admin-table-wrapper">
+            <table class="admin-table" id="usersTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>User ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usersBody"></tbody>
+            </table>
+          </div>
+          <div class="empty-state hidden" id="noUsers" style="padding: 40px;">
+            <div class="empty-state__icon">✅</div>
+            <h3 class="empty-state__title">No users</h3>
+            <p class="empty-state__description">No users registered yet.</p>
+          </div>
+        </div>
+
+        <div class="admin-panel" id="panel-categories">
+          <h1 class="admin-page-title">Category Management</h1>
+          <p class="admin-page-subtitle">Add, edit, or remove story categories.</p>
+          <div class="mb-24" style="display: flex; gap: 12px; align-items: flex-end;">
+            <div style="flex: 1;">
+              <label class="form-label">New Category Name</label>
+              <input type="text" class="form-input" id="newCategoryName" placeholder="e.g. Friendship">
+            </div>
+            <button class="btn btn--primary" id="addCategoryBtn">Add Category</button>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table" id="categoriesTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Slug</th>
+                  <th>Stories</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="categoriesBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel" id="panel-bans">
+          <h1 class="admin-page-title">IP Bans</h1>
+          <p class="admin-page-subtitle">Manage restricted IP addresses.</p>
+          <div class="mb-24 card card--flat card--no-hover" style="padding: 20px;">
+            <h3 style="margin-bottom: 16px;">Add New Ban</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: flex-end;">
+              <div>
+                <label class="form-label">IP Hash</label>
+                <input type="text" class="form-input" id="banIdentifier" placeholder="IP hash from story/comment">
+              </div>
+              <div>
+                <label class="form-label">Reason</label>
+                <input type="text" class="form-input" id="banReason" placeholder="Reason for ban">
+              </div>
+              <button class="btn btn--danger" id="addBanBtn">Ban</button>
+            </div>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table" id="bansTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Identifier</th>
+                  <th>Reason</th>
+                  <th>Created</th>
+                  <th>Expires</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="bansBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel" id="panel-settings">
+          <h1 class="admin-page-title">Platform Settings</h1>
+          <p class="admin-page-subtitle">Configure moderation and abuse prevention settings.</p>
+          <div class="card card--flat card--no-hover" style="padding: 28px;">
+            <div class="form-group">
+              <label class="form-label">Story Rate Limit (per hour)</label>
+              <input type="number" class="form-input" id="settingStoryRate" min="1" max="100">
+              <p class="form-hint">Max number of story submissions per IP per hour.</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Comment Rate Limit (per hour)</label>
+              <input type="number" class="form-input" id="settingCommentRate" min="1" max="200">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Auto-Hide Report Threshold</label>
+              <input type="number" class="form-input" id="settingReportThreshold" min="1" max="20">
+              <p class="form-hint">Number of reports before content is automatically hidden for review.</p>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="settingRequireApproval">
+                <span>Require manual approval for all submissions</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Banned Keywords</label>
+              <textarea class="form-textarea" id="settingBannedKeywords" style="min-height: 100px;" placeholder="One keyword per line"></textarea>
+              <p class="form-hint">Content containing these keywords will be automatically rejected.</p>
+            </div>
+            <button class="btn btn--primary" id="saveSettingsBtn">💾 Save Settings</button>
+          </div>
+        </div>
+
+        <div class="admin-panel" id="panel-audit-log">
+          <h1 class="admin-page-title">Audit Log</h1>
+          <p class="admin-page-subtitle">Complete record of all administrative actions.</p>
+          <div class="admin-table-wrapper">
+            <table class="admin-table" id="auditTable">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Admin</th>
+                  <th>Action</th>
+                  <th>Target</th>
+                  <th>Reason</th>
+                </tr>
+              </thead>
+              <tbody id="auditBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel" id="panel-mfa-setup">
+          <h1 class="admin-page-title">MFA Setup</h1>
+          <p class="admin-page-subtitle">Set up two-factor authentication for your admin account.</p>
+          <div class="card card--flat card--no-hover mfa-setup" style="padding: 28px;">
+            <p style="color: var(--text-secondary); margin-bottom: 24px;">Scan the QR code below with your authenticator app (Google Authenticator, Authy, etc.), then enter the 6-digit code to verify.</p>
+            <div class="mfa-setup__qr" id="mfaQrContainer">
+              <p style="color: var(--text-muted);">Loading QR code...</p>
+            </div>
+            <div class="mfa-setup__secret" id="mfaSecretDisplay"></div>
+            <div class="form-group" style="max-width: 260px; margin: 0 auto;">
+              <input type="text" class="form-input" id="mfaSetupCode" placeholder="Enter 6-digit code" maxlength="6" style="text-align: center; font-size: 20px; letter-spacing: 6px; font-family: monospace;">
+            </div>
+            <button class="btn btn--primary mt-16" id="enableMfaBtn">Enable MFA</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

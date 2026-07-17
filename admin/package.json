@@ -1,0 +1,19 @@
+{
+  "name": "midnight-stories-admin",
+  "version": "1.0.0",
+  "description": "Admin panel for Midnight Stories — deploys to admin.midnightstories.dpdns.org",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "dev:local": "wrangler dev --local"
+  },
+  "dependencies": {
+    "hono": "^4.4.2",
+    "bcryptjs": "^2.4.3",
+    "otplib": "^12.0.1",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "wrangler": "^3.60.3"
+  }
+}
