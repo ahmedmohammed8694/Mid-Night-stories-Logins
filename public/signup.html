@@ -5,31 +5,82 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Signup - Midnight Stories</title>
   <link rel="stylesheet" href="/css/style.css">
+  <!-- Cropper.js -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <style>
-    .auth-container { max-width: 400px; margin: 100px auto; padding: 2rem; }
+    .auth-container { max-width: 440px; margin: 60px auto; padding: 2rem; }
     .auth-form { display: flex; flex-direction: column; gap: 1rem; }
     .auth-input { padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: inherit; }
-    .auth-btn { padding: 0.75rem; border-radius: 8px; cursor: pointer; font-weight: bold; border: none; }
+    .auth-btn { padding: 0.75rem; border-radius: 8px; cursor: pointer; font-weight: bold; border: none; transition: background 0.2s, transform 0.1s; }
     .btn-primary { background: var(--primary, #5c6ac4); color: white; }
+    .btn-primary:active { transform: scale(0.98); }
     .btn-google { background: white; color: #333; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; }
+    .btn-google:hover { background: #f4f4f4; }
     .auth-links { text-align: center; margin-top: 1rem; font-size: 0.9em; opacity: 0.8; }
+    
+    /* Upload Dropzone styling */
+    .signup-dropzone {
+      border: 2px dashed rgba(255,255,255,0.15);
+      border-radius: 8px;
+      padding: 1.25rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background-color 0.2s;
+      background: rgba(255,255,255,0.02);
+    }
+    .signup-dropzone:hover, .signup-dropzone.dragover {
+      border-color: var(--primary, #5c6ac4);
+      background: rgba(92, 106, 196, 0.05);
+    }
+    .signup-preview {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.02);
+    }
   </style>
 </head>
 <body>
   <div class="page-wrapper">
     <div class="auth-container card glass">
-      <h2 style="text-align:center; margin-bottom: 2rem;">Join Midnight Stories</h2>
-      <form id="signupForm" class="auth-form">
+      <h2 style="text-align:center; margin-bottom: 2rem; font-family: 'Fraunces', serif;">Join Midnight Stories</h2>
+      <form id="signupForm" class="auth-form" enctype="multipart/form-data">
         <input type="text" id="fullname" class="auth-input" placeholder="Full Name" required>
         <input type="text" id="userid" class="auth-input" placeholder="Custom User ID (optional, e.g. USER_XYZ)" pattern="^[a-zA-Z0-9_]{3,20}$" title="3-20 characters, alphanumeric and underscores only">
         <input type="email" id="email" class="auth-input" placeholder="Email Address" required>
         <input type="tel" id="phone" class="auth-input" placeholder="Phone Number (optional)">
+        
         <div style="display:flex; flex-direction:column; gap: 4px;">
           <label style="font-size:0.85rem; opacity:0.8; margin-left:4px;">Date of Birth</label>
           <input type="date" id="dob" class="auth-input" required>
         </div>
+        
         <input type="password" id="password" class="auth-input" placeholder="Password (min 6 chars)" required minlength="6">
-        <button type="submit" class="auth-btn btn-primary">Create Account</button>
+        
+        <!-- Profile Picture Upload (Optional) -->
+        <div style="display:flex; flex-direction:column; gap: 4px;">
+          <label style="font-size:0.85rem; opacity:0.8; margin-left:4px;">Profile Picture (Optional)</label>
+          <div id="signupFileDropzone" class="signup-dropzone">
+            <div style="font-size: 1.5rem; margin-bottom: 6px;">📷</div>
+            <p style="margin: 0; font-size: 0.85rem; opacity: 0.8;">Click to upload profile photo</p>
+            <p style="margin: 4px 0 0 0; font-size: 0.72rem; opacity: 0.5;">JPG, PNG, or WebP (max 5MB)</p>
+            <input type="file" id="signupFileInput" accept=".jpg,.jpeg,.png,.webp" style="display:none;">
+          </div>
+          <div id="signupFilePreview" class="signup-preview" style="display: none;">
+            <img id="signupPreviewImage" src="" alt="Preview" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1);">
+            <div style="flex: 1; min-width: 0; font-size: 0.8rem;">
+              <p id="signupFileName" style="margin: 0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></p>
+              <p id="signupFileSize" style="margin: 2px 0 0 0; opacity: 0.6; font-size: 0.72rem;"></p>
+            </div>
+            <button type="button" id="signupRemoveFile" style="background: none; border: none; color: #ff5e5e; font-size: 0.8rem; cursor: pointer; padding: 4px;">✕ Remove</button>
+          </div>
+        </div>
+
+        <button type="submit" id="submitBtn" class="auth-btn btn-primary" style="margin-top: 0.5rem;">Create Account</button>
       </form>
       
       <div style="text-align:center; margin: 1.5rem 0; opacity: 0.5;">— or —</div>
@@ -45,14 +96,131 @@
     </div>
   </div>
 
+  <!-- Cropper Modal -->
+  <div id="cropperModal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #121212; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; width: 100%; max-width: 400px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      <h3 style="margin-top: 0; margin-bottom: 15px; color: white; text-align: center; font-size: 1.1rem; font-family: inherit;">Crop Profile Picture</h3>
+      <div style="max-height: 280px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #000; border-radius: 8px;">
+        <img id="cropperImage" style="max-width: 100%; max-height: 280px;">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+        <button type="button" id="cropperCancelBtn" style="padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: white; font-family: inherit;">Cancel</button>
+        <button type="button" id="cropperConfirmBtn" style="padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; border: none; background: var(--primary, #5c6ac4); color: white; font-family: inherit; font-weight: bold;">Crop & Save</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    let selectedFile = null;
+    let cropper = null;
+
+    const dropzone = document.getElementById('signupFileDropzone');
+    const fileInput = document.getElementById('signupFileInput');
+    const preview = document.getElementById('signupFilePreview');
+    const previewImage = document.getElementById('signupPreviewImage');
+    const fileName = document.getElementById('signupFileName');
+    const fileSize = document.getElementById('signupFileSize');
+    const removeBtn = document.getElementById('signupRemoveFile');
+
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        handleFile(fileInput.files[0]);
+      }
+    });
+
+    removeBtn.addEventListener('click', () => {
+      selectedFile = null;
+      fileInput.value = '';
+      preview.style.display = 'none';
+      dropzone.style.display = 'block';
+    });
+
+    function handleFile(file) {
+      const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowed.includes(file.type)) {
+        alert('Only JPG, PNG, and WebP images are allowed.');
+        fileInput.value = '';
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File must be under 5MB.');
+        fileInput.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const cropperModal = document.getElementById('cropperModal');
+        const cropperImage = document.getElementById('cropperImage');
+        cropperImage.src = event.target.result;
+        cropperModal.style.display = 'flex';
+
+        if (cropper) cropper.destroy();
+        cropper = new Cropper(cropperImage, {
+          aspectRatio: 1,
+          viewMode: 1,
+          autoCropArea: 1,
+        });
+
+        document.getElementById('cropperConfirmBtn').onclick = () => {
+          const canvas = cropper.getCroppedCanvas({
+            width: 300,
+            height: 300
+          });
+
+          canvas.toBlob((blob) => {
+            if (!blob) return;
+            selectedFile = new File([blob], file.name, { type: 'image/jpeg' });
+            
+            previewImage.src = canvas.toDataURL('image/jpeg');
+            fileName.textContent = file.name;
+            fileSize.textContent = `${(selectedFile.size / 1024).toFixed(1)} KB`;
+            preview.style.display = 'flex';
+            dropzone.style.display = 'none';
+
+            cropperModal.style.display = 'none';
+            cropper.destroy();
+            cropper = null;
+          }, 'image/jpeg');
+        };
+
+        document.getElementById('cropperCancelBtn').onclick = () => {
+          cropperModal.style.display = 'none';
+          cropper.destroy();
+          cropper = null;
+          fileInput.value = '';
+        };
+      };
+      reader.readAsDataURL(file);
+    }
+
     document.getElementById('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+      
       const full_name = document.getElementById('fullname').value;
-      const user_id = document.getElementById('userid').value.trim() || null;
+      const user_id = document.getElementById('userid').value.trim() || '';
       const email = document.getElementById('email').value;
-      const phone_number = document.getElementById('phone').value.trim() || null;
-      const dob = document.getElementById('dob').value || null;
+      const phone_number = document.getElementById('phone').value.trim() || '';
+      const dob = document.getElementById('dob').value || '';
       const password = document.getElementById('password').value;
 
       if (dob) {
@@ -69,11 +237,25 @@
         }
       }
 
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating Account...';
+
       try {
+        const formData = new FormData();
+        formData.append('full_name', full_name);
+        if (user_id) formData.append('user_id', user_id);
+        formData.append('email', email);
+        if (phone_number) formData.append('phone_number', phone_number);
+        formData.append('dob', dob);
+        formData.append('password', password);
+        if (selectedFile) {
+          formData.append('profile_pic', selectedFile);
+        }
+
         const res = await fetch('/api/auth/signup', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ full_name, email, password, phone_number, dob, user_id })
+          body: formData
         });
         const data = await res.json();
         if (res.ok) {
@@ -85,6 +267,9 @@
         }
       } catch (err) {
         alert('An error occurred during signup.');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Account';
       }
     });
   </script>

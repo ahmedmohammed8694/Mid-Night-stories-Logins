@@ -187,7 +187,27 @@ app.get('/uploads/:filename', async (c) => {
 // ═════════════════════════════════════════════════════════
 app.post('/api/auth/signup', async (c) => {
   const db = c.env.DB;
-  const { full_name, email, password, phone_number, dob, user_id } = await c.req.json();
+  
+  let full_name, email, password, phone_number, dob, user_id, profilePicFile;
+  const contentType = c.req.header('Content-Type') || '';
+  if (contentType.includes('application/json')) {
+    const json = await c.req.json();
+    full_name = json.full_name;
+    email = json.email;
+    password = json.password;
+    phone_number = json.phone_number;
+    dob = json.dob;
+    user_id = json.user_id;
+  } else {
+    const formData = await c.req.formData();
+    full_name = formData.get('full_name');
+    email = formData.get('email');
+    password = formData.get('password');
+    phone_number = formData.get('phone_number');
+    dob = formData.get('dob');
+    user_id = formData.get('user_id');
+    profilePicFile = formData.get('profile_pic');
+  }
 
   if (!full_name || !email || !password) {
     return c.json({ error: 'Name, email, and password are required.' }, 400);
@@ -231,15 +251,32 @@ app.post('/api/auth/signup', async (c) => {
     customUserId = generateUserId();
   }
 
+  let profilePicUrl = null;
+  if (profilePicFile && profilePicFile instanceof File && profilePicFile.size > 0) {
+    if (profilePicFile.size > 5 * 1024 * 1024) {
+      return c.json({ error: 'Profile picture must be under 5MB.' }, 400);
+    }
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(profilePicFile.type)) {
+      return c.json({ error: 'Only JPEG, PNG, and WebP are allowed for profile picture.' }, 400);
+    }
+    if (c.env.IMAGES) {
+      const ext = profilePicFile.type.split('/')[1] || 'jpg';
+      const filename = `profile_signup_${crypto.randomUUID()}.${ext}`;
+      await c.env.IMAGES.put(filename, await profilePicFile.arrayBuffer(), { httpMetadata: { contentType: profilePicFile.type } });
+      profilePicUrl = `/uploads/${filename}`;
+    }
+  }
+
   const passwordHash = await bcrypt.hash(password, 10);
   const result = await db.prepare(
-    'INSERT INTO users (user_id, full_name, email, password_hash, phone_number, dob) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(customUserId, full_name, email, passwordHash, phone_number || null, dob || null).run();
+    'INSERT INTO users (user_id, full_name, email, password_hash, phone_number, dob, profile_pic) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(customUserId, full_name, email, passwordHash, phone_number || null, dob || null, profilePicUrl || null).run();
 
   const userId = result.meta.last_row_id;
   const token = await signJWT({ id: userId, email }, getUserJwtSecret(c));
 
-  return c.json({ token, user: { id: userId, user_id: customUserId, full_name, email } }, 201);
+  return c.json({ token, user: { id: userId, user_id: customUserId, full_name, email, profile_pic: profilePicUrl } }, 201);
 });
 
 app.post('/api/auth/login', async (c) => {
@@ -319,8 +356,19 @@ app.get('/api/auth/google/callback', async (c) => {
   } else {
     userId = user.id;
     user_id = user.user_id;
+    const updates = [];
+    const params = [];
     if (!user.google_id) {
-      await db.prepare('UPDATE users SET google_id = ? WHERE id = ?').bind(profile.id, userId).run();
+      updates.push('google_id = ?');
+      params.push(profile.id);
+    }
+    if (!user.profile_pic && profile.picture) {
+      updates.push('profile_pic = ?');
+      params.push(profile.picture);
+    }
+    if (updates.length > 0) {
+      params.push(userId);
+      await db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).bind(...params).run();
     }
   }
 
