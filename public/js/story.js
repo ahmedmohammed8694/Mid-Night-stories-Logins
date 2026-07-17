@@ -166,8 +166,8 @@
   async function postComment(e) {
     e.preventDefault();
     const body = document.getElementById('commentBody').value.trim();
-    if (!body || body.length < 5) {
-      showToast('Comment must be at least 5 characters.', 'warning');
+    if (!body || body.length < 1) {
+      showToast('Comment cannot be empty.', 'warning');
       return;
     }
 

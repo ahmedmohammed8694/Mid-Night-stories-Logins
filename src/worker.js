@@ -629,7 +629,7 @@ app.post('/api/stories/:id/comments', requireUser, checkBan, async (c) => {
   }
 
   await db.prepare(
-    'INSERT INTO comments (story_id, user_id, content, status) VALUES (?, ?, ?, ?)'
+    'INSERT INTO comments (story_id, user_id, body, status) VALUES (?, ?, ?, ?)'
   ).bind(storyId, user.id, modResult.redactedText, 'approved').run();
 
   return c.json({ success: true, message: 'Comment posted successfully', status: 'approved' });
