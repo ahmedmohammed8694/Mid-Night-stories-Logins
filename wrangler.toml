@@ -12,8 +12,8 @@ directory = "public"
 # ── Cloudflare D1 SQLite Database ──
 [[d1_databases]]
 binding = "DB"
-database_name = "midnight-stories-db"
-database_id = "0a711700-3884-4e8d-afb1-ac99ad290743"
+database_name = "midnight-stories-login-db"
+database_id = "48095d8e-c182-4ba3-a285-81eddbc3beb9"
 
 # ── Cloudflare R2 Object Storage (for uploaded images) ──
 [[r2_buckets]]
