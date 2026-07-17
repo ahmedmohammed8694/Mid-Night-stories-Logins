@@ -890,6 +890,66 @@ app.post('/api/messages', requireUser, rateLimit('message', 30), async (c) => {
   }, 201);
 });
 
+// POST /api/conversations - Send / initiate chat request
+app.post('/api/conversations', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const { receiver_id } = await c.req.json();
+  
+  const receiverId = parseInt(receiver_id);
+  const senderId = Number(user.id);
+  if (isNaN(receiverId)) return c.json({ error: 'Receiver ID is required.' }, 400);
+  if (senderId === receiverId) return c.json({ error: 'You cannot request chat with yourself.' }, 400);
+
+  // Check blocks
+  const blockCheck1 = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(senderId, receiverId).first();
+  const blockCheck2 = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(receiverId, senderId).first();
+  if (blockCheck1 || blockCheck2) {
+    return c.json({ error: 'Action blocked by safety preferences.' }, 403);
+  }
+
+  const userOneId = Math.min(senderId, receiverId);
+  const userTwoId = Math.max(senderId, receiverId);
+
+  // Find existing
+  let conv = await db.prepare('SELECT * FROM conversations WHERE user_one_id = ? AND user_two_id = ?')
+    .bind(userOneId, userTwoId).first();
+
+  if (conv) {
+    // If it exists, update it to pending and set initiated_by_id to senderId
+    await db.prepare('UPDATE conversations SET status = "pending", initiated_by_id = ?, last_message_at = datetime("now") WHERE id = ?')
+      .bind(senderId, conv.id).run();
+    
+    // Retrieve updated
+    conv = await db.prepare(`
+      SELECT c.*, 
+             u.id as other_id, u.user_id as other_user_id, u.full_name as other_name, u.profile_pic as other_pic, u.bio as other_bio
+      FROM conversations c
+      JOIN users u ON u.id = CASE WHEN c.user_one_id = ? THEN c.user_two_id ELSE c.user_one_id END
+      WHERE c.id = ?
+    `).bind(senderId, conv.id).first();
+    
+    return c.json(conv);
+  }
+
+  // Create new
+  const result = await db.prepare(
+    'INSERT INTO conversations (user_one_id, user_two_id, initiated_by_id, status, last_message_at) VALUES (?, ?, ?, ?, datetime("now"))'
+  ).bind(userOneId, userTwoId, senderId, 'pending').run();
+  
+  const newConvId = result.meta.last_row_id;
+  
+  const newConv = await db.prepare(`
+    SELECT c.*, 
+           u.id as other_id, u.user_id as other_user_id, u.full_name as other_name, u.profile_pic as other_pic, u.bio as other_bio
+    FROM conversations c
+    JOIN users u ON u.id = CASE WHEN c.user_one_id = ? THEN c.user_two_id ELSE c.user_one_id END
+    WHERE c.id = ?
+  `).bind(senderId, newConvId).first();
+
+  return c.json(newConv, 201);
+});
+
 // GET /api/conversations - List conversations
 app.get('/api/conversations', requireUser, async (c) => {
   const db = c.env.DB;

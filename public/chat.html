@@ -433,7 +433,7 @@
     }
 
     async function loadMessages() {
-      if (!activeConversation) return;
+      if (!activeConversation || activeConversation.id === null) return;
 
       try {
         const res = await fetch(`/api/conversations/${activeConversation.id}/messages`, {
@@ -514,7 +514,7 @@
           </div>
         </div>
         <div>
-          <button class="btn btn--secondary btn--sm" onclick="deleteConversationPermanently(${conversation.id})" style="border-color: rgba(255,94,94,0.3); color: #ff5e5e;">Delete Chat</button>
+          ${conversation.id ? `<button class="btn btn--secondary btn--sm" onclick="deleteConversationPermanently(${conversation.id})" style="border-color: rgba(255,94,94,0.3); color: #ff5e5e;">Delete Chat</button>` : ''}
         </div>
       `;
     }
@@ -524,6 +524,21 @@
       if (!bottomBar) return;
 
       bottomBar.innerHTML = '';
+
+      if (conversation.id === null) {
+        const requestDiv = document.createElement('div');
+        requestDiv.className = 'request-banner';
+        requestDiv.innerHTML = `
+          <div class="request-banner-title">Send Chat Request?</div>
+          <div class="request-banner-desc">You must send a chat request to communicate with ${escapeHtml(conversation.other_name)}.</div>
+          <div style="display: flex; gap: 12px; justify-content: center; margin-top: 10px;">
+            <button class="btn btn--primary btn--sm" onclick="sendChatRequest(${conversation.other_id})">Send Request</button>
+            <button class="btn btn--secondary btn--sm" onclick="cancelChatRequest('${conversation.other_user_id || conversation.other_id}')">Cancel</button>
+          </div>
+        `;
+        bottomBar.appendChild(requestDiv);
+        return;
+      }
 
       if (conversation.status === 'pending') {
         const isInitiator = Number(conversation.initiated_by_id) === Number(currentUser.id);
@@ -557,13 +572,16 @@
           requestDiv.innerHTML = `
             <div class="request-banner-title" style="color: #ef4444;">Chat Request Declined</div>
             <div class="request-banner-desc">Your chat request was declined by the user.</div>
+            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 10px;">
+              <button class="btn btn--primary btn--sm" onclick="sendChatRequest(${conversation.other_id})">Send Request Again</button>
+            </div>
           `;
         } else {
           requestDiv.innerHTML = `
             <div class="request-banner-title" style="color: #ef4444;">Chat Request Declined</div>
-            <div class="request-banner-desc">You declined this chat request.</div>
+            <div class="request-banner-desc">You declined this chat request. Accept again?</div>
             <div style="display: flex; gap: 12px; justify-content: center; margin-top: 10px;">
-              <button class="btn btn--primary btn--sm" onclick="acceptChat(${conversation.id})">Accept Chat</button>
+              <button class="btn btn--primary btn--sm" onclick="acceptChat(${conversation.id})">Accept Again</button>
             </div>
           `;
         }
@@ -690,6 +708,28 @@
           loadConversations();
         }
       } catch (err) { alert('An error occurred.'); }
+    }
+
+    async function sendChatRequest(otherId) {
+      try {
+        const res = await fetch('/api/conversations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ receiver_id: otherId })
+        });
+        if (res.ok) {
+          const newConv = await res.json();
+          await loadConversations();
+          selectConversation(newConv);
+        } else {
+          const err = await res.json();
+          alert(err.error || 'Failed to send chat request.');
+        }
+      } catch (err) { alert('An error occurred.'); }
+    }
+
+    function cancelChatRequest(otherIdOrUserId) {
+      window.location.href = '/profile.html?id=' + encodeURIComponent(otherIdOrUserId);
     }
 
     async function openUserChat(userId) {
