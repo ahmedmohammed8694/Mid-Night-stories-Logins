@@ -914,12 +914,20 @@ app.get('/api/conversations', requireUser, async (c) => {
 app.get('/api/conversations/:id/messages', requireUser, async (c) => {
   const db = c.env.DB;
   const user = c.get('user');
+  const userId = Number(user.id);
   const convId = parseInt(c.req.param('id'));
 
-  const conv = await db.prepare('SELECT * FROM conversations WHERE id = ?').bind(convId).first();
+  const conv = await db.prepare(`
+    SELECT c.*, 
+           u.id as other_id, u.user_id as other_user_id, u.full_name as other_name, u.profile_pic as other_pic, u.bio as other_bio
+    FROM conversations c
+    JOIN users u ON u.id = CASE WHEN c.user_one_id = ? THEN c.user_two_id ELSE c.user_one_id END
+    WHERE c.id = ?
+  `).bind(userId, convId).first();
+
   if (!conv) return c.json({ error: 'Conversation not found.' }, 404);
 
-  if (conv.user_one_id !== user.id && conv.user_two_id !== user.id) {
+  if (conv.user_one_id !== userId && conv.user_two_id !== userId) {
     return c.json({ error: 'Unauthorized.' }, 403);
   }
 

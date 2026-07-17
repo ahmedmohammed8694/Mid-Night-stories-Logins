@@ -441,11 +441,13 @@
         });
         const data = await res.json();
 
+        const mergedConv = { ...activeConversation, ...data.conversation };
+
         // If status changed or conversation is new, update layout widgets
         if (data.conversation.status !== activeConversation.status) {
           activeConversation.status = data.conversation.status;
-          updateChatHeader(data.conversation);
-          updateChatBottomBar(data.conversation);
+          updateChatHeader(mergedConv);
+          updateChatBottomBar(mergedConv);
         }
 
         renderMessagesOnly(data.messages);
@@ -699,7 +701,8 @@
         const otherUser = await res.json();
         const placeholderConv = { id: null, other_id: otherUser.id, other_name: otherUser.full_name, other_pic: otherUser.profile_pic, status: 'pending', initiated_by_id: currentUser.id };
         activeConversation = placeholderConv;
-        renderChatWindow(placeholderConv, []);
+        renderChatLayout(placeholderConv);
+        renderMessagesOnly([]);
       } catch (err) { console.error('Failed to initiate user chat:', err); }
     }
 
