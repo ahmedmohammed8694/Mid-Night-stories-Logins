@@ -632,6 +632,10 @@ app.post('/api/stories/:id/comments', requireUser, checkBan, async (c) => {
     'INSERT INTO comments (story_id, user_id, body, status) VALUES (?, ?, ?, ?)'
   ).bind(storyId, user.id, modResult.redactedText, 'approved').run();
 
+  await db.prepare(
+    'UPDATE stories SET comment_count = comment_count + 1 WHERE id = ?'
+  ).bind(storyId).run();
+
   return c.json({ success: true, message: 'Comment posted successfully', status: 'approved' });
 });
 
@@ -666,7 +670,7 @@ app.delete('/api/comments/:id', requireUser, async (c) => {
   const user = c.get('user');
   const commentId = parseInt(c.req.param('id'));
 
-  const comment = await db.prepare('SELECT user_id FROM comments WHERE id = ?').bind(commentId).first();
+  const comment = await db.prepare('SELECT user_id, story_id FROM comments WHERE id = ?').bind(commentId).first();
   if (!comment) return c.json({ error: 'Comment not found.' }, 404);
 
   if (comment.user_id !== user.id) {
@@ -674,6 +678,8 @@ app.delete('/api/comments/:id', requireUser, async (c) => {
   }
 
   await db.prepare('UPDATE comments SET status = "removed" WHERE id = ?').bind(commentId).run();
+  await db.prepare('UPDATE stories SET comment_count = MAX(0, comment_count - 1) WHERE id = ?').bind(comment.story_id).run();
+
   return c.json({ success: true });
 });
 

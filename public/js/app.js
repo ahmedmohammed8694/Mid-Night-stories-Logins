@@ -376,7 +376,8 @@ function initAuthLayout() {
       : avatarChar;
 
     authSection = `
-      <div class="header__avatar-container" style="position: relative; cursor: pointer; display: flex; align-items: center;">
+      <div class="header__avatar-container" style="position: relative; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+        <span class="header__username" style="font-weight: 500; font-size: 0.9rem; color: inherit; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(user.full_name || '')}</span>
         <div class="header__avatar" id="avatarBtn" style="width: 38px; height: 38px; border-radius: 50%; background: var(--primary, #5c6ac4); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; overflow: hidden; border: 2px solid rgba(255,255,255,0.1);">
           ${profilePicHtml}
         </div>
@@ -407,6 +408,7 @@ function initAuthLayout() {
       <nav class="header__nav" style="display: flex; gap: 24px; align-items: center; margin-left: auto; margin-right: 24px;">
         <a href="/" class="nav-link ${path === '/' || path === '/index.html' ? 'active' : ''}">Browse</a>
         <a href="/submit.html" class="nav-link ${path === '/submit.html' ? 'active' : ''}">Share Story</a>
+        <a href="/profile.html" class="nav-link ${path === '/profile.html' ? 'active' : ''}">Find User</a>
         <a href="/resources.html" class="nav-link ${path === '/resources.html' ? 'active' : ''}">Resources</a>
         <a href="/about.html" class="nav-link ${path === '/about.html' ? 'active' : ''}">About</a>
       </nav>
