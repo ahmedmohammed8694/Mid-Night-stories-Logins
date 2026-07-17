@@ -32,10 +32,18 @@
           <a href="/resources" class="nav-link">Resources</a>
           <a href="/about" class="nav-link">About</a>
         </nav>
-        <div class="header__actions">
-          <button class="btn-3d-toggle" id="toggle3D" aria-label="Toggle 3D card style">✦ 3D</button>
+        <div class="header__actions" id="authActions">
           <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
-          <a href="/submit" class="btn btn--primary btn--sm">✍️ Share Your Story</a>
+          
+          <!-- Guest Links -->
+          <a href="/login" class="btn btn--secondary btn--sm guest-only">Login</a>
+          <a href="/signup" class="btn btn--primary btn--sm guest-only">Sign Up</a>
+          
+          <!-- Auth Links -->
+          <a href="/profile" class="btn btn--secondary btn--sm auth-only" style="display:none;">Profile</a>
+          <button id="logoutBtn" class="btn btn--secondary btn--sm auth-only" style="display:none;">Logout</button>
+          <a href="/submit" class="btn btn--primary btn--sm auth-only" style="display:none;">✍️ Share Story</a>
+
           <button class="mobile-menu-toggle" id="mobileMenuBtn" aria-label="Open menu">☰</button>
         </div>
       </div>
@@ -103,6 +111,7 @@
         <!-- Controls Bar -->
         <section class="controls-bar" id="stories">
           <div class="controls-bar__left" id="categoryFilters">
+            <button class="filter-chip auth-only" id="feedToggle" style="display:none; border:1px solid var(--primary); background:rgba(92,106,196,0.2);">Following Feed</button>
             <button class="filter-chip active" data-category="all">All Stories</button>
             <!-- Categories will be loaded dynamically -->
           </div>

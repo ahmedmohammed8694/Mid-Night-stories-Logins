@@ -18,4 +18,4 @@ database_id = "0a711700-3884-4e8d-afb1-ac99ad290743"
 # ── Cloudflare R2 Object Storage (for uploaded images) ──
 [[r2_buckets]]
 binding = "IMAGES"
-bucket_name = "midnight-stories-images"
+bucket_name = "midnight-stories-log-db"

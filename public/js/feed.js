@@ -5,6 +5,7 @@
   let currentSort = 'newest';
   let currentCategory = 'all';
   let currentSearch = '';
+  let currentFeed = 'all';
 
   // ── Load Categories ──
   async function loadCategories() {
@@ -64,6 +65,7 @@
         limit: 12
       });
 
+      if (currentFeed !== 'all') params.set('feed', currentFeed);
       if (currentCategory !== 'all') params.set('category', currentCategory);
       if (currentSearch) params.set('search', currentSearch);
 
@@ -147,6 +149,22 @@
     if (sortSelect) {
       sortSelect.addEventListener('change', () => {
         currentSort = sortSelect.value;
+        currentPage = 1;
+        loadStories();
+      });
+    }
+
+    // Feed Toggle
+    const feedToggle = document.getElementById('feedToggle');
+    if (feedToggle) {
+      feedToggle.addEventListener('click', () => {
+        if (currentFeed === 'all') {
+          currentFeed = 'following';
+          feedToggle.classList.add('active');
+        } else {
+          currentFeed = 'all';
+          feedToggle.classList.remove('active');
+        }
         currentPage = 1;
         loadStories();
       });

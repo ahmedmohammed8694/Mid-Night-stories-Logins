@@ -1,5 +1,5 @@
 // src/worker.js — Cloudflare Worker entry point for Midnight Stories
-// Handles all API and image upload routes; static assets are served by Workers Assets
+// Upgraded version: local auth, Google OAuth 2.0, profiles, followers, reads history, and likes tracking.
 
 import { Hono } from 'hono';
 import { authenticator } from 'otplib';
@@ -55,7 +55,7 @@ async function verifyJWT(token, secret) {
 
 const app = new Hono();
 
-// ── In-Memory Rate Limiting (Isolate-level) ──
+// ── In-Memory Rate Limiting ──
 const rateLimitMap = new Map();
 
 function rateLimit(type, maxPerHour) {
@@ -63,7 +63,7 @@ function rateLimit(type, maxPerHour) {
     const ip = c.req.header('cf-connecting-ip') || '127.0.0.1';
     const key = `${type}:${ip}`;
     const now = Date.now();
-    const windowMs = 60 * 60 * 1000; // 1 hour
+    const windowMs = 60 * 60 * 1000;
 
     if (!rateLimitMap.has(key)) {
       rateLimitMap.set(key, []);
@@ -84,20 +84,17 @@ function rateLimit(type, maxPerHour) {
   };
 }
 
-// ── JWT Secret helper ──
-const getJwtSecret = (c) => c.env.ADMIN_JWT_SECRET || 'midnight_stories_jwt_secret_2026';
+// ── JWT Secret Helpers ──
+const getAdminJwtSecret = (c) => c.env.ADMIN_JWT_SECRET || 'midnight_stories_admin_secret_2026';
+const getUserJwtSecret = (c) => c.env.JWT_SECRET || 'midnight_stories_user_secret_2026';
 
-// ── Admin Session Middleware (Stateless JWT) ──
+// ── Authentication Middlewares ──
 const requireAdmin = async (c, next) => {
   const token = c.req.header('x-admin-token');
-  if (!token) {
-    return c.json({ error: 'Unauthorized. Please log in.' }, 401);
-  }
+  if (!token) return c.json({ error: 'Unauthorized. Please log in.' }, 401);
   try {
-    const payload = await verifyJWT(token, getJwtSecret(c));
-    if (payload.step === 'mfa') {
-      return c.json({ error: 'MFA verification required.' }, 401);
-    }
+    const payload = await verifyJWT(token, getAdminJwtSecret(c));
+    if (payload.step === 'mfa') return c.json({ error: 'MFA verification required.' }, 401);
     c.set('admin', payload);
     await next();
   } catch (err) {
@@ -105,7 +102,31 @@ const requireAdmin = async (c, next) => {
   }
 };
 
-// ── Ban Check Middleware ──
+const requireUser = async (c, next) => {
+  const authHeader = c.req.header('Authorization');
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return c.json({ error: 'Unauthorized. Please log in.' }, 401);
+  try {
+    const payload = await verifyJWT(token, getUserJwtSecret(c));
+    c.set('user', payload);
+    await next();
+  } catch (err) {
+    return c.json({ error: 'Session expired or invalid.' }, 401);
+  }
+};
+
+const optionalUser = async (c, next) => {
+  const authHeader = c.req.header('Authorization');
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token) {
+    try {
+      const payload = await verifyJWT(token, getUserJwtSecret(c));
+      c.set('user', payload);
+    } catch (err) {}
+  }
+  await next();
+};
+
 const checkBan = async (c, next) => {
   const db = c.env.DB;
   const ip = c.req.header('cf-connecting-ip') || '127.0.0.1';
@@ -129,16 +150,11 @@ const checkBan = async (c, next) => {
 // ═════════════════════════════════════════════════════════
 // ██  UPLOADS — Serve images from R2
 // ═════════════════════════════════════════════════════════
-
 app.get('/uploads/:filename', async (c) => {
   const filename = c.req.param('filename');
-  if (!c.env.IMAGES) {
-    return c.text('R2 bucket not configured', 500);
-  }
+  if (!c.env.IMAGES) return c.text('R2 bucket not configured', 500);
   const object = await c.env.IMAGES.get(filename);
-  if (!object) {
-    return c.text('Image not found', 404);
-  }
+  if (!object) return c.text('Image not found', 404);
   const headers = new Headers();
   object.writeHttpMetadata(headers);
   headers.set('etag', object.httpEtag);
@@ -147,24 +163,373 @@ app.get('/uploads/:filename', async (c) => {
 });
 
 // ═════════════════════════════════════════════════════════
-// ██  PUBLIC API ROUTES
+// ██  AUTHENTICATION API
 // ═════════════════════════════════════════════════════════
+app.post('/api/auth/signup', async (c) => {
+  const db = c.env.DB;
+  const { full_name, email, password } = await c.req.json();
 
-// ── GET /api/categories ──
+  if (!full_name || !email || !password) {
+    return c.json({ error: 'All fields are required.' }, 400);
+  }
+  if (password.length < 6) {
+    return c.json({ error: 'Password must be at least 6 characters.' }, 400);
+  }
+
+  const existing = await db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
+  if (existing) return c.json({ error: 'Email already in use.' }, 400);
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const result = await db.prepare(
+    'INSERT INTO users (full_name, email, password_hash) VALUES (?, ?, ?)'
+  ).bind(full_name, email, passwordHash).run();
+
+  const userId = result.meta.last_row_id;
+  const token = await signJWT({ id: userId, email }, getUserJwtSecret(c));
+
+  return c.json({ token, user: { id: userId, full_name, email } }, 201);
+});
+
+app.post('/api/auth/login', async (c) => {
+  const db = c.env.DB;
+  const { email, password } = await c.req.json();
+
+  if (!email || !password) {
+    return c.json({ error: 'Email and password are required.' }, 400);
+  }
+
+  const user = await db.prepare('SELECT * FROM users WHERE email = ?').bind(email).first();
+  if (!user || !user.password_hash) return c.json({ error: 'Invalid credentials.' }, 401);
+
+  const isMatch = await bcrypt.compare(password, user.password_hash);
+  if (!isMatch) return c.json({ error: 'Invalid credentials.' }, 401);
+
+  const token = await signJWT({ id: user.id, email: user.email }, getUserJwtSecret(c));
+  return c.json({ token, user: { id: user.id, full_name: user.full_name, email: user.email } });
+});
+
+app.get('/api/auth/me', requireUser, async (c) => {
+  const db = c.env.DB;
+  const userPayload = c.get('user');
+  const user = await db.prepare('SELECT id, full_name, email, profile_pic FROM users WHERE id = ?').bind(userPayload.id).first();
+  return c.json(user);
+});
+
+// Google OAuth Integration
+app.get('/api/auth/google', (c) => {
+  const clientId = c.env.GOOGLE_CLIENT_ID;
+  const redirectUri = `${new URL(c.req.url).origin}/api/auth/google/callback`;
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=profile%20email`;
+  return c.redirect(googleAuthUrl);
+});
+
+app.get('/api/auth/google/callback', async (c) => {
+  const db = c.env.DB;
+  const code = c.req.query('code');
+  if (!code) return c.redirect('/login.html');
+
+  const clientId = c.env.GOOGLE_CLIENT_ID;
+  const clientSecret = c.env.GOOGLE_CLIENT_SECRET;
+  const redirectUri = `${new URL(c.req.url).origin}/api/auth/google/callback`;
+
+  // Exchange authorization code for access token
+  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code'
+    })
+  });
+
+  const tokens = await tokenResponse.json();
+  if (tokens.error) return c.redirect('/login.html');
+
+  // Fetch Google Profile info
+  const profileResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+    headers: { Authorization: `Bearer ${tokens.access_token}` }
+  });
+  const profile = await profileResponse.json();
+
+  let user = await db.prepare('SELECT * FROM users WHERE email = ?').bind(profile.email).first();
+  let userId;
+
+  if (!user) {
+    const insert = await db.prepare(
+      'INSERT INTO users (full_name, email, google_id, profile_pic) VALUES (?, ?, ?, ?)'
+    ).bind(profile.name, profile.email, profile.id, profile.picture).run();
+    userId = insert.meta.last_row_id;
+  } else {
+    userId = user.id;
+    if (!user.google_id) {
+      await db.prepare('UPDATE users SET google_id = ? WHERE id = ?').bind(profile.id, userId).run();
+    }
+  }
+
+  const token = await signJWT({ id: userId, email: profile.email }, getUserJwtSecret(c));
+  return c.redirect(`/hash.html?token=${token}`);
+});
+
+// ═════════════════════════════════════════════════════════
+// ██  PUBLIC / FEED STORIES ROUTES
+// ═════════════════════════════════════════════════════════
 app.get('/api/categories', async (c) => {
   const db = c.env.DB;
   const { results } = await db.prepare('SELECT * FROM categories ORDER BY name').all();
   return c.json(results);
 });
 
-// ── GET /api/stats/public — Community-wide stats for the homepage ──
+app.get('/api/stories', optionalUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const { sort = 'newest', category, search, page = 1, limit = 12, feed, userId } = c.req.query();
+  const offset = (parseInt(page) - 1) * parseInt(limit);
+
+  let where = "WHERE s.status = 'approved'";
+  const params = [];
+
+  if (category && category !== 'all') {
+    where += ' AND c.slug = ?';
+    params.push(category);
+  }
+
+  if (search) {
+    where += ' AND (s.title LIKE ? OR s.content LIKE ?)';
+    params.push(`%${search}%`, `%${search}%`);
+  }
+
+  if (feed === 'following' && user) {
+    where += ' AND s.user_id IN (SELECT following_id FROM follows WHERE follower_id = ?)';
+    params.push(user.id);
+  } else if (feed === 'me') {
+    const targetId = userId ? parseInt(userId) : (user ? user.id : null);
+    if (targetId) {
+      where += ' AND s.user_id = ?';
+      params.push(targetId);
+    } else {
+      where += ' AND 1=0';
+    }
+  } else if (feed === 'liked') {
+    const targetId = userId ? parseInt(userId) : (user ? user.id : null);
+    if (targetId) {
+      where += ' AND s.id IN (SELECT story_id FROM likes WHERE user_id = ?)';
+      params.push(targetId);
+    } else {
+      where += ' AND 1=0';
+    }
+  }
+
+  let orderBy;
+  switch (sort) {
+    case 'liked': orderBy = 's.likes_count DESC'; break;
+    default: orderBy = 's.created_at DESC';
+  }
+
+  const countSql = `SELECT COUNT(*) as total FROM stories s LEFT JOIN categories c ON s.category_id = c.id ${where}`;
+  const countRes = await db.prepare(countSql).bind(...params).first();
+  const total = countRes ? countRes.total : 0;
+
+  const sql = `
+    SELECT s.*, u.full_name as author_name, u.profile_pic as author_pic, c.name as category_name, c.slug as category_slug
+    FROM stories s
+    LEFT JOIN users u ON s.user_id = u.id
+    LEFT JOIN categories c ON s.category_id = c.id
+    ${where}
+    ORDER BY ${orderBy}
+    LIMIT ? OFFSET ?
+  `;
+
+  const { results: stories } = await db.prepare(sql).bind(...params, parseInt(limit), offset).all();
+
+  // Map is_liked status
+  if (user && stories.length > 0) {
+    const ids = stories.map(s => s.id);
+    const placeholders = ids.map(() => '?').join(',');
+    const { results: likes } = await db.prepare(
+      `SELECT story_id FROM likes WHERE user_id = ? AND story_id IN (${placeholders})`
+    ).bind(user.id, ...ids).all();
+    const likedSet = new Set(likes.map(l => l.story_id));
+    stories.forEach(s => s.is_liked = likedSet.has(s.id));
+  }
+
+  return c.json({
+    stories: stories.map(s => ({
+      ...s,
+      body_preview: s.content.substring(0, 200) + (s.content.length > 200 ? '...' : '')
+    })),
+    total,
+    page: parseInt(page),
+    totalPages: Math.ceil(total / parseInt(limit))
+  });
+});
+
+app.post('/api/stories', requireUser, checkBan, rateLimit('story', 5), async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+
+  let title, content, categoryIdStr, imageFile;
+  const contentType = c.req.header('Content-Type') || '';
+  if (contentType.includes('application/json')) {
+    const json = await c.req.json();
+    title = json.title;
+    content = json.content || json.body;
+    categoryIdStr = json.category_id;
+  } else {
+    const formData = await c.req.formData();
+    title = formData.get('title');
+    content = formData.get('content') || formData.get('body');
+    categoryIdStr = formData.get('category_id');
+    imageFile = formData.get('image');
+  }
+
+  if (!content || content.trim().length < 50) {
+    return c.json({ error: 'Story must be at least 50 characters long.' }, 400);
+  }
+
+  let bannedKeywords = [];
+  try {
+    const setting = await db.prepare("SELECT value FROM settings WHERE key = 'banned_keywords'").first();
+    if (setting) bannedKeywords = JSON.parse(setting.value);
+  } catch (e) {}
+
+  const modResult = moderateText(content, bannedKeywords);
+  if (modResult.autoAction === 'reject') {
+    return c.json({ error: 'Your submission contains content that violates guidelines.' }, 400);
+  }
+
+  let imageUrl = null;
+  if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+    if (imageFile.size > 5 * 1024 * 1024) return c.json({ error: 'File size must be under 5MB.' }, 400);
+    const safetyCheck = checkImageSafety(imageFile);
+    if (!safetyCheck.safe) return c.json({ error: 'Uploaded image did not pass safety checks.' }, 400);
+
+    if (c.env.IMAGES) {
+      const ext = imageFile.type.split('/')[1] || 'jpg';
+      const filename = `${crypto.randomUUID()}.${ext}`;
+      await c.env.IMAGES.put(filename, await imageFile.arrayBuffer(), { httpMetadata: { contentType: imageFile.type } });
+      imageUrl = `/uploads/${filename}`;
+    }
+  }
+
+  const result = await db.prepare(
+    'INSERT INTO stories (user_id, title, content, category_id, image_url, status) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(user.id, title ? title.trim() : null, modResult.redactedText, categoryIdStr ? parseInt(categoryIdStr) : null, imageUrl, 'approved').run();
+
+  return c.json({ id: result.meta.last_row_id, status: 'approved', message: 'Your story has been published.' }, 201);
+});
+
+// GET /api/stories/:id
+app.get('/api/stories/:id', optionalUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const id = c.req.param('id');
+
+  const story = await db.prepare(`
+    SELECT s.*, u.full_name as author_name, u.profile_pic as author_pic, c.name as category_name
+    FROM stories s
+    LEFT JOIN users u ON s.user_id = u.id
+    LEFT JOIN categories c ON s.category_id = c.id
+    WHERE s.id = ? AND s.status = 'approved'
+  `).bind(id).first();
+
+  if (!story) return c.json({ error: 'Story not found' }, 404);
+
+  // Track reads history if logged in
+  if (user) {
+    await db.prepare('INSERT OR IGNORE INTO reads (user_id, story_id) VALUES (?, ?)').bind(user.id, id).run();
+  }
+
+  const { results: comments } = await db.prepare(`
+    SELECT cm.*, u.full_name as author_name, u.profile_pic as author_pic
+    FROM comments cm
+    LEFT JOIN users u ON cm.user_id = u.id
+    WHERE cm.story_id = ? AND cm.status = 'approved' 
+    ORDER BY cm.created_at ASC
+  `).bind(id).all();
+
+  return c.json({ story, comments });
+});
+
+// POST /api/stories/:id/like
+app.post('/api/stories/:id/like', requireUser, checkBan, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const storyId = parseInt(c.req.param('id'));
+
+  const story = await db.prepare('SELECT id FROM stories WHERE id = ? AND status = "approved"').bind(storyId).first();
+  if (!story) return c.json({ error: 'Story not found.' }, 404);
+
+  const existingLike = await db.prepare('SELECT id FROM likes WHERE user_id = ? AND story_id = ?').bind(user.id, storyId).first();
+
+  if (existingLike) {
+    await db.prepare('DELETE FROM likes WHERE id = ?').bind(existingLike.id).run();
+    await db.prepare('UPDATE stories SET likes_count = MAX(0, likes_count - 1) WHERE id = ?').bind(storyId).run();
+    const updated = await db.prepare('SELECT likes_count FROM stories WHERE id = ?').bind(storyId).first();
+    return c.json({ liked: false, likes_count: updated.likes_count });
+  }
+
+  await db.prepare('INSERT INTO likes (user_id, story_id) VALUES (?, ?)').bind(user.id, storyId).run();
+  await db.prepare('UPDATE stories SET likes_count = likes_count + 1 WHERE id = ?').bind(storyId).run();
+  const updated = await db.prepare('SELECT likes_count FROM stories WHERE id = ?').bind(storyId).first();
+  return c.json({ liked: true, likes_count: updated.likes_count });
+});
+
+// ═════════════════════════════════════════════════════════
+// ██  USER PROFILES & SOCIAL CAPABILITIES
+// ═════════════════════════════════════════════════════════
+app.get('/api/users/:id', optionalUser, async (c) => {
+  const db = c.env.DB;
+  const targetId = parseInt(c.req.param('id'));
+  const loggedInUser = c.get('user');
+
+  const user = await db.prepare('SELECT id, full_name, bio, profile_pic, created_at FROM users WHERE id = ?').bind(targetId).first();
+  if (!user) return c.json({ error: 'User not found.' }, 404);
+
+  const followers = (await db.prepare('SELECT COUNT(*) as c FROM follows WHERE following_id = ?').bind(targetId).first()).c;
+  const following = (await db.prepare('SELECT COUNT(*) as c FROM follows WHERE follower_id = ?').bind(targetId).first()).c;
+
+  user.followers_count = followers;
+  user.following_count = following;
+
+  if (loggedInUser) {
+    const isFollowing = await db.prepare('SELECT id FROM follows WHERE follower_id = ? AND following_id = ?').bind(loggedInUser.id, targetId).first();
+    user.is_following = !!isFollowing;
+  }
+
+  return c.json(user);
+});
+
+app.post('/api/users/:id/follow', requireUser, async (c) => {
+  const db = c.env.DB;
+  const loggedInUser = c.get('user');
+  const targetId = parseInt(c.req.param('id'));
+
+  if (loggedInUser.id === targetId) return c.json({ error: 'You cannot follow yourself.' }, 400);
+
+  const target = await db.prepare('SELECT id FROM users WHERE id = ?').bind(targetId).first();
+  if (!target) return c.json({ error: 'User not found.' }, 404);
+
+  const existing = await db.prepare('SELECT id FROM follows WHERE follower_id = ? AND following_id = ?').bind(loggedInUser.id, targetId).first();
+
+  if (existing) {
+    await db.prepare('DELETE FROM follows WHERE id = ?').bind(existing.id).run();
+    return c.json({ following: false });
+  }
+
+  await db.prepare('INSERT INTO follows (follower_id, following_id) VALUES (?, ?)').bind(loggedInUser.id, targetId).run();
+  return c.json({ following: true });
+});
+
+// Stats public block fallback
 app.get('/api/stats/public', async (c) => {
   const db = c.env.DB;
   const [storyStats, visitorRow, commentRow] = await Promise.all([
     db.prepare(`
       SELECT
-        COALESCE(SUM(like_count), 0)    AS total_likes,
-        COALESCE(SUM(comment_count), 0) AS total_comments,
+        COALESCE(SUM(likes_count), 0)    AS total_likes,
         COUNT(*)                         AS total_stories
       FROM stories WHERE status = 'approved'
     `).first(),
@@ -180,322 +545,13 @@ app.get('/api/stats/public', async (c) => {
   });
 });
 
-// ── POST /api/stats/visit — Increment visitor counter (called once per browser) ──
 app.post('/api/stats/visit', async (c) => {
   const db = c.env.DB;
-  // Upsert: if key doesn't exist yet, insert it; otherwise increment
   await db.prepare(`
     INSERT INTO settings (key, value) VALUES ('total_visitors', '1')
     ON CONFLICT(key) DO UPDATE SET value = CAST(CAST(value AS INTEGER) + 1 AS TEXT)
   `).run();
   return c.json({ ok: true });
-});
-
-// ── GET /api/stories ──
-app.get('/api/stories', async (c) => {
-  const db = c.env.DB;
-  const { sort = 'newest', category, search, page = 1, limit = 12 } = c.req.query();
-  const offset = (parseInt(page) - 1) * parseInt(limit);
-
-  let where = "WHERE s.status = 'approved'";
-  const params = [];
-
-  if (category && category !== 'all') {
-    where += ' AND c.slug = ?';
-    params.push(category);
-  }
-
-  if (search) {
-    where += ' AND (s.title LIKE ? OR s.body LIKE ?)';
-    params.push(`%${search}%`, `%${search}%`);
-  }
-
-  let orderBy;
-  switch (sort) {
-    case 'liked': orderBy = 's.like_count DESC'; break;
-    case 'discussed': orderBy = 's.comment_count DESC'; break;
-    default: orderBy = 's.created_at DESC';
-  }
-
-  const countSql = `SELECT COUNT(*) as total FROM stories s LEFT JOIN categories c ON s.category_id = c.id ${where}`;
-  const countRes = await db.prepare(countSql).bind(...params).first();
-  const total = countRes ? countRes.total : 0;
-
-  const sql = `
-    SELECT s.*, c.name as category_name, c.slug as category_slug
-    FROM stories s
-    LEFT JOIN categories c ON s.category_id = c.id
-    ${where}
-    ORDER BY ${orderBy}
-    LIMIT ? OFFSET ?
-  `;
-
-  const { results } = await db.prepare(sql).bind(...params, parseInt(limit), offset).all();
-
-  return c.json({
-    stories: results.map(s => ({
-      ...s,
-      body_preview: s.body.substring(0, 200) + (s.body.length > 200 ? '...' : '')
-    })),
-    total,
-    page: parseInt(page),
-    totalPages: Math.ceil(total / parseInt(limit))
-  });
-});
-
-// ── GET /api/stories/:id ──
-app.get('/api/stories/:id', async (c) => {
-  const db = c.env.DB;
-  const id = c.req.param('id');
-
-  const story = await db.prepare(`
-    SELECT s.*, c.name as category_name, c.slug as category_slug
-    FROM stories s
-    LEFT JOIN categories c ON s.category_id = c.id
-    WHERE s.id = ? AND s.status = 'approved'
-  `).bind(id).first();
-
-  if (!story) {
-    return c.json({ error: 'Story not found' }, 404);
-  }
-
-  const { results: comments } = await db.prepare(`
-    SELECT * FROM comments 
-    WHERE story_id = ? AND status = 'approved' 
-    ORDER BY created_at ASC
-  `).bind(id).all();
-
-  return c.json({ story, comments });
-});
-
-// ── POST /api/stories — Submit a new story ──
-app.post('/api/stories', checkBan, rateLimit('story', 5), async (c) => {
-  const db = c.env.DB;
-  const ipHash = c.get('ipHash');
-
-  const formData = await c.req.formData();
-  const title = formData.get('title');
-  const body = formData.get('body');
-  const categoryIdStr = formData.get('category_id');
-  const ageConfirmed = formData.get('age_confirmed');
-  const imageFile = formData.get('image');
-
-  if (!body || body.trim().length < 50) {
-    return c.json({ error: 'Story must be at least 50 characters long.' }, 400);
-  }
-
-  if (!ageConfirmed || ageConfirmed !== 'true') {
-    return c.json({ error: 'You must confirm you are 18 or older.' }, 400);
-  }
-
-  let bannedKeywords = [];
-  try {
-    const setting = await db.prepare("SELECT value FROM settings WHERE key = 'banned_keywords'").first();
-    if (setting) bannedKeywords = JSON.parse(setting.value);
-  } catch (e) { /* ignore */ }
-
-  const modResult = moderateText(body, bannedKeywords);
-  const titleModResult = title ? moderateText(title, bannedKeywords) : null;
-
-  if (modResult.autoAction === 'reject' || (titleModResult && titleModResult.autoAction === 'reject')) {
-    return c.json({
-      error: 'Your submission contains content that violates our community guidelines.',
-      flags: [...modResult.flags, ...(titleModResult?.flags || [])]
-    }, 400);
-  }
-
-  const crisisResult = detectCrisisLanguage(body);
-
-  let imageUrl = null;
-  if (imageFile && imageFile instanceof File && imageFile.size > 0) {
-    if (imageFile.size > 5 * 1024 * 1024) {
-      return c.json({ error: 'File size must be under 5MB.' }, 400);
-    }
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(imageFile.type)) {
-      return c.json({ error: 'Only JPG, PNG, and WebP images are allowed' }, 400);
-    }
-
-    const safetyCheck = checkImageSafety(imageFile);
-    if (!safetyCheck.safe) {
-      return c.json({ error: 'Uploaded image did not pass safety checks.' }, 400);
-    }
-
-    if (c.env.IMAGES) {
-      const ext = imageFile.type.split('/')[1] || 'jpg';
-      const filename = `${crypto.randomUUID()}.${ext}`;
-      const arrayBuffer = await imageFile.arrayBuffer();
-      await c.env.IMAGES.put(filename, arrayBuffer, {
-        httpMetadata: { contentType: imageFile.type }
-      });
-      imageUrl = `/uploads/${filename}`;
-    }
-  }
-
-  const submitterToken = crypto.randomUUID();
-
-  // Auto-approve everything except explicitly toxic content
-  // Admin can delete any story at any time from the admin panel
-  let status = 'approved';
-  if (modResult.autoAction === 'reject') {
-    // Toxic content — still reject at submission time
-    status = 'pending'; // Let admin review truly toxic content
-  }
-
-  const result = await db.prepare(`
-    INSERT INTO stories (title, body, category_id, image_url, status, submitter_token, ip_hash)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).bind(
-    title ? title.trim() : null,
-    modResult.redactedText,
-    categoryIdStr ? parseInt(categoryIdStr) : null,
-    imageUrl,
-    status,
-    submitterToken,
-    ipHash
-  ).run();
-
-  const storyId = result.meta.last_row_id;
-
-  if (modResult.flags.length > 0) {
-    await db.prepare(
-      'INSERT INTO moderation_log (target_type, target_id, action, reason) VALUES (?, ?, ?, ?)'
-    ).bind('story', storyId, 'auto_flag', modResult.flags.join('; ')).run();
-  }
-
-  return c.json({
-    id: storyId,
-    status,
-    submitterToken,
-    crisisDetected: crisisResult.isCrisis,
-    crisisSeverity: crisisResult.severity,
-    message: status === 'pending'
-      ? 'Your story has been submitted and is awaiting review by our moderation team.'
-      : 'Your story has been published.',
-    important: 'Save your submitter token — it is the only way to edit or delete your story later.'
-  }, 201);
-});
-
-// ── POST /api/stories/:id/comments ──
-app.post('/api/stories/:id/comments', checkBan, rateLimit('comment', 15), async (c) => {
-  const db = c.env.DB;
-  const ipHash = c.get('ipHash');
-  const storyId = parseInt(c.req.param('id'));
-  const { body } = await c.req.json();
-
-  if (!body || body.trim().length < 5) {
-    return c.json({ error: 'Comment must be at least 5 characters.' }, 400);
-  }
-
-  const story = await db.prepare("SELECT id FROM stories WHERE id = ? AND status = 'approved'").bind(storyId).first();
-  if (!story) {
-    return c.json({ error: 'Story not found.' }, 404);
-  }
-
-  let bannedKeywords = [];
-  try {
-    const setting = await db.prepare("SELECT value FROM settings WHERE key = 'banned_keywords'").first();
-    if (setting) bannedKeywords = JSON.parse(setting.value);
-  } catch (e) { /* ignore */ }
-
-  const modResult = moderateText(body, bannedKeywords);
-  if (modResult.autoAction === 'reject') {
-    return c.json({ error: 'Your comment contains content that violates our guidelines.' }, 400);
-  }
-
-  // Auto-approve comments — admin can delete anytime
-  let status = 'approved';
-  if (modResult.autoAction === 'reject') {
-    status = 'pending'; // Only hold truly toxic comments for review
-  }
-
-  const result = await db.prepare(
-    'INSERT INTO comments (story_id, body, status, ip_hash) VALUES (?, ?, ?, ?)'
-  ).bind(storyId, modResult.redactedText, status, ipHash).run();
-
-  if (status === 'approved') {
-    await db.prepare('UPDATE stories SET comment_count = comment_count + 1 WHERE id = ?').bind(storyId).run();
-  }
-
-  return c.json({
-    id: result.meta.last_row_id,
-    status,
-    message: status === 'pending'
-      ? 'Your comment is awaiting moderation.'
-      : 'Comment posted.'
-  }, 201);
-});
-
-// ── POST /api/stories/:id/like ──
-app.post('/api/stories/:id/like', checkBan, rateLimit('like', 60), async (c) => {
-  const db = c.env.DB;
-  const ipHash = c.get('ipHash');
-  const storyId = parseInt(c.req.param('id'));
-
-  const story = await db.prepare("SELECT id FROM stories WHERE id = ? AND status = 'approved'").bind(storyId).first();
-  if (!story) {
-    return c.json({ error: 'Story not found.' }, 404);
-  }
-
-  const existingLike = await db.prepare(
-    'SELECT id FROM likes WHERE story_id = ? AND ip_hash = ?'
-  ).bind(storyId, ipHash).first();
-
-  if (existingLike) {
-    await db.prepare('DELETE FROM likes WHERE id = ?').bind(existingLike.id).run();
-    await db.prepare('UPDATE stories SET like_count = MAX(0, like_count - 1) WHERE id = ?').bind(storyId).run();
-    const updated = await db.prepare('SELECT like_count FROM stories WHERE id = ?').bind(storyId).first();
-    return c.json({ liked: false, like_count: updated.like_count });
-  }
-
-  await db.prepare('INSERT INTO likes (story_id, ip_hash) VALUES (?, ?)').bind(storyId, ipHash).run();
-  await db.prepare('UPDATE stories SET like_count = like_count + 1 WHERE id = ?').bind(storyId).run();
-  const updated = await db.prepare('SELECT like_count FROM stories WHERE id = ?').bind(storyId).first();
-  return c.json({ liked: true, like_count: updated.like_count });
-});
-
-// ── POST /api/reports ──
-app.post('/api/reports', checkBan, rateLimit('report', 10), async (c) => {
-  const db = c.env.DB;
-  const ipHash = c.get('ipHash');
-  const { target_type, target_id, reason } = await c.req.json();
-
-  if (!['story', 'comment'].includes(target_type)) {
-    return c.json({ error: 'Invalid target type.' }, 400);
-  }
-  if (!target_id || !reason) {
-    return c.json({ error: 'Target ID and reason are required.' }, 400);
-  }
-
-  const targetIdInt = parseInt(target_id);
-
-  await db.prepare(
-    'INSERT INTO reports (target_type, target_id, reason, reporter_ip_hash) VALUES (?, ?, ?, ?)'
-  ).bind(target_type, targetIdInt, reason, ipHash).run();
-
-  const threshold = await db.prepare("SELECT value FROM settings WHERE key = 'auto_hide_report_threshold'").first();
-  const thresholdVal = threshold ? parseInt(threshold.value) : 3;
-
-  const reportCountRes = await db.prepare(
-    'SELECT COUNT(*) as count FROM reports WHERE target_type = ? AND target_id = ? AND resolved = 0'
-  ).bind(target_type, targetIdInt).first();
-  const reportCount = reportCountRes ? reportCountRes.count : 0;
-
-  if (reportCount >= thresholdVal) {
-    const table = target_type === 'story' ? 'stories' : 'comments';
-    await db.prepare(`UPDATE ${table} SET status = 'pending' WHERE id = ? AND status = 'approved'`).bind(targetIdInt).run();
-  }
-
-  return c.json({ message: 'Report submitted. Thank you for helping keep our community safe.' });
-});
-
-// ── POST /api/moderate/text ──
-app.post('/api/moderate/text', async (c) => {
-  const { text } = await c.req.json();
-  if (!text) return c.json({ pii: [], crisis: { isCrisis: false } });
-  const pii = detectPII(text);
-  const crisis = detectCrisisLanguage(text);
-  return c.json({ pii, crisis });
 });
 
 // ── GET /api/crisis-resources ──
@@ -506,18 +562,7 @@ app.get('/api/crisis-resources', (c) => {
       {
         category: 'United States Support',
         items: [
-          { name: '988 Suicide & Crisis Lifeline', contact: '988', type: 'Call or Text', region: 'US', hours: '24/7' },
-          { name: 'The Trevor Project (LGBTQ+ Youth)', contact: '1-866-488-7386', type: 'Call or Text (START to 678-678)', region: 'US', hours: '24/7' },
-          { name: 'Crisis Text Line', contact: 'Text HOME to 741741', type: 'Text', region: 'US', hours: '24/7' },
-          { name: 'National Domestic Violence Hotline', contact: '1-800-799-7233', type: 'Call or Text (START to 88788)', region: 'US', hours: '24/7' }
-        ]
-      },
-      {
-        category: 'India Support',
-        items: [
-          { name: 'Tele-MANAS (Govt Mental Health Helpline)', contact: '14416 or 1-800-891-4416', type: 'Call', region: 'India', hours: '24/7' },
-          { name: 'Vandrevala Foundation Crisis Helpline', contact: '9999 666 555', type: 'Call or Chat', region: 'India', hours: '24/7' },
-          { name: 'iCall (TISS Mental Health Helpline)', contact: '9152987821', type: 'Call (LGBTQ+-affirmative)', region: 'India', hours: 'Mon-Sat 10 AM - 8 PM' }
+          { name: '988 Suicide & Crisis Lifeline', contact: '988', type: 'Call or Text', region: 'US', hours: '24/7' }
         ]
       }
     ]
@@ -525,154 +570,72 @@ app.get('/api/crisis-resources', (c) => {
 });
 
 // ═════════════════════════════════════════════════════════
-// ██  ADMIN API ROUTES
+// ██  ADMIN API ROUTES (UPGRADED FOR D1 RELATIONSHIPS)
 // ═════════════════════════════════════════════════════════
-
-// ── POST /api/admin/login ──
 app.post('/api/admin/login', rateLimit('admin-login', 10), async (c) => {
   const db = c.env.DB;
   const { username, password } = await c.req.json();
 
   const admin = await db.prepare('SELECT * FROM admin_users WHERE username = ?').bind(username).first();
   const passwordMatch = admin ? await bcrypt.compare(password, admin.password_hash) : false;
-  if (!admin || !passwordMatch) {
-    return c.json({ error: 'Invalid credentials.' }, 401);
-  }
+  if (!admin || !passwordMatch) return c.json({ error: 'Invalid credentials.' }, 401);
 
   if (admin.mfa_enabled) {
-    const preToken = await signJWT({
-      adminId: admin.id,
-      username: admin.username,
-      step: 'mfa',
-      exp: Math.floor(Date.now() / 1000) + 5 * 60
-    }, getJwtSecret(c));
+    const preToken = await signJWT({ adminId: admin.id, username: admin.username, step: 'mfa', exp: Math.floor(Date.now() / 1000) + 300 }, getAdminJwtSecret(c));
     return c.json({ requireMFA: true, preToken });
   }
 
-  const token = await signJWT({
-    adminId: admin.id,
-    username: admin.username,
-    role: admin.role,
-    exp: Math.floor(Date.now() / 1000) + 8 * 60 * 60
-  }, getJwtSecret(c));
-
+  const token = await signJWT({ adminId: admin.id, username: admin.username, role: admin.role, exp: Math.floor(Date.now() / 1000) + 28800 }, getAdminJwtSecret(c));
   return c.json({ token, username: admin.username, role: admin.role, mfaEnabled: false });
 });
 
-// ── POST /api/admin/mfa-verify ──
-app.post('/api/admin/mfa-verify', async (c) => {
+app.get('/api/admin/users', requireAdmin, async (c) => {
   const db = c.env.DB;
-  const { preToken, code } = await c.req.json();
-
-  try {
-    const preSession = await verifyJWT(preToken, getJwtSecret(c));
-    if (preSession.step !== 'mfa') {
-      return c.json({ error: 'Invalid or expired pre-auth token.' }, 401);
-    }
-
-    const admin = await db.prepare('SELECT * FROM admin_users WHERE id = ?').bind(preSession.adminId).first();
-    const isValid = authenticator.verify({ token: code, secret: admin.mfa_secret });
-
-    if (!isValid) {
-      return c.json({ error: 'Invalid MFA code.' }, 401);
-    }
-
-    const token = await signJWT({
-      adminId: admin.id,
-      username: admin.username,
-      role: admin.role,
-      exp: Math.floor(Date.now() / 1000) + 8 * 60 * 60
-    }, getJwtSecret(c));
-
-    return c.json({ token, username: admin.username, role: admin.role });
-  } catch (err) {
-    return c.json({ error: 'Invalid or expired pre-auth token.' }, 401);
-  }
+  const { results } = await db.prepare('SELECT id, full_name, email, created_at FROM users ORDER BY created_at DESC').all();
+  return c.json(results);
 });
 
-// ── POST /api/admin/mfa-setup ──
-app.post('/api/admin/mfa-setup', requireAdmin, async (c) => {
+app.delete('/api/admin/users/:id', requireAdmin, async (c) => {
   const db = c.env.DB;
-  const adminPayload = c.get('admin');
-
-  const admin = await db.prepare('SELECT * FROM admin_users WHERE id = ?').bind(adminPayload.adminId).first();
-  const secret = admin.mfa_secret || authenticator.generateSecret();
-
-  if (!admin.mfa_secret) {
-    await db.prepare('UPDATE admin_users SET mfa_secret = ? WHERE id = ?').bind(secret, admin.id).run();
-  }
-
-  const otpauth = authenticator.keyuri(admin.email, 'LifeStories Admin', secret);
-  const qrDataUrl = await QRCode.toDataURL(otpauth);
-
-  return c.json({ secret, qrCode: qrDataUrl, email: admin.email });
+  const id = parseInt(c.req.param('id'));
+  await db.prepare('DELETE FROM users WHERE id = ?').bind(id).run();
+  return c.json({ message: 'User deleted successfully.' });
 });
 
-// ── POST /api/admin/mfa-enable ──
-app.post('/api/admin/mfa-enable', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const adminPayload = c.get('admin');
-  const { code } = await c.req.json();
-
-  const admin = await db.prepare('SELECT * FROM admin_users WHERE id = ?').bind(adminPayload.adminId).first();
-
-  const isValid = authenticator.verify({ token: code, secret: admin.mfa_secret });
-  if (!isValid) {
-    return c.json({ error: 'Invalid code. Please try again.' }, 400);
-  }
-
-  await db.prepare('UPDATE admin_users SET mfa_enabled = 1 WHERE id = ?').bind(admin.id).run();
-  return c.json({ message: 'MFA enabled successfully.' });
-});
-
-// ── GET /api/admin/stats ──
 app.get('/api/admin/stats', requireAdmin, async (c) => {
   const db = c.env.DB;
 
   const totalStories = (await db.prepare('SELECT COUNT(*) as c FROM stories').first()).c;
   const pendingStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'pending'").first()).c;
-  const approvedStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'approved'").first()).c;
-  const rejectedStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'rejected'").first()).c;
   const totalComments = (await db.prepare('SELECT COUNT(*) as c FROM comments').first()).c;
-  const pendingComments = (await db.prepare("SELECT COUNT(*) as c FROM comments WHERE status = 'pending'").first()).c;
-  const openReports = (await db.prepare('SELECT COUNT(*) as c FROM reports WHERE resolved = 0').first()).c;
-  const totalLikes = (await db.prepare('SELECT COALESCE(SUM(like_count), 0) as c FROM stories').first()).c;
-  const bannedIPs = (await db.prepare('SELECT COUNT(*) as c FROM banned_identifiers').first()).c;
-
-  const { results: dailyStories } = await db.prepare(`
-    SELECT date(created_at) as date, COUNT(*) as count
-    FROM stories
-    WHERE created_at >= datetime('now', '-7 days')
-    GROUP BY date(created_at)
-    ORDER BY date ASC
-  `).all();
+  const totalUsers = (await db.prepare('SELECT COUNT(*) as c FROM users').first()).c;
+  const totalLikes = (await db.prepare('SELECT COALESCE(SUM(likes_count), 0) as c FROM stories').first()).c;
 
   return c.json({
-    totalStories, pendingStories, approvedStories, rejectedStories,
-    totalComments, pendingComments, openReports, totalLikes, bannedIPs,
-    dailyStories
+    totalStories, pendingStories, totalComments, totalUsers, totalLikes
   });
 });
 
-// ── GET /api/admin/queue ──
 app.get('/api/admin/queue', requireAdmin, async (c) => {
   const db = c.env.DB;
   const { type = 'stories', status = 'pending' } = c.req.query();
 
   if (type === 'stories') {
     const { results } = await db.prepare(`
-      SELECT s.*, c.name as category_name
+      SELECT s.*, c.name as category_name, u.full_name as author_name
       FROM stories s
       LEFT JOIN categories c ON s.category_id = c.id
+      LEFT JOIN users u ON s.user_id = u.id
       WHERE s.status = ?
       ORDER BY s.created_at ASC
     `).bind(status).all();
     return c.json({ items: results, type: 'stories' });
   } else {
     const { results } = await db.prepare(`
-      SELECT cm.*, s.title as story_title
+      SELECT cm.*, s.title as story_title, u.full_name as author_name
       FROM comments cm
       LEFT JOIN stories s ON cm.story_id = s.id
+      LEFT JOIN users u ON cm.user_id = u.id
       WHERE cm.status = ?
       ORDER BY cm.created_at ASC
     `).bind(status).all();
@@ -680,29 +643,16 @@ app.get('/api/admin/queue', requireAdmin, async (c) => {
   }
 });
 
-// ── POST /api/admin/moderate ──
 app.post('/api/admin/moderate', requireAdmin, async (c) => {
   const db = c.env.DB;
   const adminPayload = c.get('admin');
   const { target_type, target_id, action, reason } = await c.req.json();
-
-  if (!['approve', 'reject', 'remove'].includes(action)) {
-    return c.json({ error: 'Invalid action.' }, 400);
-  }
 
   const statusMap = { approve: 'approved', reject: 'rejected', remove: 'removed' };
   const table = target_type === 'story' ? 'stories' : 'comments';
   const targetIdInt = parseInt(target_id);
 
   await db.prepare(`UPDATE ${table} SET status = ? WHERE id = ?`).bind(statusMap[action], targetIdInt).run();
-
-  if (target_type === 'comment') {
-    const comment = await db.prepare('SELECT story_id FROM comments WHERE id = ?').bind(targetIdInt).first();
-    if (comment) {
-      const count = (await db.prepare("SELECT COUNT(*) as c FROM comments WHERE story_id = ? AND status = 'approved'").bind(comment.story_id).first()).c;
-      await db.prepare('UPDATE stories SET comment_count = ? WHERE id = ?').bind(count, comment.story_id).run();
-    }
-  }
 
   await db.prepare(
     'INSERT INTO moderation_log (target_type, target_id, admin_id, action, reason) VALUES (?, ?, ?, ?, ?)'
@@ -711,159 +661,4 @@ app.post('/api/admin/moderate', requireAdmin, async (c) => {
   return c.json({ message: `Content ${statusMap[action]} successfully.` });
 });
 
-// ── GET /api/admin/reports ──
-app.get('/api/admin/reports', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const { resolved = '0' } = c.req.query();
-
-  const { results } = await db.prepare(`
-    SELECT r.*, 
-      CASE r.target_type 
-        WHEN 'story' THEN (SELECT title FROM stories WHERE id = r.target_id)
-        WHEN 'comment' THEN (SELECT substr(body, 1, 100) FROM comments WHERE id = r.target_id)
-      END as target_preview
-    FROM reports r
-    WHERE r.resolved = ?
-    ORDER BY r.created_at DESC
-  `).bind(parseInt(resolved)).all();
-
-  return c.json(results);
-});
-
-// ── POST /api/admin/reports/:id/resolve ──
-app.post('/api/admin/reports/:id/resolve', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const adminPayload = c.get('admin');
-  const reportId = parseInt(c.req.param('id'));
-  const { reason } = await c.req.json();
-
-  await db.prepare('UPDATE reports SET resolved = 1 WHERE id = ?').bind(reportId).run();
-
-  await db.prepare(
-    'INSERT INTO moderation_log (target_type, target_id, admin_id, action, reason) VALUES (?, ?, ?, ?, ?)'
-  ).bind('report', reportId, adminPayload.adminId, 'resolve_report', reason || null).run();
-
-  return c.json({ message: 'Report resolved.' });
-});
-
-// ── POST /api/admin/ban ──
-app.post('/api/admin/ban', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const adminPayload = c.get('admin');
-  const { identifier, reason, duration_hours } = await c.req.json();
-
-  const expiresAt = duration_hours
-    ? new Date(Date.now() + parseInt(duration_hours) * 60 * 60 * 1000).toISOString()
-    : null;
-
-  await db.prepare(
-    'INSERT INTO banned_identifiers (identifier, type, reason, expires_at) VALUES (?, ?, ?, ?)'
-  ).bind(identifier, 'ip', reason || 'Policy violation', expiresAt).run();
-
-  await db.prepare(
-    'INSERT INTO moderation_log (target_type, target_id, admin_id, action, reason) VALUES (?, ?, ?, ?, ?)'
-  ).bind('ban', 0, adminPayload.adminId, 'ban_ip', `Banned: ${identifier} - ${reason || 'Policy violation'}`).run();
-
-  return c.json({ message: 'IP banned successfully.' });
-});
-
-// ── GET /api/admin/bans ──
-app.get('/api/admin/bans', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const { results } = await db.prepare('SELECT * FROM banned_identifiers ORDER BY created_at DESC').all();
-  return c.json(results);
-});
-
-// ── DELETE /api/admin/bans/:id ──
-app.delete('/api/admin/bans/:id', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const id = parseInt(c.req.param('id'));
-  await db.prepare('DELETE FROM banned_identifiers WHERE id = ?').bind(id).run();
-  return c.json({ message: 'Ban removed.' });
-});
-
-// ── GET /api/admin/audit-log ──
-app.get('/api/admin/audit-log', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const { results } = await db.prepare(`
-    SELECT ml.*, au.username as admin_username
-    FROM moderation_log ml
-    LEFT JOIN admin_users au ON ml.admin_id = au.id
-    ORDER BY ml.created_at DESC
-    LIMIT 100
-  `).all();
-  return c.json(results);
-});
-
-// ── GET /api/admin/settings ──
-app.get('/api/admin/settings', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const { results } = await db.prepare('SELECT * FROM settings').all();
-  const result = {};
-  for (const s of results) {
-    try { result[s.key] = JSON.parse(s.value); } catch { result[s.key] = s.value; }
-  }
-  return c.json(result);
-});
-
-// ── PUT /api/admin/settings ──
-app.put('/api/admin/settings', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const adminPayload = c.get('admin');
-  const updates = await c.req.json();
-
-  const upsert = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?');
-
-  const batchStatements = [];
-  for (const [key, value] of Object.entries(updates)) {
-    const val = typeof value === 'object' ? JSON.stringify(value) : String(value);
-    batchStatements.push(upsert.bind(key, val, val));
-  }
-
-  if (batchStatements.length > 0) {
-    await db.batch(batchStatements);
-  }
-
-  await db.prepare(
-    'INSERT INTO moderation_log (target_type, target_id, admin_id, action, reason) VALUES (?, ?, ?, ?, ?)'
-  ).bind('settings', 0, adminPayload.adminId, 'update_settings', `Updated keys: ${Object.keys(updates).join(', ')}`).run();
-
-  return c.json({ message: 'Settings updated.' });
-});
-
-// ── GET /api/admin/categories ──
-app.get('/api/admin/categories', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const { results } = await db.prepare(`
-    SELECT c.*, (SELECT COUNT(*) FROM stories WHERE category_id = c.id) as story_count
-    FROM categories c ORDER BY c.name
-  `).all();
-  return c.json(results);
-});
-
-// ── POST /api/admin/categories ──
-app.post('/api/admin/categories', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const { name } = await c.req.json();
-  if (!name) return c.json({ error: 'Name is required.' }, 400);
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-
-  try {
-    await db.prepare('INSERT INTO categories (name, slug) VALUES (?, ?)').bind(name, slug).run();
-    return c.json({ message: 'Category created.' });
-  } catch (e) {
-    return c.json({ error: 'Category already exists.' }, 400);
-  }
-});
-
-// ── DELETE /api/admin/categories/:id ──
-app.delete('/api/admin/categories/:id', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const id = parseInt(c.req.param('id'));
-  await db.prepare('UPDATE stories SET category_id = NULL WHERE category_id = ?').bind(id).run();
-  await db.prepare('DELETE FROM categories WHERE id = ?').bind(id).run();
-  return c.json({ message: 'Category deleted.' });
-});
-
-// Export the Worker fetch handler
 export default app;

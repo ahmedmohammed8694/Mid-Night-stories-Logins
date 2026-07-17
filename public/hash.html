@@ -1,20 +1,32 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Bcrypt Generator</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Authenticating...</title>
 </head>
 <body>
-  <div id="result">Hashing...</div>
+  <p>Authenticating, please wait...</p>
   <script>
-    try {
-      // bcryptjs exports as dcodeIO.bcrypt
-      const bcrypt = dcodeIO.bcrypt;
-      const hash = bcrypt.hashSync('Admin@2026!', 12);
-      document.getElementById('result').innerText = hash;
-      console.log('Hash generated:', hash);
-    } catch (e) {
-      document.getElementById('result').innerText = 'Error: ' + e.message;
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    
+    if (token) {
+      localStorage.setItem('token', token);
+      
+      // Fetch user profile to save to local storage
+      fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(user => {
+        if(user) localStorage.setItem('user', JSON.stringify(user));
+        window.location.href = '/';
+      })
+      .catch(() => {
+        window.location.href = '/';
+      });
+    } else {
+      window.location.href = '/login';
     }
   </script>
 </body>

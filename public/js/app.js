@@ -44,6 +44,10 @@ async function api(url, options = {}) {
   if (adminToken) {
     defaultHeaders['X-Admin-Token'] = adminToken;
   }
+  const token = localStorage.getItem('token');
+  if (token) {
+    defaultHeaders['Authorization'] = `Bearer ${token}`;
+  }
 
   try {
     const res = await fetch(url, {
@@ -177,12 +181,42 @@ function createStoryCard(story) {
     <p class="story-card__excerpt">${escapeHtml(preview)}</p>
     <div class="story-card__footer">
       <div class="story-card__meta">
-        <span class="story-card__meta-item">❤️ ${formatNumber(story.like_count || 0)}</span>
+        <button class="story-card__meta-item btn-like ${story.is_liked ? 'liked' : ''}" data-id="${story.id}" style="background:none; border:none; cursor:pointer; color:inherit; font:inherit; display:flex; align-items:center; gap:5px;">
+          ${story.is_liked ? '💖' : '🤍'} <span class="like-count">${formatNumber(story.likes_count || story.like_count || 0)}</span>
+        </button>
         <span class="story-card__meta-item">💬 ${formatNumber(story.comment_count || 0)}</span>
       </div>
       <span class="story-card__time">${formatDate(story.created_at)}</span>
     </div>
   `;
+
+  // Bind Like Button event
+  setTimeout(() => {
+    const likeBtn = card.querySelector('.btn-like');
+    if (likeBtn) {
+      likeBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (!localStorage.getItem('token')) {
+          showToast('Please login to like stories.', 'warning');
+          return;
+        }
+        try {
+          const res = await api(`/api/stories/${story.id}/like`, { method: 'POST' });
+          const countSpan = likeBtn.querySelector('.like-count');
+          countSpan.textContent = formatNumber(res.likes_count);
+          if (res.liked) {
+            likeBtn.classList.add('liked');
+            likeBtn.innerHTML = `💖 <span class="like-count">${formatNumber(res.likes_count)}</span>`;
+          } else {
+            likeBtn.classList.remove('liked');
+            likeBtn.innerHTML = `🤍 <span class="like-count">${formatNumber(res.likes_count)}</span>`;
+          }
+        } catch (err) {
+          showToast('Failed to update like.', 'error');
+        }
+      });
+    }
+  }, 0);
 
   if (scrollObserver) {
     scrollObserver.observe(card);
@@ -312,9 +346,36 @@ async function loadCommunityStats() {
   }
 }
 
+// ── Auth UI Management ──
+function initAuth() {
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user'));
+  
+  const guestEls = document.querySelectorAll('.guest-only');
+  const authEls = document.querySelectorAll('.auth-only');
+  
+  if (token && user) {
+    guestEls.forEach(el => el.style.display = 'none');
+    authEls.forEach(el => el.style.display = 'inline-block');
+    
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+      });
+    }
+  } else {
+    guestEls.forEach(el => el.style.display = 'inline-block');
+    authEls.forEach(el => el.style.display = 'none');
+  }
+}
+
 // ── Initialize Shared Components ──
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
+  initAuth();
   initCrisisBanner();
   initMobileNav();
   initScrollObserver();
