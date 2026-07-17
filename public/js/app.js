@@ -158,9 +158,15 @@ function initMobileNav() {
 
 // ── Generate Story Card HTML ──
 function createStoryCard(story) {
-  const card = document.createElement('a');
-  card.href = getStoryUrl(story.id);
+  const card = document.createElement('div');
   card.className = 'card story-card scroll-animate';
+  card.style.cursor = 'pointer';
+
+  card.addEventListener('click', (e) => {
+    if (!e.target.closest('a') && !e.target.closest('button')) {
+      window.location.href = getStoryUrl(story.id);
+    }
+  });
 
   let imageHtml = '';
   if (story.image_url) {
@@ -172,12 +178,19 @@ function createStoryCard(story) {
     : '';
 
   const title = story.title || 'Untitled Story';
-  const preview = story.body_preview || story.body.substring(0, 200);
+  const preview = story.body_preview || (story.content || story.body || '').substring(0, 200);
+
+  const authorName = story.author_name || 'Anonymous';
+  const targetId = story.author_user_id || story.user_id;
+  const authorHtml = targetId
+    ? `<span style="font-size:0.85rem; opacity:0.8; margin-bottom:8px; display:inline-block; position:relative; z-index:5;">👤 By <a href="/profile.html?id=${encodeURIComponent(targetId)}" style="color:var(--page-accent); text-decoration:none; font-weight:600;" onclick="event.stopPropagation();">${authorName}</a></span>`
+    : `<span style="font-size:0.85rem; opacity:0.8; margin-bottom:8px; display:inline-block;">👤 By Anonymous</span>`;
 
   card.innerHTML = `
     ${imageHtml}
     ${categoryHtml}
     <h3 class="story-card__title">${escapeHtml(title)}</h3>
+    ${authorHtml}
     <p class="story-card__excerpt">${escapeHtml(preview)}</p>
     <div class="story-card__footer">
       <div class="story-card__meta">

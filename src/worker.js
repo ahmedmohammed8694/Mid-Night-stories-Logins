@@ -362,7 +362,7 @@ app.get('/api/stories', optionalUser, async (c) => {
   const total = countRes ? countRes.total : 0;
 
   const sql = `
-    SELECT s.*, u.full_name as author_name, u.profile_pic as author_pic, c.name as category_name, c.slug as category_slug
+    SELECT s.*, u.full_name as author_name, u.profile_pic as author_pic, u.user_id as author_user_id, c.name as category_name, c.slug as category_slug
     FROM stories s
     LEFT JOIN users u ON s.user_id = u.id
     LEFT JOIN categories c ON s.category_id = c.id
@@ -457,7 +457,7 @@ app.get('/api/stories/:id', optionalUser, async (c) => {
   const id = c.req.param('id');
 
   const story = await db.prepare(`
-    SELECT s.*, u.full_name as author_name, u.profile_pic as author_pic, c.name as category_name
+    SELECT s.*, u.full_name as author_name, u.profile_pic as author_pic, u.user_id as author_user_id, c.name as category_name
     FROM stories s
     LEFT JOIN users u ON s.user_id = u.id
     LEFT JOIN categories c ON s.category_id = c.id
@@ -472,7 +472,7 @@ app.get('/api/stories/:id', optionalUser, async (c) => {
   }
 
   const { results: comments } = await db.prepare(`
-    SELECT cm.*, u.full_name as author_name, u.profile_pic as author_pic
+    SELECT cm.*, u.full_name as author_name, u.profile_pic as author_pic, u.user_id as author_user_id
     FROM comments cm
     LEFT JOIN users u ON cm.user_id = u.id
     WHERE cm.story_id = ? AND cm.status = 'approved' 

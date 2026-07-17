@@ -644,7 +644,7 @@
         container.innerHTML = comments.map(c => `
           <div class="comment-card" id="comment-card-${c.id}">
             <h4>On story: <a href="/story.html?id=${c.story_id}">${c.story_title || 'Midnight Story'}</a></h4>
-            <p style="color: var(--text-secondary); line-height: 1.5;">"${c.content}"</p>
+            <p style="color: var(--text-secondary); line-height: 1.5;">"${c.body}"</p>
             <div class="comment-meta">
               <span>Posted: ${new Date(c.created_at).toLocaleString()}</span>
               ${isOwner ? `<button class="comment-delete" onclick="deleteComment(${c.id})">Delete Comment</button>` : ''}

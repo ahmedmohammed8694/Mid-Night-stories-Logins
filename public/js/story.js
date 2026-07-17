@@ -53,8 +53,20 @@
 
     // Meta
     document.getElementById('storyDate').querySelector('span').textContent = formatDate(story.created_at);
-    document.getElementById('storyLikes').querySelector('span').textContent = formatNumber(story.like_count || 0);
+    document.getElementById('storyLikes').querySelector('span').textContent = formatNumber(story.like_count || story.likes_count || 0);
     document.getElementById('storyComments').querySelector('span').textContent = formatNumber(story.comment_count || 0);
+
+    const authorLink = document.getElementById('storyAuthorLink');
+    if (authorLink) {
+      const authorName = story.author_name || 'Anonymous';
+      const targetId = story.author_user_id || story.user_id;
+      authorLink.textContent = authorName;
+      if (targetId) {
+        authorLink.href = `/profile.html?id=${encodeURIComponent(targetId)}`;
+      } else {
+        authorLink.removeAttribute('href');
+      }
+    }
 
     // Image
     const imageEl = document.getElementById('storyImage');
@@ -65,10 +77,10 @@
 
     // Body — convert newlines to paragraphs
     const bodyEl = document.getElementById('storyBody');
-    bodyEl.textContent = story.body;
+    bodyEl.textContent = story.content || story.body;
 
     // Like count
-    document.getElementById('likeBtnCount').textContent = formatNumber(story.like_count || 0);
+    document.getElementById('likeBtnCount').textContent = formatNumber(story.like_count || story.likes_count || 0);
 
     // Comments
     renderComments(comments);
@@ -94,11 +106,18 @@
       const el = document.createElement('div');
       el.className = 'comment';
       el.style.animationDelay = `${index * 0.05}s`;
+      
+      const authorName = comment.author_name || 'Anonymous';
+      const targetId = comment.author_user_id || comment.user_id;
+      const authorHtml = targetId 
+        ? `<a href="/profile.html?id=${encodeURIComponent(targetId)}" style="color:var(--page-accent); text-decoration:none; font-weight:600;">${authorName}</a>`
+        : `<span>${authorName}</span>`;
+
       el.innerHTML = `
         <div class="comment__header">
           <div class="comment__author">
             <div class="comment__avatar">👤</div>
-            <span class="comment__name">Anonymous</span>
+            <span class="comment__name">${authorHtml}</span>
           </div>
           <span class="comment__time">${formatDate(comment.created_at)}</span>
         </div>
