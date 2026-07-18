@@ -297,7 +297,7 @@
           <td>${formatDate(report.created_at)}</td>
           <td>
             <div class="admin-table__actions">
-              ${!report.resolved ? `<button class="btn btn--success btn--sm" onclick="resolveReport(${report.id})">Resolve</button>` : '<span style="color: var(--accent-emerald);">Resolved</span>'}
+              ${!report.resolved ? `<button class="btn btn--success btn--sm" onclick='window.openReportModal(${JSON.stringify(report).replace(/'/g, "&#39;")})'>Review & Resolve</button>` : '<span style="color: var(--accent-emerald);">Resolved</span>'}
             </div>
           </td>
         `;
@@ -308,13 +308,51 @@
     }
   }
 
-  window.resolveReport = async function (id) {
+  window.openReportModal = function (report) {
+    window.currentReportId = report.id;
+    window.currentReportTargetUser = report.target_user_id;
+
+    const detailsContent = `
+      <p><strong>Reporter ID:</strong> ${report.reporter_id || 'Anonymous'}</p>
+      <p><strong>Reason:</strong> ${escapeHtml(report.reason)}</p>
+      <p><strong>Target Type:</strong> ${report.target_type}</p>
+      <p><strong>Target Preview:</strong> ${escapeHtml(report.target_preview || 'N/A')}</p>
+      <p><strong>Details:</strong> ${escapeHtml(report.details || 'None provided')}</p>
+      ${report.attachment_url ? `<p><strong>Evidence:</strong><br><img src="${escapeHtml(report.attachment_url)}" style="max-width:100%; border-radius:4px; margin-top:8px;"></p>` : ''}
+    `;
+    document.getElementById('reportDetailsContent').innerHTML = detailsContent;
+    document.getElementById('reportReplyBox').value = '';
+    document.getElementById('adminMsgTitle').value = '';
+    document.getElementById('adminMsgBody').value = '';
+
+    document.getElementById('reportDetailsModal').classList.add('active');
+  };
+
+  window.submitReportReply = async function () {
+    const reportId = window.currentReportId;
+    const targetUserId = window.currentReportTargetUser;
+    
+    const reply = document.getElementById('reportReplyBox').value.trim();
+    const systemTitle = document.getElementById('adminMsgTitle').value.trim();
+    const systemBody = document.getElementById('adminMsgBody').value.trim();
+
     try {
-      await api(`/api/admin/reports/${id}/resolve`, {
+      // 1. Resolve and reply to reporter
+      await api(`/api/admin/reports/${reportId}/resolve`, {
         method: 'POST',
-        body: JSON.stringify({})
+        body: JSON.stringify({ reply })
       });
-      showToast('Report resolved.', 'success');
+
+      // 2. Send system message to reported user if provided
+      if (systemTitle && systemBody && targetUserId) {
+        await api('/api/admin/messages/send', {
+          method: 'POST',
+          body: JSON.stringify({ user_id: targetUserId, title: systemTitle, body: systemBody })
+        });
+      }
+
+      showToast('Report resolved and messages sent.', 'success');
+      document.getElementById('reportDetailsModal').classList.remove('active');
       loadReports();
       loadStats();
     } catch (err) {

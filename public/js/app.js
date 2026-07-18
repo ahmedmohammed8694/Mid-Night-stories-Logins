@@ -388,17 +388,17 @@ function initAuthLayout() {
           ${profilePicHtml}
         </div>
         <div class="header__dropdown" id="avatarDropdown" style="display: none; position: absolute; right: 0; top: 48px; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; width: 180px; z-index: 1000; box-shadow: 0 4px 16px rgba(0,0,0,0.6); padding: 6px 0;">
-          <a href="/profile.html" style="display: block; padding: 10px 16px; color: #fff; text-decoration: none; font-size: 0.9rem; transition: background 0.2s;">My Profile</a>
-          <a href="/chat.html" style="display: block; padding: 10px 16px; color: #fff; text-decoration: none; font-size: 0.9rem; transition: background 0.2s;">Chats</a>
-          <a href="/profile.html?edit=true" style="display: block; padding: 10px 16px; color: #fff; text-decoration: none; font-size: 0.9rem; transition: background 0.2s;">Update Profile</a>
+          <a href="/profile" style="display: block; padding: 10px 16px; color: #fff; text-decoration: none; font-size: 0.9rem; transition: background 0.2s;">My Profile</a>
+          <a href="/chat" style="display: block; padding: 10px 16px; color: #fff; text-decoration: none; font-size: 0.9rem; transition: background 0.2s;">Chats</a>
+          <a href="/profile?edit=true" style="display: block; padding: 10px 16px; color: #fff; text-decoration: none; font-size: 0.9rem; transition: background 0.2s;">Update Profile</a>
           <button id="logoutBtn" style="display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; color: #ff5e5e; font-size: 0.9rem; cursor: pointer; font-family: inherit; transition: background 0.2s;">Logout</button>
         </div>
       </div>
     `;
   } else {
     authSection = `
-      <a href="/login.html" class="btn btn--secondary btn--sm guest-only">Login</a>
-      <a href="/signup.html" class="btn btn--primary btn--sm guest-only">Sign Up</a>
+      <a href="/login" class="btn btn--secondary btn--sm guest-only">Login</a>
+      <a href="/signup" class="btn btn--primary btn--sm guest-only">Sign Up</a>
     `;
   }
 
@@ -414,11 +414,11 @@ function initAuthLayout() {
       </a>
       <nav class="header__nav" style="display: flex; gap: 24px; align-items: center; margin-left: auto; margin-right: 24px;">
         <a href="/" class="nav-link ${path === '/' || path === '/index.html' ? 'active' : ''}">Browse</a>
-        <a href="/submit.html" class="nav-link ${path === '/submit.html' ? 'active' : ''}">Share Story</a>
-        <a href="/profile.html" class="nav-link ${path === '/profile.html' ? 'active' : ''}">Find User</a>
-        ${token ? `<a href="/chat.html" class="nav-link ${path === '/chat.html' ? 'active' : ''}">Chats</a>` : ''}
-        <a href="/resources.html" class="nav-link ${path === '/resources.html' ? 'active' : ''}">Resources</a>
-        <a href="/about.html" class="nav-link ${path === '/about.html' ? 'active' : ''}">About</a>
+        <a href="/submit" class="nav-link ${path === '/submit.html' ? 'active' : ''}">Share Story</a>
+        <a href="/profile" class="nav-link ${path === '/profile.html' ? 'active' : ''}">Find User</a>
+        ${token ? `<a href="/chat" class="nav-link ${path === '/chat.html' ? 'active' : ''}">Chats</a>` : ''}
+        <a href="/resources" class="nav-link ${path === '/resources.html' ? 'active' : ''}">Resources</a>
+        <a href="/about" class="nav-link ${path === '/about.html' ? 'active' : ''}">About</a>
       </nav>
       <div class="header__actions" style="display: flex; align-items: center; gap: 16px;">
         <button class="theme-toggle" id="themeToggle" style="background: none; border: none; font-size: 1.1rem; cursor: pointer;" aria-label="Toggle theme">🌙</button>

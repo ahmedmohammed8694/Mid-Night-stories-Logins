@@ -75,6 +75,19 @@ async function createNotification(db, userId, actorId, type, targetId, content) 
 
 const app = new Hono();
 
+// ── Global Security Headers ──
+app.use('*', async (c, next) => {
+  await next();
+  c.res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  c.res.headers.set('X-Content-Type-Options', 'nosniff');
+  c.res.headers.set('X-Frame-Options', 'DENY');
+  c.res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.res.headers.set(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss: https:; frame-src 'self' https://challenges.cloudflare.com;"
+  );
+});
+
 // ── In-Memory Rate Limiting ──
 const rateLimitMap = new Map();
 
@@ -128,7 +141,10 @@ const requireUser = async (c, next) => {
   if (!token) return c.json({ error: 'Unauthorized. Please log in.' }, 401);
   try {
     const payload = await verifyJWT(token, getUserJwtSecret(c));
-    c.set('user', { ...payload, permissions: user.interaction_permissions ? JSON.parse(user.interaction_permissions) : {} });
+    const db = c.env.DB;
+    const userRow = await db.prepare('SELECT interaction_permissions FROM users WHERE id = ?').bind(payload.id).first();
+    const permissions = userRow && userRow.interaction_permissions ? JSON.parse(userRow.interaction_permissions) : {};
+    c.set('user', { ...payload, permissions });
     await next();
   } catch (err) {
     return c.json({ error: 'Session expired or invalid.' }, 401);
@@ -141,7 +157,10 @@ const optionalUser = async (c, next) => {
   if (token) {
     try {
       const payload = await verifyJWT(token, getUserJwtSecret(c));
-      c.set('user', { ...payload, permissions: user.interaction_permissions ? JSON.parse(user.interaction_permissions) : {} });
+      const db = c.env.DB;
+      const userRow = await db.prepare('SELECT interaction_permissions FROM users WHERE id = ?').bind(payload.id).first();
+      const permissions = userRow && userRow.interaction_permissions ? JSON.parse(userRow.interaction_permissions) : {};
+      c.set('user', { ...payload, permissions });
     } catch (err) {}
   }
   await next();
@@ -1516,7 +1535,9 @@ app.get('/api/admin/reports', requireAdmin, async (c) => {
   const { results } = await db.prepare(`
     SELECT r.*,
            CASE WHEN r.target_type = 'story' THEN (SELECT title FROM stories WHERE id = r.target_id)
-                ELSE (SELECT body FROM comments WHERE id = r.target_id) END as target_preview
+                ELSE (SELECT body FROM comments WHERE id = r.target_id) END as target_preview,
+           CASE WHEN r.target_type = 'story' THEN (SELECT user_id FROM stories WHERE id = r.target_id)
+                ELSE (SELECT user_id FROM comments WHERE id = r.target_id) END as target_user_id
     FROM reports r
     WHERE resolved = ?
     ORDER BY created_at DESC

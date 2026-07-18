@@ -477,14 +477,6 @@
 
         <!-- Column 2 -->
         <div>
-          <div class="admin-card" style="margin-bottom: 1rem;">
-            <h3>Send Official System Message</h3>
-            <p style="font-size: 0.8rem; color: var(--text-secondary);">Will appear as a high-priority flash alert for this user.</p>
-            <input type="text" id="adminMsgTitle" class="form-input" placeholder="Message Title (e.g. Warning)" style="margin-top: 0.5rem;">
-            <textarea id="adminMsgBody" class="form-input" placeholder="Detailed message..." rows="3" style="margin-top: 0.5rem;"></textarea>
-            <button class="btn btn--primary btn--sm" style="margin-top: 0.5rem; width: 100%;" onclick="window.sendAdminMessage()">Send Message</button>
-          </div>
-          
           <div class="admin-card">
             <h3>Login Ledger</h3>
             <div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem; border-top: 1px solid var(--border); padding-top: 0.5rem; margin-top: 0.5rem;">
@@ -514,12 +506,18 @@
     <div class="modal__content" style="max-width: 600px;">
       <h2 style="margin-top:0;">Report Details</h2>
       <div id="reportDetailsContent" style="font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary); max-height: 50vh; overflow-y: auto; padding: 1rem; background: var(--bg-secondary); border-radius: 4px;"></div>
-      <div style="margin-top: 1rem;">
-        <textarea id="reportReplyBox" class="form-input" placeholder="Type your resolution reply to the reporter..." rows="3"></textarea>
-        <div style="display: flex; gap: 1rem; margin-top: 1rem; justify-content: flex-end;">
-          <button class="btn btn--secondary" onclick="document.getElementById('reportDetailsModal').classList.remove('active')">Cancel</button>
-          <button class="btn btn--primary" onclick="window.submitReportReply()">Resolve & Send Reply</button>
-        </div>
+      <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+        <h3 style="font-size: 1rem; margin-bottom: 0.5rem; color: var(--primary);">Message to Reporter</h3>
+        <textarea id="reportReplyBox" class="form-input" placeholder="Type your resolution reply to the reporter..." rows="2"></textarea>
+      </div>
+      <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+        <h3 style="font-size: 1rem; margin-bottom: 0.5rem; color: var(--danger);">Message to Reported User (System Alert)</h3>
+        <input type="text" id="adminMsgTitle" class="form-input" placeholder="Message Title (e.g. Warning)" style="margin-bottom: 0.5rem;">
+        <textarea id="adminMsgBody" class="form-input" placeholder="Detailed message..." rows="2"></textarea>
+      </div>
+      <div style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: flex-end;">
+        <button class="btn btn--secondary" onclick="document.getElementById('reportDetailsModal').classList.remove('active')">Cancel</button>
+        <button class="btn btn--primary" onclick="window.submitReportReply()">Resolve & Send Messages</button>
       </div>
     </div>
   </div>

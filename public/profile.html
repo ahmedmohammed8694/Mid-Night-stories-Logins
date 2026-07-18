@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>User Profile — Midnight Stories</title>
+  <title>User Profile | Midnight Stories</title>
+  <meta name="description" content="View and manage your Midnight Stories user profile. Connect with others, track your stories, and customize your anonymous identity securely.">
+  <link rel="canonical" href="https://midnightstories.dpdns.org/profile.html" />
   <link rel="stylesheet" href="/css/style.css">
   <!-- Cropper.js -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
@@ -396,6 +398,10 @@
 
     <main class="page-content">
       <div class="container container--narrow">
+        <div style="margin-bottom: 20px; display: flex; gap: 12px;">
+          <a href="/" class="btn btn--secondary btn--sm">Back to Browse</a>
+          <a href="/resources" class="btn btn--secondary btn--sm">Resources</a>
+        </div>
         
         <!-- Search User by ID -->
         <form class="search-box" id="profileSearchForm" onsubmit="event.preventDefault(); handleProfileSearch();">
@@ -405,7 +411,7 @@
 
         <!-- Search Results -->
         <div id="searchResults" style="display: none; margin-bottom: 2rem;">
-          <h2 style="font-family: 'Fraunces', serif; margin-bottom: 15px; font-size: 1.5rem;">Matching Users</h2>
+          <div style="font-family: 'Fraunces', serif; margin-bottom: 15px; font-size: 1.5rem; font-weight: bold;">Matching Users</div>
           <div id="searchResultsGrid" class="search-results-grid"></div>
         </div>
 
