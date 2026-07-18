@@ -334,6 +334,7 @@
     document.getElementById('reportDetailsModal').classList.add('active');
     
     await loadTicketMessages(report);
+    window.loadUserAuditData(report.target_user_id);
   };
 
   async function loadTicketMessages(report) {
@@ -819,5 +820,101 @@
     const enableMfaBtn = document.getElementById('enableMfaBtn');
     if (enableMfaBtn) enableMfaBtn.addEventListener('click', enableMFA);
   });
+
+  window.loadUserAuditData = async function(userId) {
+    if (!userId || userId === 'Unknown') {
+      document.getElementById('auditPii').innerHTML = '<span style="color:var(--text-muted)">N/A (No User Target)</span>';
+      document.getElementById('auditContent').innerHTML = '<span style="color:var(--text-muted)">N/A</span>';
+      document.getElementById('auditLoginLogs').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">N/A</td></tr>';
+      return;
+    }
+    
+    try {
+      const audit = await api(`/api/admin/users/${userId}/audit`);
+      
+      // Populate Core Profile
+      document.getElementById('auditPii').innerHTML = `
+        <strong>ID:</strong> ${audit.user.id}<br>
+        <strong>Username:</strong> ${escapeHtml(audit.user.user_id)}<br>
+        <strong>Email:</strong> ${escapeHtml(audit.user.email)}<br>
+        <strong>Name:</strong> ${escapeHtml(audit.user.full_name)}<br>
+        <strong>Joined:</strong> ${new Date(audit.user.created_at).toLocaleString()}<br>
+        <strong>Status:</strong> <span class="status-badge status-badge--${audit.user.account_status === 'active' ? 'approved' : 'rejected'}">${audit.user.account_status}</span>
+      `;
+      
+      // Populate Content Aggregation
+      document.getElementById('auditContent').innerHTML = `
+        <strong>Stories Posted:</strong> ${audit.metrics.story_count}<br>
+        <strong>Comments Posted:</strong> ${audit.metrics.comment_count}<br>
+        <strong>Total Likes Received:</strong> ${audit.metrics.total_likes_received}<br>
+        <strong>Reports Against User:</strong> ${audit.metrics.report_count}
+      `;
+      
+      // Checkboxes for Permissions
+      document.getElementById('permLike').checked = audit.user.can_like;
+      document.getElementById('permComment').checked = audit.user.can_comment;
+      document.getElementById('permFollow').checked = audit.user.can_follow;
+      document.getElementById('permBlock').checked = audit.user.can_block;
+      
+      // Populate Login Ledger
+      const ledgerBody = document.getElementById('auditLoginLogs');
+      ledgerBody.innerHTML = '';
+      if (audit.ledgers && audit.ledgers.length > 0) {
+        audit.ledgers.forEach(log => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${new Date(log.login_timestamp).toLocaleDateString()}</td>
+            <td><code>${escapeHtml(log.ip_address)}</code></td>
+            <td style="color: ${log.status === 'success' ? 'var(--success)' : 'var(--danger)'}">${log.status}</td>
+          `;
+          ledgerBody.appendChild(tr);
+        });
+      } else {
+        ledgerBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No recent logins</td></tr>';
+      }
+    } catch (err) {
+      document.getElementById('auditPii').innerHTML = '<span style="color:var(--danger)">Failed to load data</span>';
+      document.getElementById('auditContent').innerHTML = '';
+    }
+  };
+
+  window.updateInteractionPermissions = async function() {
+    if (!window.currentTicketTargetUser || window.currentTicketTargetUser === 'Unknown') return;
+    
+    const perms = {
+      can_like: document.getElementById('permLike').checked,
+      can_comment: document.getElementById('permComment').checked,
+      can_follow: document.getElementById('permFollow').checked,
+      can_block: document.getElementById('permBlock').checked
+    };
+    
+    try {
+      await api(`/api/admin/users/${window.currentTicketTargetUser}/permissions`, {
+        method: 'PUT',
+        body: JSON.stringify(perms)
+      });
+      showToast('User permissions updated', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  window.enforceBan = async function(actionType) {
+    if (!window.currentTicketTargetUser || window.currentTicketTargetUser === 'Unknown') return;
+    
+    const reason = prompt('Enter reason for enforcement action:');
+    if (!reason) return;
+    
+    try {
+      await api(`/api/admin/users/${window.currentTicketTargetUser}/enforce`, {
+        method: 'POST',
+        body: JSON.stringify({ action: actionType, reason })
+      });
+      showToast(`Action '${actionType}' applied to user`, 'success');
+      window.loadUserAuditData(window.currentTicketTargetUser);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
 })();
 

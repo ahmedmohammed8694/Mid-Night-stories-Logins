@@ -1527,6 +1527,7 @@ app.post('/api/reports', requireUser, async (c) => {
 
     return c.json({ success: true, ticket_id });
   } catch (err) {
+    console.error('POST /api/reports ERROR:', err);
     return c.json({ success: false, error: 'Internal Server Error' }, 500);
   }
 });
@@ -1534,21 +1535,26 @@ app.get('/api/admin/reports', requireAdmin, async (c) => {
   const db = c.env.DB;
   const status = c.req.query('status') || 'open';
   
-  const { results } = await db.prepare(`
-    SELECT r.*,
-           CASE WHEN r.reported_item_type = 'story' THEN (SELECT title FROM stories WHERE id = r.reported_item_id)
-                WHEN r.reported_item_type = 'comment' THEN (SELECT body FROM comments WHERE id = r.reported_item_id)
-                ELSE NULL END as target_preview,
-           CASE WHEN r.reported_item_type = 'story' THEN (SELECT user_id FROM stories WHERE id = r.reported_item_id)
-                WHEN r.reported_item_type = 'comment' THEN (SELECT user_id FROM comments WHERE id = r.reported_item_id)
-                ELSE r.reported_item_id END as target_user_id,
-           u.full_name as reporter_name, u.created_at as reporter_join_date
-    FROM reports r
-    LEFT JOIN users u ON r.reporter_id = u.id
-    WHERE r.ticket_status = ? OR (r.ticket_status != 'closed' AND r.ticket_status != 'resolved' AND ? = 'open')
-    ORDER BY r.created_at DESC
-  `).bind(status, status).all();
-  return c.json(results);
+  try {
+    const { results } = await db.prepare(`
+      SELECT r.*,
+             CASE WHEN r.reported_item_type = 'story' THEN (SELECT title FROM stories WHERE id = r.reported_item_id)
+                  WHEN r.reported_item_type = 'comment' THEN (SELECT body FROM comments WHERE id = r.reported_item_id)
+                  ELSE NULL END as target_preview,
+             CASE WHEN r.reported_item_type = 'story' THEN (SELECT user_id FROM stories WHERE id = r.reported_item_id)
+                  WHEN r.reported_item_type = 'comment' THEN (SELECT user_id FROM comments WHERE id = r.reported_item_id)
+                  ELSE r.reported_item_id END as target_user_id,
+             u.full_name as reporter_name, u.created_at as reporter_join_date
+      FROM reports r
+      LEFT JOIN users u ON r.reporter_id = u.id
+      WHERE r.ticket_status = ? OR (r.ticket_status != 'closed' AND r.ticket_status != 'resolved' AND ? = 'open')
+      ORDER BY r.created_at DESC
+    `).bind(status, status).all();
+    return c.json(results);
+  } catch (err) {
+    console.error('GET /api/admin/reports ERROR:', err);
+    return c.json({ error: 'Internal Server Error' }, 500);
+  }
 });
 
 app.post('/api/admin/reports/:id/status', requireAdmin, async (c) => {

@@ -432,57 +432,46 @@
 
   <script src="/js/app.js"></script>
   <script src="/js/admin.js"></script>
-  <!-- Deep Audit Modal -->
-  <div id="auditModal" class="modal">
-    <div class="modal__content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
-      <h2 style="margin-top:0; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">User Audit & Controls</h2>
+  <!-- Detailed Report Modal (Ticket View) -->
+  <div id="reportDetailsModal" class="modal">
+    <div class="modal__content" style="max-width: 1300px; width: 95%; display: flex; flex-direction: column; max-height: 95vh;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
+        <h2 style="margin: 0;">Ticket <span id="modalTicketId" style="font-family: monospace; color: var(--primary);"></span></h2>
+        <span id="modalTicketStatus" class="filter-chip">Status</span>
+      </div>
       
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
-        <!-- Column 1 -->
-        <div>
-          <div class="admin-card" style="margin-bottom: 1rem;">
-            <h3>Core Profile</h3>
-            <div id="auditPii" style="font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary);"></div>
+      <div style="display: flex; gap: 1.5rem; flex-grow: 1; overflow: hidden; min-height: 600px;">
+        
+        <!-- Column 1: User Audit & Controls -->
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; padding-right: 0.5rem;">
+          <h3 style="margin-top: 0; font-size: 1.1rem; color: var(--text-primary); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">User Audit & Controls</h3>
+          
+          <div class="admin-card" style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border);">
+            <h4 style="margin: 0 0 0.5rem 0;">Core Profile</h4>
+            <div id="auditPii" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">Loading...</div>
           </div>
-          <div class="admin-card" style="margin-bottom: 1rem;">
-            <h3>Content Aggregation</h3>
-            <div id="auditContent" style="font-size: 0.9rem; line-height: 1.5; color: var(--text-secondary);"></div>
+          
+          <div class="admin-card" style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border);">
+            <h4 style="margin: 0 0 0.5rem 0;">Content Aggregation</h4>
+            <div id="auditContent" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">Loading...</div>
           </div>
-          <div class="admin-card">
-            <h3 style="color: var(--danger);">Full Control Node</h3>
-            <div id="auditControls" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
-              <!-- Permissions Switchboard -->
-              <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
-                Allow Liking
-                <input type="checkbox" id="permLike" onchange="window.updateInteractionPermissions()">
-              </label>
-              <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
-                Allow Commenting
-                <input type="checkbox" id="permComment" onchange="window.updateInteractionPermissions()">
-              </label>
-              <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
-                Allow Following
-                <input type="checkbox" id="permFollow" onchange="window.updateInteractionPermissions()">
-              </label>
-              <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem;">
-                Allow Blocking
-                <input type="checkbox" id="permBlock" onchange="window.updateInteractionPermissions()">
-              </label>
-              
+          
+          <div class="admin-card" style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border);">
+            <h4 style="margin: 0 0 0.5rem 0; color: var(--danger);">Full Control Node</h4>
+            <div id="auditControls" style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">Allow Liking <input type="checkbox" id="permLike" onchange="window.updateInteractionPermissions()"></label>
+              <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">Allow Commenting <input type="checkbox" id="permComment" onchange="window.updateInteractionPermissions()"></label>
+              <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">Allow Following <input type="checkbox" id="permFollow" onchange="window.updateInteractionPermissions()"></label>
+              <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">Allow Blocking <input type="checkbox" id="permBlock" onchange="window.updateInteractionPermissions()"></label>
               <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-              
-              <!-- Enforcement -->
               <button class="btn btn--danger btn--sm" onclick="window.enforceBan('temporary_suspension')">Temporary Suspension</button>
               <button class="btn btn--danger btn--sm" onclick="window.enforceBan('permanent_ban')">Permanent Account Ban</button>
             </div>
           </div>
-        </div>
 
-        <!-- Column 2 -->
-        <div>
-          <div class="admin-card">
-            <h3>Login Ledger</h3>
-            <div style="max-height: 250px; overflow-y: auto; font-size: 0.8rem; border-top: 1px solid var(--border); padding-top: 0.5rem; margin-top: 0.5rem;">
+          <div class="admin-card" style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border);">
+            <h4 style="margin: 0 0 0.5rem 0;">Login Ledger</h4>
+            <div style="max-height: 150px; overflow-y: auto; font-size: 0.75rem;">
               <table style="width: 100%; border-collapse: collapse; text-align: left;">
                 <thead>
                   <tr style="border-bottom: 1px solid var(--border); color: var(--text-secondary);">
@@ -496,27 +485,13 @@
             </div>
           </div>
         </div>
-      </div>
-      
-      <div style="text-align: right; margin-top: 1.5rem;">
-        <button class="btn btn--secondary" onclick="document.getElementById('auditModal').classList.remove('active')">Close</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- Detailed Report Modal (Ticket View) -->
-  <div id="reportDetailsModal" class="modal">
-    <div class="modal__content" style="max-width: 800px; width: 90%; display: flex; flex-direction: column; max-height: 90vh;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h2 style="margin: 0;">Ticket <span id="modalTicketId" style="font-family: monospace; color: var(--primary);"></span></h2>
-        <span id="modalTicketStatus" class="filter-chip">Status</span>
-      </div>
-      
-      <div style="display: flex; gap: 1.5rem; flex-grow: 1; overflow: hidden; min-height: 500px;">
-        <!-- Left: Context & Action -->
+        <!-- Column 2: Context & Action -->
         <div style="flex: 1; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; padding-right: 0.5rem;">
+          <h3 style="margin-top: 0; font-size: 1.1rem; color: var(--text-primary); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Report Details</h3>
+          
           <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
-            <h3 style="margin-top: 0; font-size: 1rem; color: var(--text-primary);">Reported Content</h3>
+            <h4 style="margin: 0 0 0.5rem 0;">Reported Content</h4>
             <div id="modalTargetPreview" style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-style: italic;"></div>
             <div style="font-size: 0.85rem; color: var(--text-muted);">
               Reported Item ID: <span id="modalTargetId"></span> (<span id="modalTargetType"></span>)<br>
@@ -525,9 +500,9 @@
           </div>
           
           <div style="background: var(--bg-secondary); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
-            <h3 style="margin-top: 0; font-size: 1rem; color: var(--text-primary);">Resolution Actions</h3>
-            <div class="form-group">
-              <label class="form-label">Enforcement Action</label>
+            <h4 style="margin: 0 0 0.5rem 0;">Resolution Actions</h4>
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label class="form-label" style="font-size: 0.85rem;">Enforcement Action</label>
               <select id="enforcementAction" class="form-input">
                 <option value="">None / Note Only</option>
                 <option value="delete_content">Delete Content</option>
@@ -536,29 +511,28 @@
                 <option value="ban_user">Ban User</option>
               </select>
             </div>
-            
             <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-              <button class="btn btn--secondary" onclick="window.updateTicketStatus('investigating')" style="flex: 1;">Investigate</button>
-              <button class="btn btn--primary" onclick="window.submitTicketResolution()" style="flex: 1; min-width: 150px;">Resolve Ticket</button>
+              <button class="btn btn--secondary btn--sm" onclick="window.updateTicketStatus('investigating')" style="flex: 1;">Investigate</button>
+              <button class="btn btn--primary btn--sm" onclick="window.submitTicketResolution()" style="flex: 1;">Resolve Ticket</button>
             </div>
           </div>
           
           <div style="background: rgba(255,100,100,0.1); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,100,100,0.3);">
-             <h3 style="margin-top: 0; font-size: 1rem; color: var(--danger);">System Alert to Violator</h3>
+             <h4 style="margin: 0 0 0.5rem 0; color: var(--danger);">System Alert to Violator</h4>
              <input type="text" id="adminMsgTitle" class="form-input" placeholder="Title (e.g. Warning)" style="margin-bottom: 0.5rem; font-size: 0.85rem; padding: 0.5rem;">
-             <textarea id="adminMsgBody" class="form-input" placeholder="Message..." rows="2" style="font-size: 0.85rem; padding: 0.5rem;"></textarea>
-             <button class="btn btn--danger" onclick="window.sendSystemAlert()" style="width: 100%; margin-top: 0.5rem; padding: 0.5rem;">Send Alert</button>
+             <textarea id="adminMsgBody" class="form-input" placeholder="Message..." rows="3" style="font-size: 0.85rem; padding: 0.5rem; margin-bottom: 0.5rem;"></textarea>
+             <button class="btn btn--danger btn--sm" onclick="window.sendSystemAlert()" style="width: 100%;">Send Alert</button>
           </div>
         </div>
         
-        <!-- Right: Chat Log -->
+        <!-- Column 3: Chat Log -->
         <div style="flex: 1.5; display: flex; flex-direction: column; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border); overflow: hidden;">
-          <h3 style="margin: 0; padding: 1rem; border-bottom: 1px solid var(--border); font-size: 1rem;">Communication Log</h3>
+          <h3 style="margin: 0; padding: 1rem; border-bottom: 1px solid var(--border); font-size: 1.1rem;">Communication Log</h3>
           <div id="ticketChatMessages" style="flex-grow: 1; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;">
             <!-- Messages -->
           </div>
           <div style="padding: 1rem; border-top: 1px solid var(--border); background: var(--bg-card);">
-            <textarea id="adminReplyText" class="form-input" placeholder="Reply to user..." rows="2" style="resize: vertical;"></textarea>
+            <textarea id="adminReplyText" class="form-input" placeholder="Reply to user..." rows="3" style="resize: vertical;"></textarea>
             <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem;">
               <button class="btn btn--primary" onclick="window.sendTicketReply()">Send Reply</button>
             </div>
@@ -566,7 +540,7 @@
         </div>
       </div>
       
-      <div style="text-align: right; margin-top: 1.5rem;">
+      <div style="text-align: right; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
         <button class="btn btn--secondary" onclick="document.getElementById('reportDetailsModal').classList.remove('active')">Close Window</button>
       </div>
     </div>
