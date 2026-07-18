@@ -28,7 +28,9 @@ CREATE TABLE users (
   profile_pic TEXT,
   privacy_settings TEXT DEFAULT '{"show_phone":false,"show_email":false}',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  account_status TEXT DEFAULT 'active' CHECK(account_status IN ('active','suspended','banned','shadowbanned')),
+  dm_permission TEXT DEFAULT 'full' CHECK(dm_permission IN ('full','text_only','suspended'))
 );
 
 CREATE TABLE categories (
@@ -95,7 +97,12 @@ CREATE TABLE reports (
   reason TEXT NOT NULL,
   reporter_ip_hash TEXT,
   resolved INTEGER DEFAULT 0,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  reporter_id INTEGER REFERENCES users(id),
+  admin_reply TEXT,
+  resolved_by INTEGER REFERENCES admin_users(id),
+  resolved_at DATETIME,
+  enforcement_action TEXT
 );
 
 CREATE TABLE moderation_log (
@@ -132,6 +139,18 @@ CREATE TABLE banned_identifiers (
 CREATE TABLE settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
+);
+
+CREATE TABLE user_warnings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  admin_id INTEGER NOT NULL REFERENCES admin_users(id),
+  level TEXT NOT NULL CHECK(level IN ('first_warning','second_warning','final_notice')),
+  template TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  rule_broken TEXT,
+  penalties TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indices

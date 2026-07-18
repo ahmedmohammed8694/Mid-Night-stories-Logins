@@ -93,6 +93,9 @@
         </div>
         <div class="admin-sidebar__section">
           <p class="admin-sidebar__heading">Management</p>
+          <button class="admin-nav-item" data-panel="users">
+            <span class="admin-nav-item__icon">👥</span> Users
+          </button>
           <button class="admin-nav-item" data-panel="categories">
             <span class="admin-nav-item__icon">🏷️</span> Categories
           </button>
@@ -155,9 +158,40 @@
               <p class="stat-card__value stat-card__value--rose" id="statLikes">—</p>
             </div>
             <div class="stat-card">
+              <p class="stat-card__label">Total Users</p>
+              <p class="stat-card__value stat-card__value--purple" id="statUsers">—</p>
+            </div>
+            <div class="stat-card">
               <p class="stat-card__label">Banned IPs</p>
               <p class="stat-card__value stat-card__value--rose" id="statBans">—</p>
             </div>
+          </div>
+        </div>
+
+        <!-- Users Panel -->
+        <div class="admin-panel" id="panel-users">
+          <div class="admin-header-flex">
+            <div>
+              <h1 class="admin-page-title">Users</h1>
+              <p class="admin-page-subtitle">Manage user accounts, permissions, and moderation.</p>
+            </div>
+          </div>
+          <div class="card" style="padding: 0;">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>User ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usersList">
+                <tr><td colspan="6" style="text-align: center; opacity: 0.5;">Loading users...</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
 

@@ -1320,12 +1320,19 @@ app.get('/api/admin/stats', requireAdmin, async (c) => {
 
   const totalStories = (await db.prepare('SELECT COUNT(*) as c FROM stories').first()).c;
   const pendingStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'pending'").first()).c;
+  const approvedStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'approved'").first()).c;
+  const rejectedStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'rejected'").first()).c;
   const totalComments = (await db.prepare('SELECT COUNT(*) as c FROM comments').first()).c;
+  const pendingComments = (await db.prepare("SELECT COUNT(*) as c FROM comments WHERE status = 'pending'").first()).c;
   const totalUsers = (await db.prepare('SELECT COUNT(*) as c FROM users').first()).c;
   const totalLikes = (await db.prepare('SELECT COALESCE(SUM(likes_count), 0) as c FROM stories').first()).c;
+  const openReports = (await db.prepare('SELECT COUNT(*) as c FROM reports WHERE resolved = 0').first()).c;
+  const bannedIPs = (await db.prepare('SELECT COUNT(*) as c FROM banned_identifiers').first()).c;
 
   return c.json({
-    totalStories, pendingStories, totalComments, totalUsers, totalLikes
+    totalStories, pendingStories, approvedStories, rejectedStories,
+    totalComments, pendingComments, totalUsers, totalLikes,
+    openReports, bannedIPs
   });
 });
 
@@ -1372,6 +1379,286 @@ app.post('/api/admin/moderate', requireAdmin, async (c) => {
   ).bind(target_type, targetIdInt, adminPayload.adminId, action, reason || null).run();
 
   return c.json({ message: `Content ${statusMap[action]} successfully.` });
+});
+
+// ── Categories ──
+app.get('/api/admin/categories', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { results } = await db.prepare(`
+    SELECT c.*, (SELECT COUNT(*) FROM stories WHERE category_id = c.id) as story_count
+    FROM categories c ORDER BY name ASC
+  `).all();
+  return c.json(results);
+});
+
+app.post('/api/admin/categories', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { name } = await c.req.json();
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+  try {
+    await db.prepare('INSERT INTO categories (name, slug) VALUES (?, ?)').bind(name, slug).run();
+    return c.json({ message: 'Category added.' });
+  } catch (err) {
+    return c.json({ error: 'Category already exists.' }, 400);
+  }
+});
+
+app.delete('/api/admin/categories/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const id = parseInt(c.req.param('id'));
+  await db.prepare('DELETE FROM categories WHERE id = ?').bind(id).run();
+  return c.json({ message: 'Category deleted.' });
+});
+
+// ── Bans ──
+app.get('/api/admin/bans', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { results } = await db.prepare('SELECT * FROM banned_identifiers ORDER BY created_at DESC').all();
+  return c.json(results);
+});
+
+app.post('/api/admin/ban', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { identifier, reason, type = 'ip' } = await c.req.json();
+  await db.prepare('INSERT INTO banned_identifiers (identifier, type, reason) VALUES (?, ?, ?)')
+    .bind(identifier, type, reason).run();
+  return c.json({ message: 'Ban added.' });
+});
+
+app.delete('/api/admin/bans/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const id = parseInt(c.req.param('id'));
+  await db.prepare('DELETE FROM banned_identifiers WHERE id = ?').bind(id).run();
+  return c.json({ message: 'Ban removed.' });
+});
+
+// ── Settings ──
+app.get('/api/admin/settings', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { results } = await db.prepare('SELECT * FROM settings').all();
+  const settings = {};
+  results.forEach(r => settings[r.key] = r.value);
+  return c.json(settings);
+});
+
+app.put('/api/admin/settings', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const updates = await c.req.json();
+  
+  const stmts = [];
+  for (const [key, value] of Object.entries(updates)) {
+    const strValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+    stmts.push(db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').bind(key, strValue));
+  }
+  await db.batch(stmts);
+  return c.json({ message: 'Settings saved.' });
+});
+
+// ── Reports ──
+app.get('/api/admin/reports', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const resolved = parseInt(c.req.query('resolved') || '0');
+  
+  const { results } = await db.prepare(`
+    SELECT r.*,
+           CASE WHEN r.target_type = 'story' THEN (SELECT title FROM stories WHERE id = r.target_id)
+                ELSE (SELECT body FROM comments WHERE id = r.target_id) END as target_preview
+    FROM reports r
+    WHERE resolved = ?
+    ORDER BY created_at DESC
+  `).bind(resolved).all();
+  return c.json(results);
+});
+
+app.post('/api/admin/reports/:id/resolve', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const id = parseInt(c.req.param('id'));
+  const { reply, action } = await c.req.json().catch(() => ({}));
+
+  await db.prepare(`
+    UPDATE reports 
+    SET resolved = 1, admin_reply = ?, enforcement_action = ?, resolved_by = ?, resolved_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).bind(reply || null, action || null, adminPayload.adminId, id).run();
+  
+  return c.json({ message: 'Report resolved.' });
+});
+
+// ── Audit Log ──
+app.get('/api/admin/audit-log', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { results } = await db.prepare(`
+    SELECT ml.*, au.username as admin_username 
+    FROM moderation_log ml
+    LEFT JOIN admin_users au ON ml.admin_id = au.id
+    ORDER BY ml.created_at DESC LIMIT 100
+  `).all();
+  return c.json(results);
+});
+
+// ── MFA ──
+app.post('/api/admin/mfa-setup', requireAdmin, async (c) => {
+  const adminPayload = c.get('admin');
+  const secret = authenticator.generateSecret();
+  const otpauth = authenticator.keyuri(adminPayload.username, 'Midnight Stories Admin', secret);
+  const qrCode = await QRCode.toDataURL(otpauth);
+  
+  // Store secret temporarily (we assume admin will verify immediately)
+  // In a robust system, store it in the DB as unverified until confirmed
+  const db = c.env.DB;
+  await db.prepare('UPDATE admin_users SET mfa_secret = ? WHERE id = ?').bind(secret, adminPayload.adminId).run();
+  
+  return c.json({ secret, qrCode });
+});
+
+app.post('/api/admin/mfa-enable', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const { code } = await c.req.json();
+  
+  const admin = await db.prepare('SELECT mfa_secret FROM admin_users WHERE id = ?').bind(adminPayload.adminId).first();
+  if (!admin || !admin.mfa_secret) return c.json({ error: 'MFA setup not initiated.' }, 400);
+  
+  const isValid = authenticator.verify({ token: code, secret: admin.mfa_secret });
+  if (!isValid) return c.json({ error: 'Invalid code.' }, 400);
+  
+  await db.prepare('UPDATE admin_users SET mfa_enabled = 1 WHERE id = ?').bind(adminPayload.adminId).run();
+  return c.json({ message: 'MFA enabled.' });
+});
+
+app.post('/api/admin/mfa-verify', async (c) => {
+  const db = c.env.DB;
+  const { preToken, code } = await c.req.json();
+  
+  try {
+    const payload = await verifyJWT(preToken, getAdminJwtSecret(c));
+    if (payload.step !== 'mfa') throw new Error();
+    
+    const admin = await db.prepare('SELECT * FROM admin_users WHERE id = ?').bind(payload.adminId).first();
+    if (!admin) throw new Error();
+    
+    const isValid = authenticator.verify({ token: code, secret: admin.mfa_secret });
+    if (!isValid) return c.json({ error: 'Invalid code.' }, 401);
+    
+    const token = await signJWT({ adminId: admin.id, username: admin.username, role: admin.role, exp: Math.floor(Date.now() / 1000) + 28800 }, getAdminJwtSecret(c));
+    return c.json({ token, username: admin.username, role: admin.role, mfaEnabled: true });
+  } catch (err) {
+    return c.json({ error: 'Invalid session or token.' }, 401);
+  }
+});
+
+// ── User Management & Moderation ──
+app.get('/api/admin/users/:id/relationships', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const userId = parseInt(c.req.param('id'));
+  
+  const follows = await db.prepare(`
+    SELECT f.*, u.full_name as user_name 
+    FROM follows f 
+    JOIN users u ON f.following_id = u.id 
+    WHERE f.follower_id = ?
+  `).bind(userId).all();
+  
+  const followers = await db.prepare(`
+    SELECT f.*, u.full_name as user_name 
+    FROM follows f 
+    JOIN users u ON f.follower_id = u.id 
+    WHERE f.following_id = ?
+  `).bind(userId).all();
+  
+  const blocks = await db.prepare(`
+    SELECT b.*, u.full_name as user_name 
+    FROM blocks b 
+    JOIN users u ON b.blocked_id = u.id 
+    WHERE b.blocker_id = ?
+  `).bind(userId).all();
+
+  return c.json({ follows: follows.results, followers: followers.results, blocks: blocks.results });
+});
+
+app.post('/api/admin/users/:id/status', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const userId = parseInt(c.req.param('id'));
+  const { status, reason } = await c.req.json();
+  
+  await db.prepare('UPDATE users SET account_status = ? WHERE id = ?').bind(status, userId).run();
+  await db.prepare('INSERT INTO moderation_log (target_type, target_id, admin_id, action, reason) VALUES (?, ?, ?, ?, ?)')
+    .bind('user', userId, adminPayload.adminId, `status_${status}`, reason).run();
+    
+  return c.json({ message: `User status updated to ${status}.` });
+});
+
+app.post('/api/admin/users/:id/force-unfollow', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const followerId = parseInt(c.req.param('id'));
+  const { following_id } = await c.req.json();
+  
+  await db.prepare('DELETE FROM follows WHERE follower_id = ? AND following_id = ?').bind(followerId, following_id).run();
+  return c.json({ message: 'Force unfollow successful.' });
+});
+
+app.post('/api/admin/users/:id/force-unblock', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const blockerId = parseInt(c.req.param('id'));
+  const { blocked_id } = await c.req.json();
+  
+  await db.prepare('DELETE FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(blockerId, blocked_id).run();
+  return c.json({ message: 'Force unblock successful.' });
+});
+
+app.post('/api/admin/users/:id/reset-connections', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const userId = parseInt(c.req.param('id'));
+  
+  await db.prepare('DELETE FROM follows WHERE follower_id = ? OR following_id = ?').bind(userId, userId).run();
+  await db.prepare('DELETE FROM blocks WHERE blocker_id = ? OR blocked_id = ?').bind(userId, userId).run();
+  
+  return c.json({ message: 'All connections reset.' });
+});
+
+app.put('/api/admin/users/:id/dm-permission', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const userId = parseInt(c.req.param('id'));
+  const { dm_permission } = await c.req.json();
+  
+  await db.prepare('UPDATE users SET dm_permission = ? WHERE id = ?').bind(dm_permission, userId).run();
+  return c.json({ message: `DM permission updated to ${dm_permission}.` });
+});
+
+app.post('/api/admin/users/:id/warn', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const userId = parseInt(c.req.param('id'));
+  const { level, template, reason, rule_broken, penalties } = await c.req.json();
+  
+  await db.prepare(`
+    INSERT INTO user_warnings (user_id, admin_id, level, template, reason, rule_broken, penalties) 
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).bind(userId, adminPayload.adminId, level, template, reason, rule_broken || null, penalties || null).run();
+  
+  // Create a notification for the user
+  await db.prepare(`
+    INSERT INTO notifications (user_id, type, content) 
+    VALUES (?, 'chat_message', ?)
+  `).bind(userId, `SYSTEM WARNING: You have received a ${level}. Reason: ${reason}`).run();
+  
+  return c.json({ message: 'Warning issued.' });
+});
+
+app.get('/api/admin/users/:id/warnings', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const userId = parseInt(c.req.param('id'));
+  
+  const { results } = await db.prepare(`
+    SELECT uw.*, au.username as admin_username 
+    FROM user_warnings uw 
+    JOIN admin_users au ON uw.admin_id = au.id 
+    WHERE uw.user_id = ? ORDER BY uw.created_at DESC
+  `).bind(userId).all();
+  
+  return c.json(results);
 });
 
 export default app;

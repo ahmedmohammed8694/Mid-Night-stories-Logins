@@ -361,6 +361,9 @@ async function loadCommunityStats() {
 
 // ── Auth UI Management & Global Layout ──
 function initAuthLayout() {
+  // Skip on admin page — admin has its own isolated header
+  if (document.documentElement.getAttribute('data-page') === 'admin') return;
+
   const header = document.querySelector('header.header');
   if (!header) return;
 
@@ -477,6 +480,8 @@ function initAuthLayout() {
 let notificationPollInterval = null;
 
 function initNotifications() {
+  if (document.documentElement.getAttribute('data-page') === 'admin') return;
+
   const token = localStorage.getItem('token');
   if (!token) return;
 

@@ -110,6 +110,7 @@
       case 'stories-queue': loadStoriesQueue(); break;
       case 'comments-queue': loadCommentsQueue(); break;
       case 'reports': loadReports(); break;
+      case 'users': loadUsers(); break;
       case 'categories': loadCategories(); break;
       case 'bans': loadBans(); break;
       case 'settings': loadSettings(); break;
@@ -137,6 +138,7 @@
       document.getElementById('statPendingComments').textContent = stats.pendingComments;
       document.getElementById('statLikes').textContent = stats.totalLikes;
       document.getElementById('statBans').textContent = stats.bannedIPs;
+      document.getElementById('statUsers').textContent = stats.totalUsers;
 
       // Update sidebar badges
       updateBadge('pendingStoriesBadge', stats.pendingStories);
@@ -508,6 +510,91 @@
       showToast('Failed to load audit log.', 'error');
     }
   }
+
+  // ── Users ──
+  async function loadUsers() {
+    try {
+      const data = await api('/api/admin/users');
+      const tbody = document.getElementById('usersList');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; opacity: 0.5;">No users found.</td></tr>';
+        return;
+      }
+
+      data.forEach(user => {
+        const tr = document.createElement('tr');
+        let statusClass = 'approved';
+        if (user.account_status === 'suspended') statusClass = 'pending';
+        if (user.account_status === 'banned') statusClass = 'rejected';
+        
+        tr.innerHTML = `
+          <td>#${user.id}</td>
+          <td>${escapeHtml(user.full_name)}<br><small style="opacity:0.6">${escapeHtml(user.user_id)}</small></td>
+          <td>${escapeHtml(user.email)}</td>
+          <td>
+            <select class="form-input" style="padding: 4px 8px; width: auto; font-size: 0.85rem;" onchange="window.updateUserStatus(${user.id}, this.value)">
+              <option value="active" ${user.account_status === 'active' ? 'selected' : ''}>Active</option>
+              <option value="suspended" ${user.account_status === 'suspended' ? 'selected' : ''}>Suspended</option>
+              <option value="banned" ${user.account_status === 'banned' ? 'selected' : ''}>Banned</option>
+              <option value="shadowbanned" ${user.account_status === 'shadowbanned' ? 'selected' : ''}>Shadowbanned</option>
+            </select>
+          </td>
+          <td>${formatDate(user.created_at)}</td>
+          <td>
+            <button class="btn btn--secondary btn--sm" onclick="window.warnUser(${user.id})">Warn</button>
+            <button class="btn btn--ghost btn--sm" onclick="window.resetUserConnections(${user.id})">Reset Connections</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      showToast('Failed to load users.', 'error');
+    }
+  }
+  
+  window.updateUserStatus = async function(id, status) {
+    const reason = prompt(`Enter reason for changing status to ${status}:`);
+    if (reason === null) return;
+    try {
+      await api(`/api/admin/users/${id}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status, reason })
+      });
+      showToast('User status updated.', 'success');
+      loadUsers();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  window.warnUser = async function(id) {
+    const reason = prompt('Enter warning reason:');
+    if (!reason) return;
+    try {
+      await api(`/api/admin/users/${id}/warn`, {
+        method: 'POST',
+        body: JSON.stringify({ level: 'first_warning', template: 'general_warning', reason })
+      });
+      showToast('Warning sent to user.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  window.resetUserConnections = async function(id) {
+    if (!confirm('Are you sure you want to reset all follows and blocks for this user?')) return;
+    try {
+      await api(`/api/admin/users/${id}/reset-connections`, {
+        method: 'POST'
+      });
+      showToast('Connections reset.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
 
   // ── MFA Setup ──
   async function loadMFASetup() {
