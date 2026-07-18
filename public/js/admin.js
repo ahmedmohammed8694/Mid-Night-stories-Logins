@@ -843,29 +843,39 @@
       `;
       
       // Populate Content Aggregation
+      const stats = audit.stats || { stories: 0, comments: 0, likesReceived: 0 };
       document.getElementById('auditContent').innerHTML = `
-        <strong>Stories Posted:</strong> ${audit.metrics.story_count}<br>
-        <strong>Comments Posted:</strong> ${audit.metrics.comment_count}<br>
-        <strong>Total Likes Received:</strong> ${audit.metrics.total_likes_received}<br>
-        <strong>Reports Against User:</strong> ${audit.metrics.report_count}
+        <strong>Stories Posted:</strong> ${stats.stories}<br>
+        <strong>Comments Posted:</strong> ${stats.comments}<br>
+        <strong>Total Likes Received:</strong> ${stats.likesReceived}
       `;
       
-      // Checkboxes for Permissions
-      document.getElementById('permLike').checked = audit.user.can_like;
-      document.getElementById('permComment').checked = audit.user.can_comment;
-      document.getElementById('permFollow').checked = audit.user.can_follow;
-      document.getElementById('permBlock').checked = audit.user.can_block;
+      // Parse & Checkboxes for Permissions
+      let perms = { like: true, comment: true, follow: true, block: true };
+      if (audit.user.interaction_permissions) {
+        try {
+          perms = typeof audit.user.interaction_permissions === 'string'
+            ? JSON.parse(audit.user.interaction_permissions)
+            : audit.user.interaction_permissions;
+        } catch (e) {
+          console.error('Error parsing interaction permissions:', e);
+        }
+      }
+      document.getElementById('permLike').checked = !!perms.like;
+      document.getElementById('permComment').checked = !!perms.comment;
+      document.getElementById('permFollow').checked = !!perms.follow;
+      document.getElementById('permBlock').checked = !!perms.block;
       
-      // Populate Login Ledger
+      // Populate Login Ledger (Show top 5)
       const ledgerBody = document.getElementById('auditLoginLogs');
       ledgerBody.innerHTML = '';
-      if (audit.ledgers && audit.ledgers.length > 0) {
-        audit.ledgers.forEach(log => {
+      if (audit.login_logs && audit.login_logs.length > 0) {
+        audit.login_logs.slice(0, 5).forEach(log => {
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td>${new Date(log.login_timestamp).toLocaleDateString()}</td>
-            <td><code>${escapeHtml(log.ip_address)}</code></td>
-            <td style="color: ${log.status === 'success' ? 'var(--success)' : 'var(--danger)'}">${log.status}</td>
+            <td>${new Date(log.created_at).toLocaleDateString()}</td>
+            <td><code>${escapeHtml(log.ip_address || '—')}</code></td>
+            <td style="color: ${log.status === 'success' ? 'var(--success)' : 'var(--danger)'}">${escapeHtml(log.status)}</td>
           `;
           ledgerBody.appendChild(tr);
         });
@@ -875,6 +885,7 @@
     } catch (err) {
       document.getElementById('auditPii').innerHTML = '<span style="color:var(--danger)">Failed to load data</span>';
       document.getElementById('auditContent').innerHTML = '';
+      document.getElementById('auditLoginLogs').innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--danger);">Failed to load</td></tr>';
     }
   };
 
@@ -882,16 +893,16 @@
     if (!window.currentTicketTargetUser || window.currentTicketTargetUser === 'Unknown') return;
     
     const perms = {
-      can_like: document.getElementById('permLike').checked,
-      can_comment: document.getElementById('permComment').checked,
-      can_follow: document.getElementById('permFollow').checked,
-      can_block: document.getElementById('permBlock').checked
+      like: document.getElementById('permLike').checked,
+      comment: document.getElementById('permComment').checked,
+      follow: document.getElementById('permFollow').checked,
+      block: document.getElementById('permBlock').checked
     };
     
     try {
       await api(`/api/admin/users/${window.currentTicketTargetUser}/permissions`, {
         method: 'PUT',
-        body: JSON.stringify(perms)
+        body: JSON.stringify({ permissions: perms })
       });
       showToast('User permissions updated', 'success');
     } catch (err) {
