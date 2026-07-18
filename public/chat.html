@@ -587,6 +587,9 @@
         }
         bottomBar.appendChild(requestDiv);
       } else {
+        if (bottomBar.querySelector('.chat-input-bar')) return; // Prevent overwriting existing input
+        bottomBar.innerHTML = ''; // Clear other banners
+        
         const inputBar = document.createElement('div');
         inputBar.className = 'chat-input-bar';
         inputBar.innerHTML = `
