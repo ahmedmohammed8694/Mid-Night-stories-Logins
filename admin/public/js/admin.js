@@ -1,9 +1,10 @@
-// admin/public/js/admin.js — Admin dashboard: login, MFA, moderation queues, reports, categories, bans, settings, users, audit log
+// admin.js — Admin dashboard: login, MFA, moderation queues, reports, categories, bans, settings, audit log
 
 (function () {
   let adminToken = sessionStorage.getItem('adminToken');
   let preToken = null;
 
+  // ── Check Auth State ──
   function checkAuth() {
     if (adminToken) {
       showDashboard();
@@ -17,6 +18,7 @@
     document.getElementById('logoutBtn').classList.remove('hidden');
   }
 
+  // ── Login ──
   async function handleLogin(e) {
     e.preventDefault();
     const username = document.getElementById('loginUsername').value.trim();
@@ -51,6 +53,7 @@
     }
   }
 
+  // ── MFA Verify ──
   async function handleMFA() {
     const code = document.getElementById('mfaCode').value.trim();
     if (!code || code.length !== 6) {
@@ -76,6 +79,7 @@
     }
   }
 
+  // ── Logout ──
   function handleLogout() {
     adminToken = null;
     sessionStorage.removeItem('adminToken');
@@ -89,6 +93,7 @@
     showToast('Logged out.', 'info');
   }
 
+  // ── Panel Navigation ──
   function switchPanel(panelName) {
     document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.admin-nav-item').forEach(n => n.classList.remove('active'));
@@ -99,24 +104,27 @@
     const navItem = document.querySelector(`[data-panel="${panelName}"]`);
     if (navItem) navItem.classList.add('active');
 
+    // Load panel-specific data
     switch (panelName) {
       case 'overview': loadStats(); break;
       case 'stories-queue': loadStoriesQueue(); break;
       case 'comments-queue': loadCommentsQueue(); break;
       case 'reports': loadReports(); break;
+      case 'users': loadUsers(); break;
       case 'categories': loadCategories(); break;
       case 'bans': loadBans(); break;
       case 'settings': loadSettings(); break;
       case 'audit-log': loadAuditLog(); break;
       case 'mfa-setup': loadMFASetup(); break;
-      case 'users': loadUsers(); break;
     }
   }
 
+  // ── Load Dashboard Data ──
   function loadDashboardData() {
     loadStats();
   }
 
+  // ── Stats ──
   async function loadStats() {
     try {
       const stats = await api('/api/admin/stats');
@@ -130,8 +138,9 @@
       document.getElementById('statPendingComments').textContent = stats.pendingComments;
       document.getElementById('statLikes').textContent = stats.totalLikes;
       document.getElementById('statBans').textContent = stats.bannedIPs;
-      document.getElementById('statTotalUsers').textContent = stats.totalUsers;
+      document.getElementById('statUsers').textContent = stats.totalUsers;
 
+      // Update sidebar badges
       updateBadge('pendingStoriesBadge', stats.pendingStories);
       updateBadge('pendingCommentsBadge', stats.pendingComments);
       updateBadge('reportsBadge', stats.openReports);
@@ -155,6 +164,7 @@
     }
   }
 
+  // ── Stories Queue ──
   let currentStoryQueueStatus = 'pending';
 
   async function loadStoriesQueue(status) {
@@ -179,9 +189,8 @@
         tr.innerHTML = `
           <td>${item.id}</td>
           <td>${escapeHtml(item.title || 'Untitled')}</td>
-          <td><div class="admin-table__preview">${escapeHtml((item.body || item.content || '').substring(0, 150))}</div></td>
+          <td><div class="admin-table__preview">${escapeHtml(item.body.substring(0, 150))}</div></td>
           <td>${escapeHtml(item.category_name || '—')}</td>
-          <td>${escapeHtml(item.author_name || (item.user_id ? 'User #' + item.user_id : '—'))}</td>
           <td><span class="status-badge status-badge--${item.status}">${item.status}</span></td>
           <td>${formatDate(item.created_at)}</td>
           <td>
@@ -198,6 +207,7 @@
     }
   }
 
+  // ── Comments Queue ──
   let currentCommentQueueStatus = 'pending';
 
   async function loadCommentsQueue(status) {
@@ -223,7 +233,6 @@
           <td>${item.id}</td>
           <td>${escapeHtml(item.story_title || `Story #${item.story_id}`)}</td>
           <td><div class="admin-table__preview">${escapeHtml(item.body)}</div></td>
-          <td>${escapeHtml(item.author_name || (item.user_id ? 'User #' + item.user_id : '—'))}</td>
           <td><span class="status-badge status-badge--${item.status}">${item.status}</span></td>
           <td>${formatDate(item.created_at)}</td>
           <td>
@@ -240,6 +249,7 @@
     }
   }
 
+  // ── Moderate Item ──
   window.moderateItem = async function (type, id, action) {
     try {
       const data = await api('/api/admin/moderate', {
@@ -248,6 +258,7 @@
       });
       showToast(data.message, 'success');
 
+      // Reload the appropriate queue
       if (type === 'story') loadStoriesQueue();
       if (type === 'comment') loadCommentsQueue();
       loadStats();
@@ -256,6 +267,7 @@
     }
   };
 
+  // ── Reports ──
   let currentReportResolved = '0';
 
   async function loadReports(resolved) {
@@ -310,6 +322,7 @@
     }
   };
 
+  // ── Categories ──
   async function loadCategories() {
     try {
       const categories = await api('/api/admin/categories');
@@ -364,53 +377,7 @@
     }
   };
 
-  async function loadUsers() {
-    try {
-      const users = await api('/api/admin/users');
-      const tbody = document.getElementById('usersBody');
-      const empty = document.getElementById('noUsers');
-      tbody.innerHTML = '';
-
-      if (users.length === 0) {
-        empty.classList.remove('hidden');
-        document.getElementById('usersTable').closest('.admin-table-wrapper').classList.add('hidden');
-        return;
-      }
-
-      empty.classList.add('hidden');
-      document.getElementById('usersTable').closest('.admin-table-wrapper').classList.remove('hidden');
-
-      users.forEach(user => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${user.id}</td>
-          <td><code>${escapeHtml(user.user_id || '')}</code></td>
-          <td>${escapeHtml(user.full_name || '—')}</td>
-          <td>${escapeHtml(user.email)}</td>
-          <td>${formatDate(user.created_at)}</td>
-          <td>
-            <button class="btn btn--danger btn--sm" onclick="deleteUser(${user.id})">Delete</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    } catch (err) {
-      showToast('Failed to load users.', 'error');
-    }
-  }
-
-  window.deleteUser = async function (id) {
-    if (!confirm('Delete this user? This cannot be undone.')) return;
-    try {
-      await api(`/api/admin/users/${id}`, { method: 'DELETE' });
-      showToast('User deleted.', 'success');
-      loadUsers();
-      loadStats();
-    } catch (err) {
-      showToast(err.message, 'error');
-    }
-  };
-
+  // ── Bans ──
   async function loadBans() {
     try {
       const bans = await api('/api/admin/bans');
@@ -474,6 +441,7 @@
     }
   };
 
+  // ── Settings ──
   async function loadSettings() {
     try {
       const settings = await api('/api/admin/settings');
@@ -515,6 +483,7 @@
     }
   }
 
+  // ── Audit Log ──
   async function loadAuditLog() {
     try {
       const logs = await api('/api/admin/audit-log');
@@ -542,6 +511,92 @@
     }
   }
 
+  // ── Users ──
+  async function loadUsers() {
+    try {
+      const data = await api('/api/admin/users');
+      const tbody = document.getElementById('usersList');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; opacity: 0.5;">No users found.</td></tr>';
+        return;
+      }
+
+      data.forEach(user => {
+        const tr = document.createElement('tr');
+        let statusClass = 'approved';
+        if (user.account_status === 'suspended') statusClass = 'pending';
+        if (user.account_status === 'banned') statusClass = 'rejected';
+        
+        tr.innerHTML = `
+          <td>#${user.id}</td>
+          <td>${escapeHtml(user.full_name)}<br><small style="opacity:0.6">${escapeHtml(user.user_id)}</small></td>
+          <td>${escapeHtml(user.email)}</td>
+          <td>
+            <select class="form-input" style="padding: 4px 8px; width: auto; font-size: 0.85rem;" onchange="window.updateUserStatus(${user.id}, this.value)">
+              <option value="active" ${user.account_status === 'active' ? 'selected' : ''}>Active</option>
+              <option value="suspended" ${user.account_status === 'suspended' ? 'selected' : ''}>Suspended</option>
+              <option value="banned" ${user.account_status === 'banned' ? 'selected' : ''}>Banned</option>
+              <option value="shadowbanned" ${user.account_status === 'shadowbanned' ? 'selected' : ''}>Shadowbanned</option>
+            </select>
+          </td>
+          <td>${formatDate(user.created_at)}</td>
+          <td>
+            <button class="btn btn--secondary btn--sm" onclick="window.warnUser(${user.id})">Warn</button>
+            <button class="btn btn--ghost btn--sm" onclick="window.resetUserConnections(${user.id})">Reset Connections</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      showToast('Failed to load users.', 'error');
+    }
+  }
+  
+  window.updateUserStatus = async function(id, status) {
+    const reason = prompt(`Enter reason for changing status to ${status}:`);
+    if (reason === null) return;
+    try {
+      await api(`/api/admin/users/${id}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status, reason })
+      });
+      showToast('User status updated.', 'success');
+      loadUsers();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  window.warnUser = async function(id) {
+    const reason = prompt('Enter warning reason:');
+    if (!reason) return;
+    try {
+      await api(`/api/admin/users/${id}/warn`, {
+        method: 'POST',
+        body: JSON.stringify({ level: 'first_warning', template: 'general_warning', reason })
+      });
+      showToast('Warning sent to user.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  window.resetUserConnections = async function(id) {
+    if (!confirm('Are you sure you want to reset all follows and blocks for this user?')) return;
+    try {
+      await api(`/api/admin/users/${id}/reset-connections`, {
+        method: 'POST'
+      });
+      showToast('Connections reset.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  // ── MFA Setup ──
   async function loadMFASetup() {
     try {
       const data = await api('/api/admin/mfa-setup', {
@@ -575,27 +630,34 @@
     }
   }
 
+  // ── Event Bindings ──
   document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
 
+    // Login form
     const loginForm = document.getElementById('loginForm');
     if (loginForm) loginForm.addEventListener('submit', handleLogin);
 
+    // MFA submit
     const mfaSubmitBtn = document.getElementById('mfaSubmitBtn');
     if (mfaSubmitBtn) mfaSubmitBtn.addEventListener('click', handleMFA);
 
+    // MFA code enter key
     const mfaCode = document.getElementById('mfaCode');
     if (mfaCode) mfaCode.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') handleMFA();
     });
 
+    // Logout
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
 
+    // Panel navigation
     document.querySelectorAll('.admin-nav-item[data-panel]').forEach(item => {
       item.addEventListener('click', () => switchPanel(item.dataset.panel));
     });
 
+    // Stories queue filter chips
     document.querySelectorAll('[data-queue-status]').forEach(chip => {
       chip.addEventListener('click', () => {
         document.querySelectorAll('[data-queue-status]').forEach(c => c.classList.remove('active'));
@@ -604,6 +666,7 @@
       });
     });
 
+    // Comments queue filter chips
     document.querySelectorAll('[data-comment-status]').forEach(chip => {
       chip.addEventListener('click', () => {
         document.querySelectorAll('[data-comment-status]').forEach(c => c.classList.remove('active'));
@@ -612,6 +675,7 @@
       });
     });
 
+    // Reports filter chips
     document.querySelectorAll('[data-report-resolved]').forEach(chip => {
       chip.addEventListener('click', () => {
         document.querySelectorAll('[data-report-resolved]').forEach(c => c.classList.remove('active'));
@@ -620,15 +684,19 @@
       });
     });
 
+    // Add category
     const addCategoryBtn = document.getElementById('addCategoryBtn');
     if (addCategoryBtn) addCategoryBtn.addEventListener('click', addCategory);
 
+    // Add ban
     const addBanBtn = document.getElementById('addBanBtn');
     if (addBanBtn) addBanBtn.addEventListener('click', addBan);
 
+    // Save settings
     const saveSettingsBtn = document.getElementById('saveSettingsBtn');
     if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveSettings);
 
+    // Enable MFA
     const enableMfaBtn = document.getElementById('enableMfaBtn');
     if (enableMfaBtn) enableMfaBtn.addEventListener('click', enableMFA);
   });

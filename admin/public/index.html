@@ -7,14 +7,15 @@
   <meta name="robots" content="noindex, nofollow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="/css/admin.css">
+  <link rel="stylesheet" href="/css/style.css">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 </head>
 <body>
   <div class="page-wrapper">
+    <!-- Header -->
     <header class="header">
       <div class="header__inner">
-        <a href="https://midnightstories.dpdns.org/" class="header__logo">
+        <a href="/" class="header__logo">
           <div class="header__logo-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
               <path d="M60 20c0 22-18 40-40 40-2 0-5 0-7-.5 7 13.5 21 22.5 37 22.5 24.8 0 45-20.2 45-45 0-16-8.5-30-22-37 .5 2 .5 5 .5 7z"/>
@@ -22,19 +23,25 @@
           </div>
           <span class="header__logo-text">Midnight Stories Admin</span>
         </a>
+        <nav class="header__nav">
+          <a href="/" class="nav-link">← Public Site</a>
+        </nav>
         <div class="header__actions">
+          <button class="btn-3d-toggle" id="toggle3D" aria-label="Toggle 3D card style">✦ 3D</button>
           <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
           <button class="btn btn--ghost btn--sm hidden" id="logoutBtn">Logout</button>
         </div>
       </div>
     </header>
 
+    <!-- Login Form -->
     <div id="loginSection">
       <div class="admin-login animate-slide-up">
         <div class="admin-login__icon">🔐</div>
         <h1 class="admin-login__title">Admin Login</h1>
         <p class="admin-login__subtitle">Secure access to the moderation dashboard.</p>
 
+        <!-- Login Step -->
         <form class="card card--no-hover" id="loginForm" style="padding: 28px; text-align: left;">
           <div class="form-group">
             <label class="form-label">Username</label>
@@ -47,6 +54,7 @@
           <button type="submit" class="btn btn--primary" style="width: 100%;">Login</button>
         </form>
 
+        <!-- MFA Step -->
         <div class="card card--no-hover hidden" id="mfaStep" style="padding: 28px; text-align: left;">
           <h3 style="text-align: center; margin-bottom: 16px;">Two-Factor Authentication</h3>
           <p style="text-align: center; color: var(--text-secondary); margin-bottom: 24px;">Enter the 6-digit code from your authenticator app.</p>
@@ -58,7 +66,9 @@
       </div>
     </div>
 
+    <!-- Dashboard (Hidden until login) -->
     <div class="admin-layout hidden" id="dashboardSection">
+      <!-- Sidebar -->
       <aside class="admin-sidebar">
         <div class="admin-sidebar__section">
           <p class="admin-sidebar__heading">Dashboard</p>
@@ -83,6 +93,9 @@
         </div>
         <div class="admin-sidebar__section">
           <p class="admin-sidebar__heading">Management</p>
+          <button class="admin-nav-item" data-panel="users">
+            <span class="admin-nav-item__icon">👥</span> Users
+          </button>
           <button class="admin-nav-item" data-panel="categories">
             <span class="admin-nav-item__icon">🏷️</span> Categories
           </button>
@@ -98,16 +111,16 @@
           <button class="admin-nav-item" data-panel="audit-log">
             <span class="admin-nav-item__icon">📋</span> Audit Log
           </button>
-          <button class="admin-nav-item" data-panel="users">
-            <span class="admin-nav-item__icon">👥</span> Users
-          </button>
           <button class="admin-nav-item" data-panel="mfa-setup">
             <span class="admin-nav-item__icon">🔑</span> MFA Setup
           </button>
         </div>
       </aside>
 
+      <!-- Main Content Area -->
       <main class="admin-main">
+
+        <!-- Overview Panel -->
         <div class="admin-panel active" id="panel-overview">
           <h1 class="admin-page-title">Dashboard Overview</h1>
           <p class="admin-page-subtitle">Platform statistics and moderation status at a glance.</p>
@@ -115,10 +128,6 @@
             <div class="stat-card">
               <p class="stat-card__label">Total Stories</p>
               <p class="stat-card__value stat-card__value--purple" id="statTotalStories">—</p>
-            </div>
-            <div class="stat-card">
-              <p class="stat-card__label">Total Users</p>
-              <p class="stat-card__value stat-card__value--cyan" id="statTotalUsers">—</p>
             </div>
             <div class="stat-card">
               <p class="stat-card__label">Pending Review</p>
@@ -149,12 +158,44 @@
               <p class="stat-card__value stat-card__value--rose" id="statLikes">—</p>
             </div>
             <div class="stat-card">
+              <p class="stat-card__label">Total Users</p>
+              <p class="stat-card__value stat-card__value--purple" id="statUsers">—</p>
+            </div>
+            <div class="stat-card">
               <p class="stat-card__label">Banned IPs</p>
               <p class="stat-card__value stat-card__value--rose" id="statBans">—</p>
             </div>
           </div>
         </div>
 
+        <!-- Users Panel -->
+        <div class="admin-panel" id="panel-users">
+          <div class="admin-header-flex">
+            <div>
+              <h1 class="admin-page-title">Users</h1>
+              <p class="admin-page-subtitle">Manage user accounts, permissions, and moderation.</p>
+            </div>
+          </div>
+          <div class="card" style="padding: 0;">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>User ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usersList">
+                <tr><td colspan="6" style="text-align: center; opacity: 0.5;">Loading users...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Stories Queue Panel -->
         <div class="admin-panel" id="panel-stories-queue">
           <h1 class="admin-page-title">Stories Moderation Queue</h1>
           <p class="admin-page-subtitle">Review and moderate pending story submissions.</p>
@@ -171,7 +212,6 @@
                   <th>Title</th>
                   <th>Preview</th>
                   <th>Category</th>
-                  <th>Author</th>
                   <th>Status</th>
                   <th>Submitted</th>
                   <th>Actions</th>
@@ -187,6 +227,7 @@
           </div>
         </div>
 
+        <!-- Comments Queue Panel -->
         <div class="admin-panel" id="panel-comments-queue">
           <h1 class="admin-page-title">Comments Moderation Queue</h1>
           <p class="admin-page-subtitle">Review and moderate pending comments.</p>
@@ -202,7 +243,6 @@
                   <th>ID</th>
                   <th>Story</th>
                   <th>Comment</th>
-                  <th>Author</th>
                   <th>Status</th>
                   <th>Submitted</th>
                   <th>Actions</th>
@@ -218,6 +258,7 @@
           </div>
         </div>
 
+        <!-- Reports Panel -->
         <div class="admin-panel" id="panel-reports">
           <h1 class="admin-page-title">Reported Content</h1>
           <p class="admin-page-subtitle">User-submitted reports of potentially problematic content.</p>
@@ -247,31 +288,7 @@
           </div>
         </div>
 
-        <div class="admin-panel" id="panel-users">
-          <h1 class="admin-page-title">User Management</h1>
-          <p class="admin-page-subtitle">View and manage registered users.</p>
-          <div class="admin-table-wrapper">
-            <table class="admin-table" id="usersTable">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>User ID</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Joined</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="usersBody"></tbody>
-            </table>
-          </div>
-          <div class="empty-state hidden" id="noUsers" style="padding: 40px;">
-            <div class="empty-state__icon">✅</div>
-            <h3 class="empty-state__title">No users</h3>
-            <p class="empty-state__description">No users registered yet.</p>
-          </div>
-        </div>
-
+        <!-- Categories Panel -->
         <div class="admin-panel" id="panel-categories">
           <h1 class="admin-page-title">Category Management</h1>
           <p class="admin-page-subtitle">Add, edit, or remove story categories.</p>
@@ -298,6 +315,7 @@
           </div>
         </div>
 
+        <!-- Bans Panel -->
         <div class="admin-panel" id="panel-bans">
           <h1 class="admin-page-title">IP Bans</h1>
           <p class="admin-page-subtitle">Manage restricted IP addresses.</p>
@@ -332,6 +350,7 @@
           </div>
         </div>
 
+        <!-- Settings Panel -->
         <div class="admin-panel" id="panel-settings">
           <h1 class="admin-page-title">Platform Settings</h1>
           <p class="admin-page-subtitle">Configure moderation and abuse prevention settings.</p>
@@ -365,6 +384,7 @@
           </div>
         </div>
 
+        <!-- Audit Log Panel -->
         <div class="admin-panel" id="panel-audit-log">
           <h1 class="admin-page-title">Audit Log</h1>
           <p class="admin-page-subtitle">Complete record of all administrative actions.</p>
@@ -384,6 +404,7 @@
           </div>
         </div>
 
+        <!-- MFA Setup Panel -->
         <div class="admin-panel" id="panel-mfa-setup">
           <h1 class="admin-page-title">MFA Setup</h1>
           <p class="admin-page-subtitle">Set up two-factor authentication for your admin account.</p>
@@ -399,6 +420,7 @@
             <button class="btn btn--primary mt-16" id="enableMfaBtn">Enable MFA</button>
           </div>
         </div>
+
       </main>
     </div>
   </div>
