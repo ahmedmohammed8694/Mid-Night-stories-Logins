@@ -39,7 +39,10 @@ function showToast(message, type = 'info', duration = 4000) {
 
 // ── API Helper ──
 async function api(url, options = {}) {
-  const defaultHeaders = { 'Content-Type': 'application/json' };
+  const defaultHeaders = {};
+  if (!(options.body instanceof FormData)) {
+    defaultHeaders['Content-Type'] = 'application/json';
+  }
   const adminToken = sessionStorage.getItem('adminToken');
   if (adminToken) {
     defaultHeaders['X-Admin-Token'] = adminToken;
@@ -669,7 +672,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Load community stats (only fires if the stats bar is on the page)
   loadCommunityStats();
+  
+  // Check for admin system messages
+  checkAdminMessages();
 });
+
+async function checkAdminMessages() {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+  try {
+    const res = await fetch('/api/users/me/support-inbox', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.messages && data.messages.length > 0) {
+      const unreadMsgs = data.messages.filter(m => !m.is_read);
+      if (unreadMsgs.length > 0) {
+        let banner = document.getElementById('adminMessageBanner');
+        if (!banner) {
+          banner = document.createElement('div');
+          banner.id = 'adminMessageBanner';
+          banner.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; background: var(--danger, #e53e3e); color: white; text-align: center; padding: 12px; z-index: 9999; font-weight: bold; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.5);';
+          banner.innerHTML = `⚠️ Official System Message: You have an unread admin notification. Click here to view.`;
+          banner.onclick = () => {
+            window.location.href = '/profile.html';
+          };
+          document.body.appendChild(banner);
+        }
+      }
+    }
+  } catch(e) {}
+}
 
 
 

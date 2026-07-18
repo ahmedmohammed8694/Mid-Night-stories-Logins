@@ -274,6 +274,7 @@
     if (resolved !== undefined) currentReportResolved = resolved;
     try {
       const reports = await api(`/api/admin/reports?resolved=${currentReportResolved}`);
+      window.currentReportsCache = reports;
       const tbody = document.getElementById('reportsBody');
       const empty = document.getElementById('noReports');
       tbody.innerHTML = '';
@@ -297,7 +298,7 @@
           <td>${formatDate(report.created_at)}</td>
           <td>
             <div class="admin-table__actions">
-              ${!report.resolved ? `<button class="btn btn--success btn--sm" onclick="resolveReport(${report.id})">Resolve</button>` : '<span style="color: var(--accent-emerald);">Resolved</span>'}
+              ${!report.resolved ? `<button class="btn btn--primary btn--sm" onclick="window.openReportDetails(${report.id})">Review</button>` : '<span style="color: var(--accent-emerald);">Resolved</span>'}
             </div>
           </td>
         `;
@@ -308,13 +309,64 @@
     }
   }
 
-  window.resolveReport = async function (id) {
+  window.openReportDetails = function(id) {
+    const report = window.currentReportsCache.find(r => r.id === id);
+    if (!report) return;
+    
+    window.currentReviewingReportId = id;
+    window.currentReviewingReporterId = report.reporter_id;
+    
+    let detailsHtml = `
+      <p><strong>Reason:</strong> ${escapeHtml(report.reason)}</p>
+      <p><strong>Target:</strong> ${escapeHtml(report.target_type)} #${report.target_id}</p>
+      <p><strong>Target Preview:</strong> ${escapeHtml(report.target_preview || 'N/A')}</p>
+    `;
+    
+    if (report.details) {
+      detailsHtml += `<p><strong>Additional Details:</strong><br/>${escapeHtml(report.details).replace(/\\n/g, '<br/>')}</p>`;
+    }
+    
+    if (report.attachment_url) {
+      detailsHtml += `
+        <div style="margin-top: 1rem;">
+          <strong>Evidence Attachment:</strong><br/>
+          <a href="${report.attachment_url}" target="_blank">
+            <img src="${report.attachment_url}" alt="Attachment" style="max-width: 100%; max-height: 200px; border-radius: 4px; border: 1px solid var(--border); margin-top: 0.5rem;" />
+          </a>
+        </div>
+      `;
+    }
+    
+    document.getElementById('reportDetailsContent').innerHTML = detailsHtml;
+    document.getElementById('reportReplyBox').value = '';
+    document.getElementById('reportDetailsModal').classList.add('active');
+  };
+
+  window.submitReportReply = async function () {
+    const id = window.currentReviewingReportId;
+    const replyBody = document.getElementById('reportReplyBox').value.trim();
+    
     try {
+      // 1. Resolve Report
       await api(`/api/admin/reports/${id}/resolve`, {
         method: 'POST',
         body: JSON.stringify({})
       });
+      
+      // 2. Send System Message if provided
+      if (replyBody) {
+        await api('/api/admin/messages/send', {
+          method: 'POST',
+          body: JSON.stringify({
+            user_id: window.currentReviewingReporterId,
+            title: 'Report Resolution Update',
+            body: replyBody
+          })
+        });
+      }
+      
       showToast('Report resolved.', 'success');
+      document.getElementById('reportDetailsModal').classList.remove('active');
       loadReports();
       loadStats();
     } catch (err) {
@@ -515,6 +567,7 @@
   async function loadUsers() {
     try {
       const data = await api('/api/admin/users');
+      window.currentUsersCache = data;
       const tbody = document.getElementById('usersList');
       if (!tbody) return;
 
@@ -591,6 +644,56 @@
         method: 'POST'
       });
       showToast('Connections reset.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  window.openAuditModal = function(id) {
+    const user = window.currentUsersCache?.find(u => u.id === id);
+    if (!user) return;
+    
+    window.currentAuditUserId = id;
+    
+    const perms = user.interaction_permissions ? JSON.parse(user.interaction_permissions) : {};
+    
+    document.getElementById('permLike').checked = perms.like !== false;
+    document.getElementById('permComment').checked = perms.comment !== false;
+    document.getElementById('permFollow').checked = perms.follow !== false;
+    document.getElementById('permBlock').checked = perms.block !== false;
+    
+    const chatCheckbox = document.getElementById('permChat');
+    if (chatCheckbox) chatCheckbox.checked = perms.chat !== false;
+    
+    document.getElementById('auditModal').classList.add('active');
+  };
+
+  window.updateInteractionPermissions = async function() {
+    if (!window.currentAuditUserId) return;
+    
+    const permissions = {
+      like: document.getElementById('permLike').checked,
+      comment: document.getElementById('permComment').checked,
+      follow: document.getElementById('permFollow').checked,
+      block: document.getElementById('permBlock').checked
+    };
+    
+    const chatCheckbox = document.getElementById('permChat');
+    if (chatCheckbox) {
+      permissions.chat = chatCheckbox.checked;
+    }
+    
+    try {
+      await api(`/api/admin/users/${window.currentAuditUserId}/permissions`, {
+        method: 'PUT',
+        body: JSON.stringify({ permissions })
+      });
+      
+      // Update cache
+      const user = window.currentUsersCache?.find(u => u.id === window.currentAuditUserId);
+      if (user) user.interaction_permissions = JSON.stringify(permissions);
+      
+      showToast('Permissions updated.', 'success');
     } catch (err) {
       showToast(err.message, 'error');
     }

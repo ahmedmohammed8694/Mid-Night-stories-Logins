@@ -224,6 +224,14 @@
             Other
           </label>
         </div>
+        <div class="report-extra-details" style="margin-top: 1.5rem;">
+          <textarea id="reportDetails" class="form__input" placeholder="Please describe the incident or provide links to help our moderation team understand the context..." maxlength="500" style="resize: vertical; min-height: 80px;"></textarea>
+          <div class="file-upload" style="margin-top: 1rem; border: 2px dashed var(--border); padding: 1rem; text-align: center; border-radius: 8px; color: var(--text-muted); cursor: pointer;" onclick="document.getElementById('reportAttachment').click()">
+            <span style="font-size: 1.25rem; display: block; margin-bottom: 0.5rem;">📁</span>
+            Attach Evidence (Images up to 5MB)
+            <input type="file" id="reportAttachment" accept="image/jpeg, image/png, image/jpg" style="display: none;" onchange="this.parentElement.querySelector('span').textContent = '✅ ' + this.files[0].name" />
+          </div>
+        </div>
       </div>
       <div class="modal__footer">
         <button class="btn btn--danger" id="reportSubmitBtn" disabled>Submit Report</button>

@@ -542,6 +542,10 @@
           <p>Loading blocked users...</p>
         </div>
 
+        <div id="supportContainer" class="story-list" style="display: none;">
+          <p>Loading support inbox...</p>
+        </div>
+
       </div>
     </main>
   </div>
@@ -649,7 +653,9 @@
           document.getElementById('blockBtn').style.display = 'none';
           document.getElementById('uploadOverlay').style.display = 'flex';
           document.getElementById('tabBlocked').style.display = 'block';
+          document.getElementById('tabSupport').style.display = 'block';
           
+          checkSupportInboxBadge();
           // Setup profile picture change listener
           document.getElementById('avatarContainer').addEventListener('click', () => {
             document.getElementById('avatarFileInput').click();
@@ -1154,6 +1160,107 @@
       }
     }
 
+    async function checkSupportInboxBadge() {
+      try {
+        const res = await fetch('/api/users/me/support-inbox', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        let unread = 0;
+        if (data.messages) unread += data.messages.filter(m => !m.is_read).length;
+        
+        const badge = document.getElementById('supportBadge');
+        if (unread > 0) {
+          badge.textContent = unread;
+          badge.style.display = 'inline-block';
+        } else {
+          badge.style.display = 'none';
+        }
+      } catch (e) {}
+    }
+
+    async function loadSupportInbox() {
+      const container = document.getElementById('supportContainer');
+      container.innerHTML = '<p>Loading support inbox...</p>';
+      
+      try {
+        const res = await fetch('/api/users/me/support-inbox', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to load support inbox');
+        
+        const data = await res.json();
+        const { messages = [], reports = [] } = data;
+        
+        if (messages.length === 0 && reports.length === 0) {
+          container.innerHTML = '<p style="padding: 1rem;">Inbox is empty.</p>';
+          return;
+        }
+        
+        let html = '';
+        
+        if (messages.length > 0) {
+          html += '<h3 style="margin: 1rem 0 0.5rem;">Official System Messages</h3>';
+          messages.forEach(msg => {
+            const isUnread = !msg.is_read;
+            const bg = isUnread ? 'rgba(229, 62, 62, 0.1)' : 'var(--bg-secondary)';
+            const border = isUnread ? '2px solid var(--danger)' : '1px solid var(--border)';
+            html += `
+              <div style="background: ${bg}; border: ${border}; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                  <strong style="color: var(--danger);">${escapeHtml(msg.title || 'System Message')}</strong>
+                  <span style="font-size: 0.8rem; opacity: 0.7;">${new Date(msg.created_at).toLocaleDateString()}</span>
+                </div>
+                <div style="font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(msg.body)}</div>
+                ${isUnread ? `<button class="btn btn--sm btn--secondary" style="margin-top: 1rem;" onclick="markAdminMessageRead(${msg.id}, this)">Mark as Read</button>` : ''}
+              </div>
+            `;
+          });
+        }
+        
+        if (reports.length > 0) {
+          html += '<h3 style="margin: 1rem 0 0.5rem;">Resolved Reports</h3>';
+          reports.forEach(report => {
+            html += `
+              <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                  <strong>Report #${report.id} - ${escapeHtml(report.target_type)}</strong>
+                  <span style="font-size: 0.8rem; opacity: 0.7;">Resolved on ${new Date(report.resolved_at).toLocaleDateString()}</span>
+                </div>
+                <div style="font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>You reported:</strong> ${escapeHtml(report.reason)}</div>
+                <div style="background: var(--bg-main); padding: 0.75rem; border-radius: 4px; border-left: 3px solid var(--accent-emerald);">
+                  <strong style="display: block; margin-bottom: 0.25rem; color: var(--accent-emerald);">Admin Resolution Reply:</strong>
+                  <span style="font-size: 0.95rem; white-space: pre-wrap;">${escapeHtml(report.admin_reply)}</span>
+                </div>
+              </div>
+            `;
+          });
+        }
+        
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = '<p>Failed to load support inbox.</p>';
+      }
+    }
+    
+    window.markAdminMessageRead = async function(id, btn) {
+      btn.disabled = true;
+      btn.textContent = 'Marking...';
+      try {
+        await fetch(`/api/users/me/messages/${id}/read`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        checkSupportInboxBadge();
+        loadSupportInbox();
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Mark as Read';
+      }
+    };
+
     // Tabs toggle logic
     function switchTab(activeTabId, containerToShowId, fetchFn) {
       // Hide all containers
@@ -1202,6 +1309,10 @@
 
     document.getElementById('tabBlocked').addEventListener('click', () => {
       switchTab('tabBlocked', 'blockedContainer', loadBlocked);
+    });
+
+    document.getElementById('tabSupport').addEventListener('click', () => {
+      switchTab('tabSupport', 'supportContainer', loadSupportInbox);
     });
 
     loadProfile();

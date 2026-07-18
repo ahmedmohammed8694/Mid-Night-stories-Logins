@@ -901,6 +901,7 @@ app.post('/api/users/:id/unblock', requireUser, async (c) => {
 app.post('/api/messages', requireUser, rateLimit('message', 30), async (c) => {
   const db = c.env.DB;
   const user = c.get('user');
+  if (user.permissions && user.permissions.chat === false) return c.json({ error: 'You are restricted from chatting.' }, 403);
   const { receiver_id, body } = await c.req.json();
   
   const receiverId = parseInt(receiver_id);
@@ -974,6 +975,7 @@ app.post('/api/messages', requireUser, rateLimit('message', 30), async (c) => {
 app.post('/api/conversations', requireUser, async (c) => {
   const db = c.env.DB;
   const user = c.get('user');
+  if (user.permissions && user.permissions.chat === false) return c.json({ error: 'You are restricted from chatting.' }, 403);
   const { receiver_id } = await c.req.json();
   
   const receiverId = parseInt(receiver_id);
@@ -1463,6 +1465,50 @@ app.put('/api/admin/settings', requireAdmin, async (c) => {
 });
 
 // ── Reports ──
+app.post('/api/reports', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  
+  try {
+    const formData = await c.req.formData();
+    const target_type = formData.get('target_type');
+    const target_id = parseInt(formData.get('target_id'));
+    const reason = formData.get('reason');
+    const details = formData.get('details') || null;
+    const file = formData.get('attachment');
+    let attachment_url = null;
+
+    if (!target_type || !target_id || !reason) {
+      return c.json({ success: false, error: 'Missing required fields.' }, 400);
+    }
+
+    if (file && file instanceof File) {
+      if (file.size > 5 * 1024 * 1024) {
+        return c.json({ success: false, error: 'Max file size is 5MB.' }, 400);
+      }
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+      if (!allowedTypes.includes(file.type)) {
+        return c.json({ success: false, error: 'Only JPEG and PNG are allowed.' }, 400);
+      }
+      if (c.env.IMAGES) {
+        const ext = file.type.split('/')[1] || 'jpg';
+        const filename = `report_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+        await c.env.IMAGES.put(filename, await file.arrayBuffer(), {
+          httpMetadata: { contentType: file.type }
+        });
+        attachment_url = `/uploads/${filename}`;
+      }
+    }
+
+    await db.prepare('INSERT INTO reports (target_type, target_id, reason, details, attachment_url, reporter_id, reporter_ip_hash) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .bind(target_type, target_id, reason, details, attachment_url, user.id, c.req.header('cf-connecting-ip') || '0.0.0.0')
+      .run();
+
+    return c.json({ success: true });
+  } catch (err) {
+    return c.json({ success: false, error: 'Internal Server Error' }, 500);
+  }
+});
 app.get('/api/admin/reports', requireAdmin, async (c) => {
   const db = c.env.DB;
   const resolved = parseInt(c.req.query('resolved') || '0');
@@ -1702,7 +1748,13 @@ app.put('/api/admin/users/:id/permissions', requireAdmin, async (c) => {
   const db = c.env.DB;
   const userId = parseInt(c.req.param('id'));
   const { permissions } = await c.req.json();
+  const adminPayload = c.get('admin');
+  
   await db.prepare('UPDATE users SET interaction_permissions = ? WHERE id = ?').bind(JSON.stringify(permissions), userId).run();
+  
+  await db.prepare('INSERT INTO moderation_log (target_type, target_id, admin_id, action, reason) VALUES (?, ?, ?, ?, ?)')
+    .bind('user', userId, adminPayload.adminId, 'update_permissions', JSON.stringify(permissions)).run();
+
   return c.json({ message: 'Permissions updated.' });
 });
 

@@ -217,15 +217,26 @@
     }
 
     try {
+      const formData = new FormData();
+      formData.append('target_type', reportTarget.type);
+      formData.append('target_id', reportTarget.id);
+      formData.append('reason', reason.value);
+      
+      const details = document.getElementById('reportDetails');
+      if (details && details.value.trim()) {
+        formData.append('details', details.value.trim());
+      }
+      
+      const attachment = document.getElementById('reportAttachment');
+      if (attachment && attachment.files.length > 0) {
+        formData.append('attachment', attachment.files[0]);
+      }
+
       const data = await api('/api/reports', {
         method: 'POST',
-        body: JSON.stringify({
-          target_type: reportTarget.type,
-          target_id: reportTarget.id,
-          reason: reason.value
-        })
+        body: formData
       });
-      showToast(data.message, 'success');
+      showToast(data.message || 'Report submitted.', 'success');
       document.getElementById('reportModal').classList.remove('active');
     } catch (err) {
       showToast(err.message, 'error');
