@@ -267,13 +267,13 @@
     }
   };
 
-  // ── Reports ──
-  let currentReportResolved = '0';
+  // ── Reports / Tickets ──
+  let currentTicketStatus = 'open';
 
-  async function loadReports(resolved) {
-    if (resolved !== undefined) currentReportResolved = resolved;
+  window.loadReports = async function (status) {
+    if (status !== undefined) currentTicketStatus = status;
     try {
-      const reports = await api(`/api/admin/reports?resolved=${currentReportResolved}`);
+      const reports = await api(`/api/admin/reports?status=${currentTicketStatus}`);
       const tbody = document.getElementById('reportsBody');
       const empty = document.getElementById('noReports');
       tbody.innerHTML = '';
@@ -290,71 +290,152 @@
       reports.forEach(report => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${report.id}</td>
-          <td><span class="status-badge status-badge--pending">${report.target_type}</span></td>
-          <td><div class="admin-table__preview">${escapeHtml(report.target_preview || `ID: ${report.target_id}`)}</div></td>
+          <td><span style="font-family: monospace; font-weight: bold;">${report.ticket_id || report.id}</span></td>
+          <td><span class="status-badge status-badge--pending">${report.reported_item_type}</span></td>
+          <td><div class="admin-table__preview">${escapeHtml(report.target_preview || `ID: ${report.reported_item_id}`)}</div></td>
           <td>${escapeHtml(report.reason)}</td>
-          <td>${formatDate(report.created_at)}</td>
+          <td>
+            <div style="font-size: 0.9rem;">${escapeHtml(report.reporter_name || 'User ' + report.reporter_id)}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">${formatDate(report.created_at)}</div>
+          </td>
+          <td><span class="status-badge status-badge--${report.ticket_status.replace('_', '-')}">${report.ticket_status.replace('_', ' ')}</span></td>
           <td>
             <div class="admin-table__actions">
-              ${!report.resolved ? `<button class="btn btn--success btn--sm" onclick='window.openReportModal(${JSON.stringify(report).replace(/'/g, "&#39;")})'>Review & Resolve</button>` : '<span style="color: var(--accent-emerald);">Resolved</span>'}
+              <button class="btn btn--primary btn--sm" onclick='window.openTicketModal(${JSON.stringify(report).replace(/'/g, "&#39;")})'>Review Ticket</button>
             </div>
           </td>
         `;
         tbody.appendChild(tr);
       });
     } catch (err) {
-      showToast('Failed to load reports.', 'error');
+      showToast('Failed to load tickets.', 'error');
     }
   }
 
-  window.openReportModal = function (report) {
-    window.currentReportId = report.id;
-    window.currentReportTargetUser = report.target_user_id;
+  window.openTicketModal = async function (report) {
+    window.currentTicketId = report.id;
+    window.currentTicketTargetUser = report.target_user_id;
 
-    const detailsContent = `
-      <p><strong>Reporter ID:</strong> ${report.reporter_id || 'Anonymous'}</p>
-      <p><strong>Reason:</strong> ${escapeHtml(report.reason)}</p>
-      <p><strong>Target Type:</strong> ${report.target_type}</p>
-      <p><strong>Target Preview:</strong> ${escapeHtml(report.target_preview || 'N/A')}</p>
-      <p><strong>Details:</strong> ${escapeHtml(report.details || 'None provided')}</p>
-      ${report.attachment_url ? `<p><strong>Evidence:</strong><br><img src="${escapeHtml(report.attachment_url)}" style="max-width:100%; border-radius:4px; margin-top:8px;"></p>` : ''}
-    `;
-    document.getElementById('reportDetailsContent').innerHTML = detailsContent;
-    document.getElementById('reportReplyBox').value = '';
+    document.getElementById('modalTicketId').textContent = report.ticket_id || report.id;
+    document.getElementById('modalTicketStatus').textContent = report.ticket_status.replace('_', ' ');
+    document.getElementById('modalTicketStatus').className = `filter-chip status-${report.ticket_status.replace('_', '-')}`;
+    
+    document.getElementById('modalTargetType').textContent = report.reported_item_type;
+    document.getElementById('modalTargetId').textContent = report.reported_item_id;
+    document.getElementById('modalTargetUserId').textContent = report.target_user_id || 'Unknown';
+    document.getElementById('modalTargetPreview').textContent = report.target_preview || 'No preview available.';
+    
+    document.getElementById('enforcementAction').value = report.enforcement_action || '';
     document.getElementById('adminMsgTitle').value = '';
     document.getElementById('adminMsgBody').value = '';
-
+    document.getElementById('adminReplyText').value = '';
+    
+    document.getElementById('ticketChatMessages').innerHTML = '<div class="empty-state">Loading chat...</div>';
     document.getElementById('reportDetailsModal').classList.add('active');
+    
+    await loadTicketMessages(report);
   };
 
-  window.submitReportReply = async function () {
-    const reportId = window.currentReportId;
-    const targetUserId = window.currentReportTargetUser;
-    
-    const reply = document.getElementById('reportReplyBox').value.trim();
-    const systemTitle = document.getElementById('adminMsgTitle').value.trim();
-    const systemBody = document.getElementById('adminMsgBody').value.trim();
-
+  async function loadTicketMessages(report) {
     try {
-      // 1. Resolve and reply to reporter
-      await api(`/api/admin/reports/${reportId}/resolve`, {
-        method: 'POST',
-        body: JSON.stringify({ reply })
+      const data = await api(`/api/tickets/${report.id}/messages`);
+      const container = document.getElementById('ticketChatMessages');
+      container.innerHTML = '';
+      
+      const descHtml = report.report_description ? escapeHtml(report.report_description) : '<i>[No description provided]</i>';
+      const attachHtml = report.attachment_url ? `<div style="margin-top: 1rem;"><a href="${report.attachment_url}" target="_blank" style="color: var(--primary);">View Attachment 📁</a></div>` : '';
+      
+      container.innerHTML += `
+        <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Original Report from User ${report.reporter_id}</div>
+          <div style="font-weight: bold; margin-bottom: 0.5rem;">Reason: ${escapeHtml(report.reason)}</div>
+          <div style="font-size: 0.9rem; color: var(--text-secondary);">${descHtml}${attachHtml}</div>
+        </div>
+      `;
+
+      data.messages.forEach(msg => {
+        const isUser = msg.sender_role === 'user';
+        const color = isUser ? 'rgba(255,255,255,0.05)' : 'rgba(92, 106, 196, 0.15)';
+        const align = isUser ? 'flex-start' : 'flex-end';
+        
+        container.innerHTML += `
+          <div style="align-self: ${align}; max-width: 80%; background: ${color}; padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; display: flex; justify-content: space-between; gap: 1rem;">
+              <strong>${isUser ? 'User' : 'Admin (You)'}</strong>
+              <span>${new Date(msg.created_at).toLocaleString()}</span>
+            </div>
+            <div style="font-size: 0.9rem;">${escapeHtml(msg.message_body)}</div>
+          </div>
+        `;
       });
+      container.scrollTop = container.scrollHeight;
+    } catch (err) {
+      document.getElementById('ticketChatMessages').innerHTML = `<div class="empty-state">Failed to load chat: ${err.message}</div>`;
+    }
+  }
 
-      // 2. Send system message to reported user if provided
-      if (systemTitle && systemBody && targetUserId) {
-        await api('/api/admin/messages/send', {
-          method: 'POST',
-          body: JSON.stringify({ user_id: targetUserId, title: systemTitle, body: systemBody })
-        });
-      }
+  window.sendTicketReply = async function() {
+    const text = document.getElementById('adminReplyText').value.trim();
+    if (!text) return showToast('Enter a reply message.', 'warning');
+    
+    try {
+      await api(`/api/tickets/${window.currentTicketId}/reply`, {
+        method: 'POST',
+        body: JSON.stringify({ message_body: text })
+      });
+      document.getElementById('adminReplyText').value = '';
+      const dummyReport = { id: window.currentTicketId };
+      await loadTicketMessages(dummyReport); // Ideally fetch full report again, but this works to append chat
+      window.loadReports(); // Refresh table
+      showToast('Reply sent.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
 
-      showToast('Report resolved and messages sent.', 'success');
+  window.updateTicketStatus = async function (status) {
+    try {
+      await api(`/api/admin/reports/${window.currentTicketId}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status })
+      });
+      showToast(`Ticket status updated to ${status}.`, 'success');
+      window.loadReports();
+      document.getElementById('modalTicketStatus').textContent = status;
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  window.submitTicketResolution = async function () {
+    const action = document.getElementById('enforcementAction').value;
+    try {
+      await api(`/api/admin/reports/${window.currentTicketId}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status: 'resolved', action })
+      });
+      showToast('Ticket marked as resolved.', 'success');
+      window.loadReports();
       document.getElementById('reportDetailsModal').classList.remove('active');
-      loadReports();
-      loadStats();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  window.sendSystemAlert = async function() {
+    const title = document.getElementById('adminMsgTitle').value.trim();
+    const body = document.getElementById('adminMsgBody').value.trim();
+    if (!title || !body) return showToast('Title and message required for system alert.', 'warning');
+    if (!window.currentTicketTargetUser) return showToast('Unknown target user ID.', 'error');
+    
+    try {
+      await api('/api/admin/messages/send', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: window.currentTicketTargetUser, title, body })
+      });
+      showToast('System alert sent to violator.', 'success');
+      document.getElementById('adminMsgTitle').value = '';
+      document.getElementById('adminMsgBody').value = '';
     } catch (err) {
       showToast(err.message, 'error');
     }
@@ -713,14 +794,14 @@
       });
     });
 
-    // Reports filter chips
-    document.querySelectorAll('[data-report-resolved]').forEach(chip => {
-      chip.addEventListener('click', () => {
-        document.querySelectorAll('[data-report-resolved]').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        loadReports(chip.dataset.reportResolved);
+      const reportsChips = document.querySelectorAll('[data-ticket-status]');
+      reportsChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          document.querySelectorAll('[data-ticket-status]').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          loadReports(chip.dataset.ticketStatus);
+        });
       });
-    });
 
     // Add category
     const addCategoryBtn = document.getElementById('addCategoryBtn');
