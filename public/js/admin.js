@@ -531,7 +531,7 @@
         if (user.account_status === 'banned') statusClass = 'rejected';
         
         tr.innerHTML = `
-          <td>#${user.id}</td>
+          <td><a href="javascript:void(0)" onclick="window.openAuditModal(${user.id})" style="color:var(--primary);text-decoration:underline;">#${user.id}</a></td>
           <td>${escapeHtml(user.full_name)}<br><small style="opacity:0.6">${escapeHtml(user.user_id)}</small></td>
           <td>${escapeHtml(user.email)}</td>
           <td>
@@ -701,3 +701,4 @@
     if (enableMfaBtn) enableMfaBtn.addEventListener('click', enableMFA);
   });
 })();
+

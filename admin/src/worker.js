@@ -579,4 +579,115 @@ app.get('*', async (c) => {
   return new Response(asset.body, { headers });
 });
 
+
+// ---------------------------------------------------------
+// ��  ADVANCED MODERATION & AUDITING API
+// ---------------------------------------------------------
+
+app.get('/api/admin/users/:id/audit', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const userId = parseInt(c.req.param('id'));
+
+  const user = await db.prepare('SELECT id, user_id, full_name, email, phone_number, account_status, dm_permission, visit_count, interaction_permissions, created_at FROM users WHERE id = ?').bind(userId).first();
+  if (!user) return c.json({ error: 'User not found' }, 404);
+
+  const storiesCount = await db.prepare('SELECT COUNT(*) as count FROM stories WHERE user_id = ?').bind(userId).first();
+  const commentsCount = await db.prepare('SELECT COUNT(*) as count FROM comments WHERE user_id = ?').bind(userId).first();
+  const likesCount = await db.prepare('SELECT COUNT(*) as count FROM likes l JOIN stories s ON l.story_id = s.id WHERE s.user_id = ?').bind(userId).first();
+  
+  const { results: login_logs } = await db.prepare('SELECT ip_address, user_agent, status, created_at FROM login_logs WHERE user_id = ? ORDER BY created_at DESC LIMIT 50').bind(userId).all();
+
+  return c.json({
+    user,
+    stats: {
+      stories: storiesCount.count,
+      comments: commentsCount.count,
+      likesReceived: likesCount.count
+    },
+    login_logs
+  });
+});
+
+app.put('/api/admin/users/:id/permissions', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const userId = parseInt(c.req.param('id'));
+  const { permissions } = await c.req.json();
+  await db.prepare('UPDATE users SET interaction_permissions = ? WHERE id = ?').bind(JSON.stringify(permissions), userId).run();
+  return c.json({ message: 'Permissions updated.' });
+});
+
+app.post('/api/admin/users/:id/enforce', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const userId = parseInt(c.req.param('id'));
+  const { action, reason } = await c.req.json();
+  
+  let newStatus = 'active';
+  if (action === 'permanent_ban') newStatus = 'banned';
+  if (action === 'temporary_suspension') newStatus = 'suspended';
+
+  // Increment token_version to wipe active sessions immediately
+  await db.prepare('UPDATE users SET account_status = ?, token_version = token_version + 1 WHERE id = ?').bind(newStatus, userId).run();
+  
+  const adminPayload = c.get('admin');
+  await db.prepare('INSERT INTO moderation_log (target_type, target_id, admin_id, action, reason) VALUES (?, ?, ?, ?, ?)').bind('user', userId, adminPayload.adminId, action, reason).run();
+  
+  return c.json({ message: 'Enforcement action applied. User sessions invalidated.' });
+});
+
+app.get('/api/admin/reports/aggregated', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { results } = await db.prepare(`SELECT target_type, target_id, COUNT(*) as incident_count, MAX(created_at) as last_reported_at
+    FROM reports
+    WHERE resolved = 0
+    GROUP BY target_type, target_id
+    ORDER BY incident_count DESC`).all();
+  return c.json(results);
+});
+
+app.get('/api/admin/reports/target', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { target_type, target_id } = c.req.query();
+  const { results } = await db.prepare('SELECT r.*, u.full_name as reporter_name FROM reports r LEFT JOIN users u ON r.reporter_id = u.id WHERE target_type = ? AND target_id = ? ORDER BY created_at DESC').bind(target_type, parseInt(target_id)).all();
+  return c.json(results);
+});
+
+app.post('/api/admin/reports/:id/reply', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const reportId = parseInt(c.req.param('id'));
+  const { reply } = await c.req.json();
+  const adminPayload = c.get('admin');
+  
+  await db.prepare('UPDATE reports SET admin_reply = ?, resolved = 1, resolved_by = ?, resolved_at = CURRENT_TIMESTAMP WHERE id = ?').bind(reply, adminPayload.adminId, reportId).run();
+  return c.json({ message: 'Reply sent and report resolved.' });
+});
+
+app.post('/api/admin/messages/send', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { user_id, title, body } = await c.req.json();
+  const adminPayload = c.get('admin');
+  
+  await db.prepare('INSERT INTO admin_messages (user_id, admin_id, title, body) VALUES (?, ?, ?, ?)').bind(parseInt(user_id), adminPayload.adminId, title, body).run();
+  return c.json({ message: 'Message sent successfully.' });
+});
+
+app.get('/api/users/me/support-inbox', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  
+  const { results: messages } = await db.prepare('SELECT * FROM admin_messages WHERE user_id = ? ORDER BY created_at DESC').bind(user.id).all();
+  const { results: reports } = await db.prepare('SELECT * FROM reports WHERE reporter_id = ? AND resolved = 1 AND admin_reply IS NOT NULL ORDER BY resolved_at DESC').bind(user.id).all();
+  
+  return c.json({ messages, reports });
+});
+
+app.post('/api/users/me/messages/:id/read', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const msgId = parseInt(c.req.param('id'));
+  await db.prepare('UPDATE admin_messages SET is_read = 1 WHERE id = ? AND user_id = ?').bind(msgId, user.id).run();
+  return c.json({ success: true });
+});
 export default app;
+
+
+

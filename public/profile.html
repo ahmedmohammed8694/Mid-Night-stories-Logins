@@ -514,6 +514,7 @@
             <div class="tab" data-tab="following" id="tabFollowing">Following</div>
             <div class="tab" data-tab="followers" id="tabFollowers">Followers</div>
             <div class="tab" data-tab="blocked" id="tabBlocked" style="display: none;">Blocked Users</div>
+            <div class="tab" data-tab="support" id="tabSupport" style="display: none; position: relative;">Support Inbox <span id="supportBadge" style="display:none; position:absolute; top:-5px; right:-10px; background:var(--danger); color:white; border-radius:50%; width:16px; height:16px; font-size:10px; text-align:center; line-height:16px;">!</span></div>
           </div>
         </div>
 
@@ -1162,6 +1163,7 @@
       document.getElementById('followingContainer').style.display = 'none';
       document.getElementById('followersContainer').style.display = 'none';
       document.getElementById('blockedContainer').style.display = 'none';
+      document.getElementById('supportContainer').style.display = 'none';
       
       // Remove active class from all tabs
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -1169,7 +1171,7 @@
       // Show and activate target
       document.getElementById(activeTabId).classList.add('active');
       const container = document.getElementById(containerToShowId);
-      if (containerToShowId === 'followingContainer' || containerToShowId === 'followersContainer' || containerToShowId === 'blockedContainer' || containerToShowId === 'commentsContainer') {
+      if (containerToShowId === 'followingContainer' || containerToShowId === 'followersContainer' || containerToShowId === 'blockedContainer' || containerToShowId === 'commentsContainer' || containerToShowId === 'supportContainer') {
         container.style.display = 'flex';
       } else {
         container.style.display = 'block';
@@ -1206,3 +1208,6 @@
   </script>
 </body>
 </html>
+
+
+
