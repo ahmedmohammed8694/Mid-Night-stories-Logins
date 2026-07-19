@@ -55,7 +55,7 @@
 
   // ── MFA Verify ──
   async function handleMFA() {
-    const code = document.getElementById('mfaCode').value.trim();
+    const code = document.getElementById('mfaCode').value.replace(/\s+/g, '');
     if (!code || code.length !== 6) {
       showToast('Please enter a valid 6-digit code.', 'warning');
       return;
@@ -733,7 +733,7 @@
   }
 
   async function enableMFA() {
-    const code = document.getElementById('mfaSetupCode').value.trim();
+    const code = document.getElementById('mfaSetupCode').value.replace(/\s+/g, '');
     if (!code || code.length !== 6) {
       showToast('Enter a valid 6-digit code.', 'warning');
       return;
