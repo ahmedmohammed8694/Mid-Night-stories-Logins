@@ -1355,7 +1355,7 @@ app.get('/api/admin/stats', requireAdmin, async (c) => {
   const pendingComments = (await db.prepare("SELECT COUNT(*) as c FROM comments WHERE status = 'pending'").first()).c;
   const totalUsers = (await db.prepare('SELECT COUNT(*) as c FROM users').first()).c;
   const totalLikes = (await db.prepare('SELECT COALESCE(SUM(likes_count), 0) as c FROM stories').first()).c;
-  const openReports = (await db.prepare('SELECT COUNT(*) as c FROM reports WHERE resolved = 0').first()).c;
+  const openReports = (await db.prepare("SELECT COUNT(*) as c FROM reports WHERE ticket_status != 'resolved' AND ticket_status != 'closed'").first()).c;
   const bannedIPs = (await db.prepare('SELECT COUNT(*) as c FROM banned_identifiers').first()).c;
 
   return c.json({
@@ -1595,22 +1595,38 @@ app.post('/api/tickets/:id/reply', async (c) => {
   const id = parseInt(c.req.param('id'));
   
   let sender_id, sender_role;
-  const token = c.req.cookie('auth_token') || c.req.cookie('admin_token');
-  if (!token) return c.json({ error: 'Unauthorized' }, 401);
+  let token = c.req.header('x-admin-token') || c.req.cookie('admin_token');
   
-  try {
-    const payload = await jwt.verify(token, c.env.JWT_SECRET);
-    if (payload.adminId) {
-      sender_id = payload.adminId;
-      sender_role = 'admin';
-    } else if (payload.id) {
-      sender_id = payload.id;
-      sender_role = 'user';
-    } else {
-      return c.json({ error: 'Invalid token role' }, 403);
+  if (token) {
+    try {
+      const payload = await verifyJWT(token, getAdminJwtSecret(c));
+      if (payload.adminId) {
+        sender_id = payload.adminId;
+        sender_role = 'admin';
+      }
+    } catch (err) {
+      // Not a valid admin token, try user token next
     }
-  } catch (err) {
-    return c.json({ error: 'Invalid token' }, 401);
+  }
+
+  if (!sender_role) {
+    const authHeader = c.req.header('Authorization');
+    token = (authHeader && authHeader.split(' ')[1]) || c.req.cookie('auth_token');
+    if (token) {
+      try {
+        const payload = await verifyJWT(token, getUserJwtSecret(c));
+        if (payload.id) {
+          sender_id = payload.id;
+          sender_role = 'user';
+        }
+      } catch (err) {
+        return c.json({ error: 'Invalid token' }, 401);
+      }
+    }
+  }
+
+  if (!sender_role) {
+    return c.json({ error: 'Unauthorized' }, 401);
   }
 
   const { message_body } = await c.req.json();
