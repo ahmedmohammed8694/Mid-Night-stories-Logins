@@ -2255,15 +2255,10 @@ app.get('/api/books', optionalUser, async (c) => {
 
   const sql = `
     SELECT b.*,
-      GROUP_CONCAT(DISTINCT c.name) as category_names,
-      GROUP_CONCAT(DISTINCT t.name) as tag_names
+      (SELECT GROUP_CONCAT(c.name) FROM book_categories bc JOIN categories c ON bc.category_id = c.id WHERE bc.book_id = b.id) as category_names,
+      (SELECT GROUP_CONCAT(t.name) FROM book_tags bt JOIN tags t ON bt.tag_id = t.id WHERE bt.book_id = b.id) as tag_names
     FROM books b
-    LEFT JOIN book_categories bc ON b.id = bc.book_id
-    LEFT JOIN categories c ON bc.category_id = c.id
-    LEFT JOIN book_tags bt ON b.id = bt.book_id
-    LEFT JOIN tags t ON bt.tag_id = t.id
     ${where}
-    GROUP BY b.id
     ORDER BY ${orderBy}
     LIMIT ? OFFSET ?
   `;
@@ -2312,16 +2307,11 @@ app.get('/api/books/:id', optionalUser, async (c) => {
 
   const book = await db.prepare(`
     SELECT b.*,
-      GROUP_CONCAT(DISTINCT c.name) as category_names,
-      GROUP_CONCAT(DISTINCT c.id) as category_ids,
-      GROUP_CONCAT(DISTINCT t.name) as tag_names
+      (SELECT GROUP_CONCAT(c.name) FROM book_categories bc JOIN categories c ON bc.category_id = c.id WHERE bc.book_id = b.id) as category_names,
+      (SELECT GROUP_CONCAT(c.id) FROM book_categories bc WHERE bc.book_id = b.id) as category_ids,
+      (SELECT GROUP_CONCAT(t.name) FROM book_tags bt JOIN tags t ON bt.tag_id = t.id WHERE bt.book_id = b.id) as tag_names
     FROM books b
-    LEFT JOIN book_categories bc ON b.id = bc.book_id
-    LEFT JOIN categories c ON bc.category_id = c.id
-    LEFT JOIN book_tags bt ON b.id = bt.book_id
-    LEFT JOIN tags t ON bt.tag_id = t.id
     WHERE b.id = ?
-    GROUP BY b.id
   `).bind(bookId).first();
 
   if (!book) return c.json({ error: 'Book not found.' }, 404);
