@@ -37,6 +37,7 @@ CREATE TABLE categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL UNIQUE,
   slug TEXT NOT NULL UNIQUE,
+  channel_type TEXT NOT NULL DEFAULT 'education' CHECK(channel_type IN ('education', 'naval')),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -257,6 +258,10 @@ CREATE TABLE IF NOT EXISTS books (
   visibility TEXT NOT NULL DEFAULT 'public' CHECK(visibility IN ('public', 'restricted')),
   uploaded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
   approved_by INTEGER REFERENCES admin_users(id) ON DELETE SET NULL,
+  channel_type TEXT NOT NULL DEFAULT 'education' CHECK(channel_type IN ('education', 'naval')),
+  uploaded_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  is_user_submission INTEGER DEFAULT 0 CHECK(is_user_submission IN (0, 1)),
+  submission_status TEXT DEFAULT 'approved' CHECK(submission_status IN ('pending', 'approved', 'rejected')),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -324,12 +329,42 @@ CREATE INDEX IF NOT EXISTS idx_bookmarks_user_book ON bookmarks(user_id, book_id
 CREATE INDEX IF NOT EXISTS idx_highlights_user_book ON highlights(user_id, book_id);
 CREATE INDEX IF NOT EXISTS idx_user_library_user ON user_library(user_id);
 
+CREATE TABLE IF NOT EXISTS user_book_submissions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  author TEXT NOT NULL,
+  channel_type TEXT NOT NULL CHECK(channel_type IN ('education', 'naval')),
+  category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+  description TEXT,
+  cover_image_url TEXT,
+  book_file_url TEXT NOT NULL,
+  status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected')),
+  rejection_reason TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Seed new book-related categories
-INSERT OR IGNORE INTO categories (name, slug) VALUES ('Fiction', 'fiction');
-INSERT OR IGNORE INTO categories (name, slug) VALUES ('Non-Fiction', 'non-fiction');
-INSERT OR IGNORE INTO categories (name, slug) VALUES ('Sci-Fi', 'sci-fi');
-INSERT OR IGNORE INTO categories (name, slug) VALUES ('Romance', 'romance');
-INSERT OR IGNORE INTO categories (name, slug) VALUES ('Self-Help', 'self-help');
-INSERT OR IGNORE INTO categories (name, slug) VALUES ('Biography', 'biography');
-INSERT OR IGNORE INTO categories (name, slug) VALUES ('Academic', 'academic');
-INSERT OR IGNORE INTO categories (name, slug) VALUES ('Children', 'children');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Fiction', 'fiction', 'education');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Non-Fiction', 'non-fiction', 'education');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Sci-Fi', 'sci-fi', 'education');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Romance', 'romance', 'education');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Self-Help', 'self-help', 'education');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Biography', 'biography', 'education');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Academic', 'academic', 'education');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Children', 'children', 'education');
+
+-- Seed Educational & Naval separation categories
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Computer Science', 'computer-science', 'education');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Engineering', 'engineering', 'education');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Mathematics', 'mathematics', 'education');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Competitive Exams', 'competitive-exams', 'education');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('General Science', 'general-science', 'education');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Academic References', 'academic-references', 'education');
+
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Naval History', 'naval-history', 'naval');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Maritime Engineering', 'maritime-engineering', 'naval');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Naval Tactics & Strategy', 'naval-tactics-strategy', 'naval');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Nautical Studies', 'nautical-studies', 'naval');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Ship Design & Architecture', 'ship-design-architecture', 'naval');
+INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Submarine Operations', 'submarine-operations', 'naval');

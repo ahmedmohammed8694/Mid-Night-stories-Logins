@@ -228,6 +228,21 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_highlights_user_book ON highlights(user_id, book_id);
     CREATE INDEX IF NOT EXISTS idx_user_library_user ON user_library(user_id);
 
+    CREATE TABLE IF NOT EXISTS user_book_submissions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      author TEXT NOT NULL,
+      channel_type TEXT NOT NULL CHECK(channel_type IN ('education', 'naval')),
+      category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+      description TEXT,
+      cover_image_url TEXT,
+      book_file_url TEXT NOT NULL,
+      status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected')),
+      rejection_reason TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS follows (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       follower_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -295,35 +310,72 @@ function initializeDatabase() {
     // Column already exists, ignore
   }
 
+  // Try altering categories to add channel_type (ignore if already exists)
+  try {
+    db.exec("ALTER TABLE categories ADD COLUMN channel_type TEXT NOT NULL DEFAULT 'education' CHECK(channel_type IN ('education', 'naval'));");
+  } catch (e) {
+    // Column already exists, ignore
+  }
+
+  // Try altering books to add channel_type and user submission columns
+  try {
+    db.exec("ALTER TABLE books ADD COLUMN channel_type TEXT NOT NULL DEFAULT 'education' CHECK(channel_type IN ('education', 'naval'));");
+  } catch (e) {}
+  try {
+    db.exec("ALTER TABLE books ADD COLUMN uploaded_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;");
+  } catch (e) {}
+  try {
+    db.exec("ALTER TABLE books ADD COLUMN is_user_submission INTEGER DEFAULT 0 CHECK(is_user_submission IN (0, 1));");
+  } catch (e) {}
+  try {
+    db.exec("ALTER TABLE books ADD COLUMN submission_status TEXT DEFAULT 'approved' CHECK(submission_status IN ('pending', 'approved', 'rejected'));");
+  } catch (e) {}
+
   // ── Seed Categories ──
   const defaultCategories = [
-    { name: 'Childhood', slug: 'childhood' },
-    { name: 'Family', slug: 'family' },
-    { name: 'Loss & Grief', slug: 'loss-grief' },
-    { name: 'Recovery', slug: 'recovery' },
-    { name: 'Relationships', slug: 'relationships' },
-    { name: 'Career & School', slug: 'career-school' },
-    { name: 'Mental Health', slug: 'mental-health' },
-    { name: 'Identity', slug: 'identity' },
-    { name: 'Triumph', slug: 'triumph' },
-    { name: 'LGBTQ+', slug: 'lgbtq' },
-    { name: 'Other', slug: 'other' },
-    { name: 'Fiction', slug: 'fiction' },
-    { name: 'Non-Fiction', slug: 'non-fiction' },
-    { name: 'Sci-Fi', slug: 'sci-fi' },
-    { name: 'Romance', slug: 'romance' },
-    { name: 'Self-Help', slug: 'self-help' },
-    { name: 'Biography', slug: 'biography' },
-    { name: 'Academic', slug: 'academic' },
-    { name: 'Children', slug: 'children' }
+    { name: 'Childhood', slug: 'childhood', channel_type: 'education' },
+    { name: 'Family', slug: 'family', channel_type: 'education' },
+    { name: 'Loss & Grief', slug: 'loss-grief', channel_type: 'education' },
+    { name: 'Recovery', slug: 'recovery', channel_type: 'education' },
+    { name: 'Relationships', slug: 'relationships', channel_type: 'education' },
+    { name: 'Career & School', slug: 'career-school', channel_type: 'education' },
+    { name: 'Mental Health', slug: 'mental-health', channel_type: 'education' },
+    { name: 'Identity', slug: 'identity', channel_type: 'education' },
+    { name: 'Triumph', slug: 'triumph', channel_type: 'education' },
+    { name: 'LGBTQ+', slug: 'lgbtq', channel_type: 'education' },
+    { name: 'Other', slug: 'other', channel_type: 'education' },
+    { name: 'Fiction', slug: 'fiction', channel_type: 'education' },
+    { name: 'Non-Fiction', slug: 'non-fiction', channel_type: 'education' },
+    { name: 'Sci-Fi', slug: 'sci-fi', channel_type: 'education' },
+    { name: 'Romance', slug: 'romance', channel_type: 'education' },
+    { name: 'Self-Help', slug: 'self-help', channel_type: 'education' },
+    { name: 'Biography', slug: 'biography', channel_type: 'education' },
+    { name: 'Academic', slug: 'academic', channel_type: 'education' },
+    { name: 'Children', slug: 'children', channel_type: 'education' },
+    
+    // Educational Sub-categories
+    { name: 'Computer Science', slug: 'computer-science', channel_type: 'education' },
+    { name: 'Engineering', slug: 'engineering', channel_type: 'education' },
+    { name: 'Mathematics', slug: 'mathematics', channel_type: 'education' },
+    { name: 'Competitive Exams', slug: 'competitive-exams', channel_type: 'education' },
+    { name: 'General Science', slug: 'general-science', channel_type: 'education' },
+    { name: 'Academic References', slug: 'academic-references', channel_type: 'education' },
+
+    // Naval Sub-categories
+    { name: 'Naval History', slug: 'naval-history', channel_type: 'naval' },
+    { name: 'Maritime Engineering', slug: 'maritime-engineering', channel_type: 'naval' },
+    { name: 'Naval Tactics & Strategy', slug: 'naval-tactics-strategy', channel_type: 'naval' },
+    { name: 'Nautical Studies', slug: 'nautical-studies', channel_type: 'naval' },
+    { name: 'Ship Design & Architecture', slug: 'ship-design-architecture', channel_type: 'naval' },
+    { name: 'Submarine Operations', slug: 'submarine-operations', channel_type: 'naval' }
   ];
 
 
   const insertCategory = db.prepare(
-    'INSERT OR IGNORE INTO categories (name, slug) VALUES (?, ?)'
+    'INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES (?, ?, ?)'
   );
   for (const cat of defaultCategories) {
-    insertCategory.run(cat.name, cat.slug);
+    insertCategory.run(cat.name, cat.slug, cat.channel_type);
   }
 
   // ── Seed Admin User ──

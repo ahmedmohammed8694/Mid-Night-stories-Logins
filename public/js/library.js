@@ -6,6 +6,37 @@
   let activeView = 'grid'; // 'grid' or 'list'
   let token = localStorage.getItem('token');
 
+  // URL routing parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const channel = urlParams.get('channel') || 'education';
+  const presetCategory = urlParams.get('category') || 'all';
+
+  // Highlight active menu in header
+  function highlightHeaderNav() {
+    if (channel === 'education') {
+      const edEl = document.getElementById('navEdBooks');
+      if (edEl) edEl.classList.add('active');
+    } else if (channel === 'naval') {
+      const navEl = document.getElementById('navNavalBooks');
+      if (navEl) navEl.classList.add('active');
+    }
+  }
+
+  // Update Hero text based on channel
+  function updateHeroText() {
+    const heroTitle = document.querySelector('.hero__title');
+    const heroSubtitle = document.querySelector('.hero__subtitle');
+    if (heroTitle && heroSubtitle) {
+      if (channel === 'naval') {
+        heroTitle.textContent = 'Naval Library';
+        heroSubtitle.textContent = 'Explore naval history, maritime tactics, nautical studies, and ship design.';
+      } else {
+        heroTitle.textContent = 'Educational Library';
+        heroSubtitle.textContent = 'Find reference books, research papers, computer science materials, and study guides.';
+      }
+    }
+  }
+
   // DOM Elements
   const booksGrid = document.getElementById('booksGrid');
   const libEmptyState = document.getElementById('libEmptyState');
@@ -31,15 +62,17 @@
       document.querySelectorAll('.guest-only').forEach(el => el.style.display = '');
       if (shelfFilterSection) shelfFilterSection.style.display = 'none';
     }
+    highlightHeaderNav();
+    updateHeroText();
   }
 
   // Load and render category filters
   async function loadCategoryFilters() {
     try {
-      const categories = await api('/api/categories');
+      const categories = await api(`/api/categories?channel=${channel}`);
       libCategoryFilters.innerHTML = `
         <label class="checkbox-label" style="margin-bottom: 8px;">
-          <input type="radio" name="lib_category" class="category-radio" value="all" checked style="cursor:pointer;">
+          <input type="radio" name="lib_category" class="category-radio" value="all" ${presetCategory === 'all' ? 'checked' : ''} style="cursor:pointer;">
           <span>All Categories</span>
         </label>
       `;
@@ -49,7 +82,7 @@
         label.className = 'checkbox-label';
         label.style.marginBottom = '6px';
         label.innerHTML = `
-          <input type="radio" name="lib_category" class="category-radio" value="${cat.slug}" style="cursor:pointer;">
+          <input type="radio" name="lib_category" class="category-radio" value="${cat.slug}" ${presetCategory === cat.slug ? 'checked' : ''} style="cursor:pointer;">
           <span>${escapeHtml(cat.name)}</span>
         `;
         libCategoryFilters.appendChild(label);
@@ -96,6 +129,7 @@
       sort
     });
 
+    if (channel) params.append('channel', channel);
     if (category && category !== 'all') params.append('category', category);
     if (search) params.append('search', search);
     if (shelf) params.append('shelf', shelf);

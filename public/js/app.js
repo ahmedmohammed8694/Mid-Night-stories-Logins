@@ -399,6 +399,7 @@ function initAuthLayout() {
     authSection = `
       <a href="/login" class="btn btn--secondary btn--sm guest-only">Login</a>
       <a href="/signup" class="btn btn--primary btn--sm guest-only">Sign Up</a>
+      <a href="/login?redirect=/upload-book" class="btn btn--secondary btn--sm guest-only" style="margin-left: 8px;">📤 Upload Book</a>
     `;
   }
 
@@ -414,6 +415,33 @@ function initAuthLayout() {
       </a>
       <nav class="header__nav" style="display: flex; gap: 24px; align-items: center; margin-left: auto; margin-right: 24px;">
         <a href="/" class="nav-link ${path === '/' || path === '/index.html' ? 'active' : ''}">Browse</a>
+        
+        <!-- Education Books Dropdown -->
+        <div class="nav-dropdown">
+          <a href="/library?channel=education" class="nav-link dropdown-toggle" id="navEdBooks">Education Books</a>
+          <div class="dropdown-menu">
+            <a href="/library?channel=education&category=computer-science">Computer Science</a>
+            <a href="/library?channel=education&category=engineering">Engineering</a>
+            <a href="/library?channel=education&category=mathematics">Mathematics</a>
+            <a href="/library?channel=education&category=competitive-exams">Competitive Exams</a>
+            <a href="/library?channel=education&category=general-science">General Science</a>
+            <a href="/library?channel=education&category=academic-references">Academic References</a>
+          </div>
+        </div>
+        
+        <!-- Naval Books Dropdown -->
+        <div class="nav-dropdown">
+          <a href="/library?channel=naval" class="nav-link dropdown-toggle" id="navNavalBooks">Naval Books</a>
+          <div class="dropdown-menu">
+            <a href="/library?channel=naval&category=naval-history">Naval History</a>
+            <a href="/library?channel=naval&category=maritime-engineering">Maritime Engineering</a>
+            <a href="/library?channel=naval&category=naval-tactics-strategy">Naval Tactics & Strategy</a>
+            <a href="/library?channel=naval&category=nautical-studies">Nautical Studies</a>
+            <a href="/library?channel=naval&category=ship-design-architecture">Ship Design & Architecture</a>
+            <a href="/library?channel=naval&category=submarine-operations">Submarine Operations</a>
+          </div>
+        </div>
+
         <a href="/submit" class="nav-link ${path === '/submit.html' ? 'active' : ''}">Share Story</a>
         <a href="/profile" class="nav-link ${path === '/profile.html' ? 'active' : ''}">Find User</a>
         ${token ? `<a href="/chat" class="nav-link ${path === '/chat.html' ? 'active' : ''}">Chats</a>` : ''}
@@ -423,6 +451,7 @@ function initAuthLayout() {
       <div class="header__actions" style="display: flex; align-items: center; gap: 16px;">
         <button class="theme-toggle" id="themeToggle" style="background: none; border: none; font-size: 1.1rem; cursor: pointer;" aria-label="Toggle theme">🌙</button>
         ${token ? `
+          <a href="/upload-book" class="btn btn--primary btn--sm" style="margin-right: 8px;">📤 Upload Book</a>
           <div class="header__notif-container" style="position: relative;">
             <button id="notifBellBtn" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; position: relative; padding: 4px; display: flex; align-items: center; justify-content: center; color: inherit;">
               🔔

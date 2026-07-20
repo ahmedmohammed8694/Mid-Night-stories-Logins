@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-page="submit">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload a Book | Midnight Stories</title>
+  <meta name="description" content="Submit your educational or naval reference books to the Midnight Stories library for community reading and administrative moderation.">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <style>
+    .upload-zone {
+      border: 2px dashed var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 30px;
+      text-align: center;
+      background: rgba(255,255,255,0.01);
+      cursor: pointer;
+      transition: border-color var(--transition-fast), background var(--transition-fast);
+      margin-bottom: 8px;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--page-accent);
+      background: rgba(139, 127, 240, 0.05);
+    }
+    .upload-zone__icon {
+      font-size: 2.2rem;
+      margin-bottom: 12px;
+    }
+    .upload-zone__text {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .file-preview {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-sm);
+      margin-top: 10px;
+    }
+    .file-preview img {
+      width: 45px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+    .file-preview__info {
+      flex-grow: 1;
+      font-size: 0.85rem;
+    }
+    .file-preview__name {
+      font-weight: 500;
+      color: var(--text-primary);
+      word-break: break-all;
+    }
+    .file-preview__size {
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .file-preview__remove {
+      background: none;
+      border: none;
+      color: var(--accent-rose);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <header class="header">
+      <div class="header__inner">
+        <a href="/" class="header__logo">
+          <div class="header__logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+              <path d="M60 20c0 22-18 40-40 40-2 0-5 0-7-.5 7 13.5 21 22.5 37 22.5 24.8 0 45-20.2 45-45 0-16-8.5-30-22-37 .5 2 .5 5 .5 7z"/>
+            </svg>
+          </div>
+          <span class="header__logo-text">Midnight Stories</span>
+        </a>
+        <nav class="header__nav" id="mainNav">
+          <a href="/" class="nav-link">Browse</a>
+          
+          <!-- Education Books Dropdown -->
+          <div class="nav-dropdown">
+            <a href="/library?channel=education" class="nav-link dropdown-toggle" id="navEdBooks">Education Books</a>
+            <div class="dropdown-menu">
+              <a href="/library?channel=education&category=computer-science">Computer Science</a>
+              <a href="/library?channel=education&category=engineering">Engineering</a>
+              <a href="/library?channel=education&category=mathematics">Mathematics</a>
+              <a href="/library?channel=education&category=competitive-exams">Competitive Exams</a>
+              <a href="/library?channel=education&category=general-science">General Science</a>
+              <a href="/library?channel=education&category=academic-references">Academic References</a>
+            </div>
+          </div>
+          
+          <!-- Naval Books Dropdown -->
+          <div class="nav-dropdown">
+            <a href="/library?channel=naval" class="nav-link dropdown-toggle" id="navNavalBooks">Naval Books</a>
+            <div class="dropdown-menu">
+              <a href="/library?channel=naval&category=naval-history">Naval History</a>
+              <a href="/library?channel=naval&category=maritime-engineering">Maritime Engineering</a>
+              <a href="/library?channel=naval&category=naval-tactics-strategy">Naval Tactics & Strategy</a>
+              <a href="/library?channel=naval&category=nautical-studies">Nautical Studies</a>
+              <a href="/library?channel=naval&category=ship-design-architecture">Ship Design & Architecture</a>
+              <a href="/library?channel=naval&category=submarine-operations">Submarine Operations</a>
+            </div>
+          </div>
+          
+          <a href="/submit" class="nav-link">Share Story</a>
+          <a href="/resources" class="nav-link">Resources</a>
+          <a href="/about" class="nav-link">About</a>
+        </nav>
+        <div class="header__actions" id="authActions">
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
+          
+          <!-- Guest Links -->
+          <a href="/login" class="btn btn--secondary btn--sm guest-only">Login</a>
+          <a href="/signup" class="btn btn--primary btn--sm guest-only">Sign Up</a>
+          <a href="/login?redirect=/upload-book" class="btn btn--secondary btn--sm guest-only">📤 Upload Book</a>
+          
+          <!-- Auth Links -->
+          <a href="/profile" class="btn btn--secondary btn--sm auth-only" style="display:none;">Profile</a>
+          <button id="logoutBtn" class="btn btn--secondary btn--sm auth-only" style="display:none;">Logout</button>
+          <a href="/submit" class="btn btn--secondary btn--sm auth-only" style="display:none;">✍️ Share Story</a>
+          <a href="/upload-book" class="btn btn--primary btn--sm auth-only active" style="display:none;">📤 Upload Book</a>
+
+          <button class="mobile-menu-toggle" id="mobileMenuBtn" aria-label="Open menu">☰</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mobile Nav -->
+    <div class="mobile-nav" id="mobileNav">
+      <button class="mobile-nav__close" id="mobileNavClose">✕</button>
+      <a href="/" class="nav-link">Browse Stories</a>
+      <a href="/library?channel=education" class="nav-link">Education Books</a>
+      <a href="/library?channel=naval" class="nav-link">Naval Books</a>
+      <a href="/submit" class="nav-link">Share Your Story</a>
+      <a href="/resources" class="nav-link">Crisis Resources</a>
+      <a href="/about" class="nav-link">About</a>
+    </div>
+
+    <!-- Main Content -->
+    <main class="page-content" style="padding-top:0;">
+      <!-- Hero -->
+      <div class="page-hero" style="min-height:260px;">
+        <div class="page-hero__bg" style="background-image:url('https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&w=1600&q=80');"></div>
+        <div class="container page-hero__content">
+          <h1 class="page-hero__title">Upload a Book</h1>
+          <p class="page-hero__subtitle">Share educational materials or naval operations publications with the community.</p>
+        </div>
+      </div>
+
+      <div class="container container--narrow" style="padding-top:32px; padding-bottom: 60px;">
+        <!-- Upload Form -->
+        <form id="uploadBookForm" class="card card--no-hover" style="padding: 32px;">
+          
+          <!-- Channel Type Selection -->
+          <div class="form-group">
+            <label class="form-label" style="margin-bottom: 10px;">Target Channel <span style="color:var(--accent-rose);">*</span></label>
+            <div style="display: flex; gap: 32px; align-items: center; margin-top: 6px;">
+              <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="radio" name="channel_type" value="education" checked style="width: 18px; height: 18px;">
+                <span>Educational Book</span>
+              </label>
+              <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="radio" name="channel_type" value="naval" style="width: 18px; height: 18px;">
+                <span>Naval Book</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Metadata -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+            <div class="form-group">
+              <label class="form-label">Book Title <span style="color:var(--accent-rose);">*</span></label>
+              <input type="text" class="form-input" id="bookTitle" placeholder="Enter book title..." required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Author / Publisher <span style="color:var(--accent-rose);">*</span></label>
+              <input type="text" class="form-input" id="bookAuthor" placeholder="Enter author or publisher name..." required>
+            </div>
+          </div>
+
+          <!-- Category select -->
+          <div class="form-group">
+            <label class="form-label">Category / Genre <span style="color:var(--accent-rose);">*</span></label>
+            <select class="form-select" id="bookCategory" required>
+              <option value="">Loading categories...</option>
+            </select>
+          </div>
+
+          <!-- Description -->
+          <div class="form-group">
+            <label class="form-label">Description / Summary <span class="form-label__optional">(optional)</span></label>
+            <textarea class="form-textarea" id="bookDescription" placeholder="Provide a brief summary of the book content..." style="min-height: 100px;"></textarea>
+          </div>
+
+          <!-- Dropzones -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+            <!-- Cover Dropzone -->
+            <div class="form-group">
+              <label class="form-label">Cover Image <span class="form-label__optional">(optional, Max 5MB)</span></label>
+              <div class="upload-zone" id="coverDropzone">
+                <div class="upload-zone__icon">🖼️</div>
+                <div class="upload-zone__text">Drag & drop cover or <span style="color:var(--page-accent); text-decoration: underline;">browse</span></div>
+              </div>
+              <input type="file" id="coverFileInput" accept=".jpg,.jpeg,.png" style="display:none;">
+              <div class="file-preview" id="coverPreview" style="display:none;">
+                <img id="coverPreviewImg" src="">
+                <div class="file-preview__info">
+                  <div class="file-preview__name" id="coverPreviewName"></div>
+                  <div class="file-preview__size" id="coverPreviewSize"></div>
+                </div>
+                <button type="button" class="file-preview__remove" id="coverRemoveBtn">✕</button>
+              </div>
+            </div>
+
+            <!-- Document Dropzone -->
+            <div class="form-group">
+              <label class="form-label">Book Document <span style="color:var(--accent-rose);">*</span> <span class="form-label__optional">(PDF or EPUB, Max 50MB)</span></label>
+              <div class="upload-zone" id="bookDropzone">
+                <div class="upload-zone__icon">📄</div>
+                <div class="upload-zone__text">Drag & drop document or <span style="color:var(--page-accent); text-decoration: underline;">browse</span></div>
+              </div>
+              <input type="file" id="bookFileInput" accept=".pdf,.epub" style="display:none;">
+              <div class="file-preview" id="bookPreview" style="display:none;">
+                <div class="upload-zone__icon" style="font-size: 1.5rem; margin-bottom: 0;">📚</div>
+                <div class="file-preview__info">
+                  <div class="file-preview__name" id="bookPreviewName"></div>
+                  <div class="file-preview__size" id="bookPreviewSize"></div>
+                </div>
+                <button type="button" class="file-preview__remove" id="bookRemoveBtn">✕</button>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn--primary mt-16" id="submitBtn" style="width:100%; margin-top:24px;">🚀 Submit Book for Admin Review</button>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    (function () {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login?redirect=/upload-book';
+        return;
+      }
+
+      // DOM Elements
+      const form = document.getElementById('uploadBookForm');
+      const submitBtn = document.getElementById('submitBtn');
+      const categorySelect = document.getElementById('bookCategory');
+      const channelRadios = document.getElementsByName('channel_type');
+      
+      const coverDropzone = document.getElementById('coverDropzone');
+      const coverFileInput = document.getElementById('coverFileInput');
+      const coverPreview = document.getElementById('coverPreview');
+      const coverPreviewImg = document.getElementById('coverPreviewImg');
+      const coverPreviewName = document.getElementById('coverPreviewName');
+      const coverPreviewSize = document.getElementById('coverPreviewSize');
+      const coverRemoveBtn = document.getElementById('coverRemoveBtn');
+
+      const bookDropzone = document.getElementById('bookDropzone');
+      const bookFileInput = document.getElementById('bookFileInput');
+      const bookPreview = document.getElementById('bookPreview');
+      const bookPreviewName = document.getElementById('bookPreviewName');
+      const bookPreviewSize = document.getElementById('bookPreviewSize');
+      const bookRemoveBtn = document.getElementById('bookRemoveBtn');
+
+      let selectedCoverFile = null;
+      let selectedBookFile = null;
+
+      // Handle category loading
+      async function loadCategories() {
+        const activeChannel = Array.from(channelRadios).find(r => r.checked).value;
+        categorySelect.innerHTML = '<option value="">Loading categories...</option>';
+        try {
+          const categories = await api(`/api/categories?channel=${activeChannel}`);
+          categorySelect.innerHTML = '<option value="">Select category...</option>';
+          categories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat.id;
+            option.textContent = cat.name;
+            categorySelect.appendChild(option);
+          });
+        } catch (err) {
+          categorySelect.innerHTML = '<option value="">Failed to load categories</option>';
+          showToast('Error loading categories.', 'error');
+        }
+      }
+
+      // Initialize categories and binders
+      loadCategories();
+      channelRadios.forEach(radio => radio.addEventListener('change', loadCategories));
+
+      // ── Cover File Handlers ──
+      coverDropzone.addEventListener('click', () => coverFileInput.click());
+      coverDropzone.addEventListener('dragover', (e) => { e.preventDefault(); coverDropzone.classList.add('dragover'); });
+      coverDropzone.addEventListener('dragleave', () => coverDropzone.classList.remove('dragover'));
+      coverDropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        coverDropzone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) handleCover(e.dataTransfer.files[0]);
+      });
+      coverFileInput.addEventListener('change', () => {
+        if (coverFileInput.files.length > 0) handleCover(coverFileInput.files[0]);
+      });
+      coverRemoveBtn.addEventListener('click', () => {
+        selectedCoverFile = null;
+        coverFileInput.value = '';
+        coverPreview.style.display = 'none';
+        coverDropzone.style.display = 'block';
+      });
+
+      function handleCover(file) {
+        if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+          showToast('Please upload a JPEG or PNG image.', 'warning');
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          showToast('Cover image must be under 5MB.', 'warning');
+          return;
+        }
+        selectedCoverFile = file;
+        coverPreviewName.textContent = file.name;
+        coverPreviewSize.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          coverPreviewImg.src = e.target.result;
+          coverDropzone.style.display = 'none';
+          coverPreview.style.display = 'flex';
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // ── Book File Handlers ──
+      bookDropzone.addEventListener('click', () => bookFileInput.click());
+      bookDropzone.addEventListener('dragover', (e) => { e.preventDefault(); bookDropzone.classList.add('dragover'); });
+      bookDropzone.addEventListener('dragleave', () => bookDropzone.classList.remove('dragover'));
+      bookDropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        bookDropzone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) handleBook(e.dataTransfer.files[0]);
+      });
+      bookFileInput.addEventListener('change', () => {
+        if (bookFileInput.files.length > 0) handleBook(bookFileInput.files[0]);
+      });
+      bookRemoveBtn.addEventListener('click', () => {
+        selectedBookFile = null;
+        bookFileInput.value = '';
+        bookPreview.style.display = 'none';
+        bookDropzone.style.display = 'block';
+      });
+
+      function handleBook(file) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (ext !== 'pdf' && ext !== 'epub') {
+          showToast('Please upload a PDF or EPUB document.', 'warning');
+          return;
+        }
+        if (file.size > 50 * 1024 * 1024) {
+          showToast('Book file must be under 50MB.', 'warning');
+          return;
+        }
+        selectedBookFile = file;
+        bookPreviewName.textContent = file.name;
+        bookPreviewSize.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+        bookDropzone.style.display = 'none';
+        bookPreview.style.display = 'flex';
+      }
+
+      // ── Submit Handler ──
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        if (!selectedBookFile) {
+          showToast('Please upload a PDF or EPUB book file.', 'warning');
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting Book...';
+
+        const formData = new FormData();
+        formData.append('book', selectedBookFile);
+        if (selectedCoverFile) formData.append('cover', selectedCoverFile);
+
+        const channelVal = Array.from(channelRadios).find(r => r.checked).value;
+        formData.append('channel_type', channelVal);
+        formData.append('title', document.getElementById('bookTitle').value.trim());
+        formData.append('author', document.getElementById('bookAuthor').value.trim());
+        formData.append('category_id', categorySelect.value);
+        formData.append('description', document.getElementById('bookDescription').value.trim());
+
+        try {
+          const res = await api('/api/user/books/upload', {
+            method: 'POST',
+            body: formData
+          });
+
+          showToast('Your book submission has been received successfully and is pending administrative review.', 'success', 8000);
+          form.reset();
+          
+          selectedBookFile = null;
+          bookFileInput.value = '';
+          bookPreview.style.display = 'none';
+          bookDropzone.style.display = 'block';
+
+          selectedCoverFile = null;
+          coverFileInput.value = '';
+          coverPreview.style.display = 'none';
+          coverDropzone.style.display = 'block';
+
+          loadCategories();
+        } catch (err) {
+          showToast(err.message, 'error');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '🚀 Submit Book for Admin Review';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

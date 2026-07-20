@@ -446,7 +446,7 @@
   // ── Categories ──
   async function loadCategories() {
     try {
-      const categories = await api('/api/admin/categories');
+      const categories = await api('/api/categories');
       const tbody = document.getElementById('categoriesBody');
       tbody.innerHTML = '';
 
@@ -456,6 +456,7 @@
           <td>${cat.id}</td>
           <td>${escapeHtml(cat.name)}</td>
           <td><code>${escapeHtml(cat.slug)}</code></td>
+          <td><span class="filter-chip" style="font-size: 0.75rem;">${escapeHtml(cat.channel_type || 'education')}</span></td>
           <td>${cat.story_count || 0}</td>
           <td>
             <button class="btn btn--danger btn--sm" onclick="deleteCategory(${cat.id})">Delete</button>
@@ -470,6 +471,7 @@
 
   async function addCategory() {
     const name = document.getElementById('newCategoryName').value.trim();
+    const channel_type = document.getElementById('newCategoryChannel').value;
     if (!name) {
       showToast('Enter a category name.', 'warning');
       return;
@@ -477,7 +479,7 @@
     try {
       await api('/api/admin/categories', {
         method: 'POST',
-        body: JSON.stringify({ name })
+        body: JSON.stringify({ name, channel_type })
       });
       document.getElementById('newCategoryName').value = '';
       showToast('Category added.', 'success');
@@ -824,11 +826,11 @@
     // Book tab triggers
     const btnBooksListTab = document.getElementById('btnBooksListTab');
     const btnBooksUploadTab = document.getElementById('btnBooksUploadTab');
-    const btnBooksPendingTab = document.getElementById('btnBooksPendingTab');
+    const btnBooksSubmissionsTab = document.getElementById('btnBooksSubmissionsTab');
 
     if (btnBooksListTab) btnBooksListTab.addEventListener('click', () => switchBookTab('booksListTabSection', 'btnBooksListTab'));
     if (btnBooksUploadTab) btnBooksUploadTab.addEventListener('click', () => switchBookTab('booksUploadTabSection', 'btnBooksUploadTab'));
-    if (btnBooksPendingTab) btnBooksPendingTab.addEventListener('click', () => switchBookTab('booksPendingTabSection', 'btnBooksPendingTab'));
+    if (btnBooksSubmissionsTab) btnBooksSubmissionsTab.addEventListener('click', () => switchBookTab('booksSubmissionsTabSection', 'btnBooksSubmissionsTab'));
 
     // Book File select listener (for auto-fill metadata)
     const bookFileInput = document.getElementById('bookFile');
@@ -976,51 +978,57 @@
         document.getElementById('booksListTable').parentNode.classList.add('hidden');
       }
 
-      loadPendingBooks();
+      loadUserSubmissions();
       loadCategoriesForBooksForm();
     } catch (err) {
       showToast('Failed to load books: ' + err.message, 'error');
     }
   }
 
-  async function loadPendingBooks() {
+  async function loadUserSubmissions() {
     try {
-      const books = await api('/api/admin/books/pending');
-      const booksPendingBody = document.getElementById('booksPendingBody');
-      const noPendingBooksState = document.getElementById('noPendingBooksState');
-      const pendingBooksCount = document.getElementById('pendingBooksCount');
+      const submissions = await api('/api/admin/submissions');
+      const tbody = document.getElementById('booksSubmissionsBody');
+      const empty = document.getElementById('noSubmissionsState');
+      const countEl = document.getElementById('submissionsCount');
 
-      booksPendingBody.innerHTML = '';
-      pendingBooksCount.textContent = books.length;
+      tbody.innerHTML = '';
+      if (countEl) countEl.textContent = submissions.length;
 
-      if (books && books.length > 0) {
-        noPendingBooksState.classList.add('hidden');
-        document.getElementById('booksPendingTable').parentNode.classList.remove('hidden');
+      if (submissions && submissions.length > 0) {
+        if (empty) empty.classList.add('hidden');
+        const table = document.getElementById('booksSubmissionsTable');
+        if (table) table.parentNode.classList.remove('hidden');
 
-        books.forEach(book => {
+        submissions.forEach(sub => {
           const tr = document.createElement('tr');
+          const fileExt = sub.book_file_url.split('.').pop().toUpperCase();
+          const submissionDate = new Date(sub.created_at).toLocaleDateString();
           tr.innerHTML = `
-            <td><img src="${book.cover_image_url || '/images/default-cover.png'}" style="width: 40px; height: 60px; object-fit: cover; border-radius: 4px;"></td>
-            <td style="font-weight: 500;">${escapeHtml(book.title)}</td>
-            <td>${escapeHtml(book.author)}</td>
-            <td><span class="filter-chip" style="font-size: 0.75rem;">${book.file_type.toUpperCase()}</span></td>
-            <td>${escapeHtml(book.uploader_name || `User ID: ${book.uploaded_by}`)}</td>
-            <td>${new Date(book.created_at).toLocaleDateString()}</td>
+            <td><img src="${sub.cover_image_url || '/images/default-cover.png'}" style="width: 40px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-card);"></td>
+            <td style="font-weight: 500;">${escapeHtml(sub.title)}</td>
+            <td>${escapeHtml(sub.author)}</td>
+            <td><span class="filter-chip" style="font-size: 0.75rem;">${sub.channel_type.toUpperCase()}</span></td>
+            <td>${escapeHtml(sub.category_name || '—')}</td>
+            <td>${escapeHtml(sub.uploader_name || 'Anonymous')}<br><small style="opacity: 0.6;">${escapeHtml(sub.uploader_email || '')}</small></td>
+            <td><a href="${sub.book_file_url}" target="_blank" class="btn btn--secondary btn--sm" style="padding: 4px 8px; font-size: 0.75rem;">📥 Download ${fileExt}</a></td>
+            <td>${submissionDate}</td>
             <td>
               <div class="flex gap-8" style="display: flex; gap: 8px;">
-                <button class="btn btn--primary btn--sm" onclick="window.approveBook(${book.id})">Approve</button>
-                <button class="btn btn--danger btn--sm" onclick="window.deleteBook(${book.id})">Reject</button>
+                <button class="btn btn--success btn--sm" onclick="window.approveSubmission(${sub.id})">✓</button>
+                <button class="btn btn--danger btn--sm" onclick="window.rejectSubmission(${sub.id})">✗</button>
               </div>
             </td>
           `;
-          booksPendingBody.appendChild(tr);
+          tbody.appendChild(tr);
         });
       } else {
-        noPendingBooksState.classList.remove('hidden');
-        document.getElementById('booksPendingTable').parentNode.classList.add('hidden');
+        if (empty) empty.classList.remove('hidden');
+        const table = document.getElementById('booksSubmissionsTable');
+        if (table) table.parentNode.classList.add('hidden');
       }
     } catch (err) {
-      showToast('Failed to load pending books: ' + err.message, 'error');
+      showToast('Failed to load user submissions: ' + err.message, 'error');
     }
   }
 
@@ -1085,6 +1093,7 @@
     const tags = document.getElementById('bookTags').value.split(',').map(t => t.trim()).filter(Boolean);
     formData.append('tags', JSON.stringify(tags));
 
+    formData.append('channel_type', document.getElementById('bookChannel').value);
     formData.append('visibility', document.getElementById('bookVisibility').value);
     formData.append('status', document.getElementById('bookStatus').value);
 
@@ -1111,15 +1120,19 @@
   }
 
   window.switchBookTab = function(activeSectionId, activeTabId) {
-    ['booksListTabSection', 'booksUploadTabSection', 'booksPendingTabSection'].forEach(s => {
-      document.getElementById(s).classList.add('hidden');
+    ['booksListTabSection', 'booksUploadTabSection', 'booksSubmissionsTabSection'].forEach(s => {
+      const el = document.getElementById(s);
+      if (el) el.classList.add('hidden');
     });
-    ['btnBooksListTab', 'btnBooksUploadTab', 'btnBooksPendingTab'].forEach(t => {
-      document.getElementById(t).classList.remove('active');
+    ['btnBooksListTab', 'btnBooksUploadTab', 'btnBooksSubmissionsTab'].forEach(t => {
+      const el = document.getElementById(t);
+      if (el) el.classList.remove('active');
     });
 
-    document.getElementById(activeSectionId).classList.remove('hidden');
-    document.getElementById(activeTabId).classList.add('active');
+    const sec = document.getElementById(activeSectionId);
+    if (sec) sec.classList.remove('hidden');
+    const tab = document.getElementById(activeTabId);
+    if (tab) tab.classList.add('active');
   }
 
   window.deleteBook = async function(bookId) {
@@ -1137,6 +1150,33 @@
     try {
       await api(`/api/admin/books/${bookId}/approve`, { method: 'POST' });
       showToast('Book approved and published!', 'success');
+      loadBooks();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  window.approveSubmission = async function(id) {
+    if (!confirm('Approve and publish this book submission?')) return;
+    try {
+      await api(`/api/admin/submissions/${id}/approve`, { method: 'POST', body: '{}' });
+      showToast('Submission approved and published successfully!', 'success');
+      loadBooks();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  window.rejectSubmission = async function(id) {
+    const reason = prompt('Enter the reason for rejection (this will be sent to the user):');
+    if (reason === null) return;
+    
+    try {
+      await api(`/api/admin/submissions/${id}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ rejection_reason: reason })
+      });
+      showToast('Submission rejected.', 'success');
       loadBooks();
     } catch (err) {
       showToast(err.message, 'error');

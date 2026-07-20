@@ -17,7 +17,8 @@ async function runTests() {
     
     const requiredTables = [
       'books', 'book_categories', 'tags', 'book_tags', 
-      'reading_progress', 'bookmarks', 'highlights', 'user_library'
+      'reading_progress', 'bookmarks', 'highlights', 'user_library',
+      'user_book_submissions'
     ];
 
     let allTablesExist = true;
@@ -37,7 +38,7 @@ async function runTests() {
 
     // 3. Category Seeding Verification
     console.log('3️⃣  Verifying seeded book categories...');
-    const categories = db.prepare("SELECT * FROM categories WHERE slug IN ('fiction', 'non-fiction', 'sci-fi', 'biography')").all();
+    const categories = db.prepare("SELECT * FROM categories WHERE slug IN ('fiction', 'non-fiction', 'sci-fi', 'biography', 'computer-science', 'naval-history')").all();
     if (categories.length > 0) {
       console.log(`   - Found ${categories.length} seeded genres:`, categories.map(c => c.name).join(', '));
     } else {
@@ -108,6 +109,56 @@ async function runTests() {
       throw new Error('Book insertion verification failed.');
     }
     console.log('✅ Book creation and mapping tests passed.\n');
+
+    // 4.5. Test User Submissions Queue & Approval
+    console.log('4️⃣.5️⃣ Testing user book submission & administrative approval...');
+    const submissionRes = db.prepare(`
+      INSERT INTO user_book_submissions (user_id, title, author, channel_type, category_id, description, cover_image_url, book_file_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(999, 'User Submitted Book', 'Community Author', 'naval', catId, 'A book submitted by community user.', '/uploads/sub_cover.png', '/uploads/sub_book.pdf');
+    const submissionId = submissionRes.lastInsertRowid;
+    console.log(`   - Inserted user book submission with ID: ${submissionId}`);
+
+    const subRow = db.prepare('SELECT * FROM user_book_submissions WHERE id = ?').get(submissionId);
+    if (!subRow || subRow.status !== 'pending') {
+      throw new Error('User book submission status is not pending.');
+    }
+
+    const approveTx = db.transaction(() => {
+      const bookRes = db.prepare(`
+        INSERT INTO books (title, author, description, cover_image_url, file_url, file_type, status, visibility, uploaded_by_user_id, is_user_submission, submission_status, channel_type)
+        VALUES (?, ?, ?, ?, ?, ?, 'published', 'public', ?, 1, 'approved', ?)
+      `).run(
+        subRow.title,
+        subRow.author,
+        subRow.description,
+        subRow.cover_image_url,
+        subRow.book_file_url,
+        'pdf',
+        subRow.user_id,
+        subRow.channel_type
+      );
+      const approvedBookId = bookRes.lastInsertRowid;
+
+      db.prepare('INSERT INTO book_categories (book_id, category_id) VALUES (?, ?)').run(approvedBookId, subRow.category_id);
+      db.prepare('UPDATE user_book_submissions SET status = "approved" WHERE id = ?').run(submissionId);
+      return approvedBookId;
+    });
+
+    const approvedBookId = approveTx();
+    console.log(`   - Approved submission, created live book ID: ${approvedBookId}`);
+
+    const liveBook = db.prepare('SELECT * FROM books WHERE id = ?').get(approvedBookId);
+    if (liveBook && liveBook.channel_type === 'naval' && liveBook.is_user_submission === 1) {
+      console.log(`   - Verified live book channel matches [${liveBook.channel_type}] and user submission flag is [${liveBook.is_user_submission}]`);
+    } else {
+      throw new Error('Approved book verification failed.');
+    }
+
+    db.prepare('DELETE FROM book_categories WHERE book_id = ?').run(approvedBookId);
+    db.prepare('DELETE FROM books WHERE id = ?').run(approvedBookId);
+    db.prepare('DELETE FROM user_book_submissions WHERE id = ?').run(submissionId);
+    console.log('✅ User submissions and approval workflow tests passed.\n');
 
     // 5. Test Reading Progress Save & Restore
     console.log('5️⃣  Testing reading progress save and restore...');

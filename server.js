@@ -802,14 +802,32 @@ app.get('/api/admin/categories', requireAdmin, (req, res) => {
   res.json(categories);
 });
 
+// ── GET /api/categories ──
+app.get('/api/categories', (req, res) => {
+  const db = getDb();
+  const { channel } = req.query;
+  let sql = 'SELECT * FROM categories';
+  const params = [];
+  if (channel) {
+    sql += ' WHERE channel_type = ?';
+    params.push(channel);
+  }
+  sql += ' ORDER BY name';
+  const categories = db.prepare(sql).all(...params);
+  res.json(categories);
+});
+
 // ── POST /api/admin/categories ──
 app.post('/api/admin/categories', requireAdmin, (req, res) => {
   const db = getDb();
-  const { name } = req.body;
+  const { name, channel_type = 'education' } = req.body;
   if (!name) return res.status(400).json({ error: 'Name is required.' });
+  if (channel_type !== 'education' && channel_type !== 'naval') {
+    return res.status(400).json({ error: 'Invalid channel type.' });
+  }
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   try {
-    db.prepare('INSERT INTO categories (name, slug) VALUES (?, ?)').run(name, slug);
+    db.prepare('INSERT INTO categories (name, slug, channel_type) VALUES (?, ?, ?)').run(name, slug, channel_type);
     res.json({ message: 'Category created.' });
   } catch (e) {
     res.status(400).json({ error: 'Category already exists.' });
@@ -896,7 +914,8 @@ app.post('/api/admin/books', requireAdminOrUser, uploadBook.fields([{ name: 'boo
       published_date, page_count: page_count ? parseInt(page_count) : null,
       est_read_minutes: est_read_minutes ? parseInt(est_read_minutes) : null,
       cover_image_url: coverImageUrl, file_url: fileUrl, file_type: fileType,
-      status: finalStatus, visibility, uploaded_by: uploadedBy, approved_by: approvedBy
+      status: finalStatus, visibility, uploaded_by: uploadedBy, approved_by: approvedBy,
+      channel_type: req.body.channel_type || 'education'
     }, categoryIds, tagsList);
 
     res.status(201).json({
@@ -919,12 +938,12 @@ const insertBookTx = (bookData, categoryIds, tagsList) => {
   
   const tx = db.transaction(() => {
     const info = db.prepare(`
-      INSERT INTO books (title, author, description, publisher, language, isbn, published_date, page_count, est_read_minutes, cover_image_url, file_url, file_type, status, visibility, uploaded_by, approved_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO books (title, author, description, publisher, language, isbn, published_date, page_count, est_read_minutes, cover_image_url, file_url, file_type, status, visibility, uploaded_by, approved_by, channel_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       bookData.title, bookData.author, bookData.description, bookData.publisher, bookData.language, bookData.isbn,
       bookData.published_date, bookData.page_count, bookData.est_read_minutes, bookData.cover_image_url, bookData.file_url,
-      bookData.file_type, bookData.status, bookData.visibility, bookData.uploaded_by, bookData.approved_by
+      bookData.file_type, bookData.status, bookData.visibility, bookData.uploaded_by, bookData.approved_by, bookData.channel_type || 'education'
     );
     
     bookId = info.lastInsertRowid;
@@ -1076,11 +1095,16 @@ app.post('/api/admin/books/:id/approve', requireAdmin, (req, res) => {
 // ── GET /api/books ──
 app.get('/api/books', optionalUser, (req, res) => {
   const db = getDb();
-  const { sort = 'newest', category, search, page = 1, limit = 12, shelf } = req.query;
+  const { sort = 'newest', category, search, page = 1, limit = 12, shelf, channel } = req.query;
   const offset = (parseInt(page) - 1) * parseInt(limit);
 
   let where = "WHERE b.status = 'published'";
   const params = [];
+
+  if (channel) {
+    where += " AND b.channel_type = ?";
+    params.push(channel);
+  }
 
   if (!req.user) {
     where += " AND b.visibility = 'public'";
@@ -1327,10 +1351,152 @@ app.post('/api/books/:id/shelf', requireUser, (req, res) => {
   res.json({ success: true, message: `Added to ${shelf_status} shelf.` });
 });
 
+// ── POST /api/user/books/upload ──
+app.post('/api/user/books/upload', requireUser, uploadBook.fields([{ name: 'book', maxCount: 1 }, { name: 'cover', maxCount: 1 }]), (req, res) => {
+  const db = getDb();
+  
+  if (!req.files || !req.files['book']) {
+    return res.status(400).json({ error: 'Book file is required.' });
+  }
+
+  const bookFile = req.files['book'][0];
+  const coverFile = req.files['cover'] ? req.files['cover'][0] : null;
+
+  const fileUrl = `/uploads/${bookFile.filename}`;
+  const coverImageUrl = coverFile ? `/uploads/${coverFile.filename}` : '/images/default-cover.png';
+
+  const { title, author, channel_type, category_id, description } = req.body;
+
+  if (!title || !author || !channel_type || !category_id) {
+    return res.status(400).json({ error: 'Title, author, channel type, and category ID are required.' });
+  }
+
+  if (channel_type !== 'education' && channel_type !== 'naval') {
+    return res.status(400).json({ error: 'Invalid channel type.' });
+  }
+
+  try {
+    const result = db.prepare(`
+      INSERT INTO user_book_submissions (user_id, title, author, channel_type, category_id, description, cover_image_url, book_file_url, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+    `).run(
+      req.user.id,
+      title,
+      author,
+      channel_type,
+      parseInt(category_id),
+      description || null,
+      coverImageUrl,
+      fileUrl
+    );
+
+    res.status(201).json({
+      success: true,
+      submissionId: result.lastInsertRowid,
+      message: 'Your book submission has been received successfully and is pending administrative review.'
+    });
+  } catch (err) {
+    console.error('Error saving user submission:', err);
+    res.status(500).json({ error: 'Failed to save submission.' });
+  }
+});
+
+// ── GET /api/admin/submissions ──
+app.get('/api/admin/submissions', requireAdmin, (req, res) => {
+  const db = getDb();
+  try {
+    const submissions = db.prepare(`
+      SELECT s.*, u.full_name as uploader_name, u.email as uploader_email, c.name as category_name
+      FROM user_book_submissions s
+      LEFT JOIN users u ON s.user_id = u.id
+      LEFT JOIN categories c ON s.category_id = c.id
+      WHERE s.status = 'pending'
+      ORDER BY s.created_at ASC
+    `).all();
+    res.json(submissions);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch submissions.' });
+  }
+});
+
+// ── POST /api/admin/submissions/:id/approve ──
+app.post('/api/admin/submissions/:id/approve', requireAdmin, (req, res) => {
+  const db = getDb();
+  const submissionId = parseInt(req.params.id);
+
+  const sub = db.prepare('SELECT * FROM user_book_submissions WHERE id = ?').get(submissionId);
+  if (!sub) return res.status(404).json({ error: 'Submission not found.' });
+
+  const tx = db.transaction(() => {
+    // 1. Insert into books
+    const bookRes = db.prepare(`
+      INSERT INTO books (title, author, description, cover_image_url, file_url, file_type, status, visibility, uploaded_by_user_id, is_user_submission, submission_status, channel_type, approved_by)
+      VALUES (?, ?, ?, ?, ?, ?, 'published', 'public', ?, 1, 'approved', ?, ?)
+    `).run(
+      sub.title,
+      sub.author,
+      sub.description,
+      sub.cover_image_url,
+      sub.book_file_url,
+      sub.book_file_url.endsWith('.pdf') ? 'pdf' : 'epub',
+      sub.user_id,
+      sub.channel_type,
+      req.admin.adminId
+    );
+
+    const bookId = bookRes.lastInsertRowid;
+
+    // 2. Link category
+    db.prepare(`
+      INSERT OR IGNORE INTO book_categories (book_id, category_id)
+      VALUES (?, ?)
+    `).run(bookId, sub.category_id);
+
+    // 3. Mark submission as approved
+    db.prepare('UPDATE user_book_submissions SET status = "approved" WHERE id = ?').run(submissionId);
+    
+    // 4. Send notification to the user
+    db.prepare(`
+      INSERT INTO notifications (user_id, type, source_id, read)
+      VALUES (?, 'book_approved', ?, 0)
+    `).run(sub.user_id, bookId);
+  });
+
+  try {
+    tx();
+    res.json({ success: true, message: 'Submission approved and published.' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Approval transaction failed.' });
+  }
+});
+
+// ── POST /api/admin/submissions/:id/reject ──
+app.post('/api/admin/submissions/:id/reject', requireAdmin, (req, res) => {
+  const db = getDb();
+  const submissionId = parseInt(req.params.id);
+  const { rejection_reason } = req.body;
+
+  const sub = db.prepare('SELECT * FROM user_book_submissions WHERE id = ?').get(submissionId);
+  if (!sub) return res.status(404).json({ error: 'Submission not found.' });
+
+  db.prepare('UPDATE user_book_submissions SET status = "rejected", rejection_reason = ? WHERE id = ?')
+    .run(rejection_reason || null, submissionId);
+
+  // Send notification to the user
+  db.prepare(`
+    INSERT INTO notifications (user_id, type, source_id, read)
+    VALUES (?, 'book_rejected', ?, 0)
+  `).run(sub.user_id, submissionId);
+
+  res.json({ success: true, message: 'Submission rejected.' });
+});
+
 // ── Fallback: serve index.html for SPA-like navigation ──
 app.get('*', (req, res) => {
   // Only serve HTML pages for known routes
-  const knownPages = ['submit', 'story', 'resources', 'about', 'terms', 'privacy', 'guidelines', 'admin', 'library', 'reader'];
+  const knownPages = ['submit', 'story', 'resources', 'about', 'terms', 'privacy', 'guidelines', 'admin', 'library', 'reader', 'upload-book'];
   const requestedPage = req.path.split('/').filter(Boolean)[0];
 
   if (knownPages.includes(requestedPage)) {

@@ -29,7 +29,33 @@
         </a>
         <nav class="header__nav" id="mainNav">
           <a href="/" class="nav-link active">Browse</a>
-          <a href="/library" class="nav-link">Library</a>
+          
+          <!-- Education Books Dropdown -->
+          <div class="nav-dropdown">
+            <a href="/library?channel=education" class="nav-link dropdown-toggle">Education Books</a>
+            <div class="dropdown-menu">
+              <a href="/library?channel=education&category=computer-science">Computer Science</a>
+              <a href="/library?channel=education&category=engineering">Engineering</a>
+              <a href="/library?channel=education&category=mathematics">Mathematics</a>
+              <a href="/library?channel=education&category=competitive-exams">Competitive Exams</a>
+              <a href="/library?channel=education&category=general-science">General Science</a>
+              <a href="/library?channel=education&category=academic-references">Academic References</a>
+            </div>
+          </div>
+          
+          <!-- Naval Books Dropdown -->
+          <div class="nav-dropdown">
+            <a href="/library?channel=naval" class="nav-link dropdown-toggle">Naval Books</a>
+            <div class="dropdown-menu">
+              <a href="/library?channel=naval&category=naval-history">Naval History</a>
+              <a href="/library?channel=naval&category=maritime-engineering">Maritime Engineering</a>
+              <a href="/library?channel=naval&category=naval-tactics-strategy">Naval Tactics & Strategy</a>
+              <a href="/library?channel=naval&category=nautical-studies">Nautical Studies</a>
+              <a href="/library?channel=naval&category=ship-design-architecture">Ship Design & Architecture</a>
+              <a href="/library?channel=naval&category=submarine-operations">Submarine Operations</a>
+            </div>
+          </div>
+          
           <a href="/submit" class="nav-link">Share Story</a>
           <a href="/resources" class="nav-link">Resources</a>
           <a href="/about" class="nav-link">About</a>
@@ -40,11 +66,13 @@
           <!-- Guest Links -->
           <a href="/login" class="btn btn--secondary btn--sm guest-only">Login</a>
           <a href="/signup" class="btn btn--primary btn--sm guest-only">Sign Up</a>
+          <a href="/login?redirect=/upload-book" class="btn btn--secondary btn--sm guest-only">📤 Upload Book</a>
           
           <!-- Auth Links -->
           <a href="/profile" class="btn btn--secondary btn--sm auth-only" style="display:none;">Profile</a>
           <button id="logoutBtn" class="btn btn--secondary btn--sm auth-only" style="display:none;">Logout</button>
-          <a href="/submit" class="btn btn--primary btn--sm auth-only" style="display:none;">✍️ Share Story</a>
+          <a href="/submit" class="btn btn--secondary btn--sm auth-only" style="display:none;">✍️ Share Story</a>
+          <a href="/upload-book" class="btn btn--primary btn--sm auth-only" style="display:none;">📤 Upload Book</a>
 
           <button class="mobile-menu-toggle" id="mobileMenuBtn" aria-label="Open menu">☰</button>
         </div>

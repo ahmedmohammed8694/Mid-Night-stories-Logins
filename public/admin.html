@@ -300,12 +300,19 @@
         <div class="admin-panel" id="panel-categories">
           <h1 class="admin-page-title">Category Management</h1>
           <p class="admin-page-subtitle">Add, edit, or remove story categories.</p>
-          <div class="mb-24" style="display: flex; gap: 12px; align-items: flex-end;">
-            <div style="flex: 1;">
+          <div class="mb-24" style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+            <div style="flex: 2; min-width: 200px;">
               <label class="form-label">New Category Name</label>
               <input type="text" class="form-input" id="newCategoryName" placeholder="e.g. Friendship">
             </div>
-            <button class="btn btn--primary" id="addCategoryBtn">Add Category</button>
+            <div style="flex: 1; min-width: 150px;">
+              <label class="form-label">Channel Assignment</label>
+              <select class="form-input" id="newCategoryChannel" style="height: 42px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary);">
+                <option value="education" selected>Educational</option>
+                <option value="naval">Naval</option>
+              </select>
+            </div>
+            <button class="btn btn--primary" id="addCategoryBtn" style="height: 42px;">Add Category</button>
           </div>
           <div class="admin-table-wrapper">
             <table class="admin-table" id="categoriesTable">
@@ -314,6 +321,7 @@
                   <th>ID</th>
                   <th>Name</th>
                   <th>Slug</th>
+                  <th>Channel</th>
                   <th>Stories</th>
                   <th>Actions</th>
                 </tr>
@@ -437,7 +445,8 @@
           <div class="mb-24 flex gap-12" style="gap: 8px;">
             <button class="filter-chip active" id="btnBooksListTab">Books List</button>
             <button class="filter-chip" id="btnBooksUploadTab">Upload Book</button>
-            <button class="filter-chip" id="btnBooksPendingTab">Pending Approval (<span id="pendingBooksCount">0</span>)</button>
+            <button class="filter-chip" id="btnBooksSubmissionsTab">User Submissions (<span id="submissionsCount">0</span>)</button>
+            <button class="filter-chip" id="btnBooksPendingTab" style="display:none;">Pending Approval (<span id="pendingBooksCount">0</span>)</button>
           </div>
 
           <!-- Tab 1: Books List -->
@@ -479,6 +488,14 @@
                   <label class="form-label">Cover Image (optional)</label>
                   <input type="file" class="form-input" id="bookCover" accept="image/*">
                 </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Channel Type*</label>
+                <select class="form-input" id="bookChannel" style="height: 42px;">
+                  <option value="education" selected>Educational Channel</option>
+                  <option value="naval">Naval Channel</option>
+                </select>
               </div>
 
               <div class="form-group">
@@ -562,28 +579,30 @@
             </form>
           </div>
 
-          <!-- Tab 3: Pending Books -->
-          <div id="booksPendingTabSection" class="hidden">
+          <!-- Tab 3: User Submissions Queue -->
+          <div id="booksSubmissionsTabSection" class="hidden">
             <div class="admin-table-wrapper">
-              <table class="admin-table" id="booksPendingTable">
+              <table class="admin-table" id="booksSubmissionsTable">
                 <thead>
                   <tr>
                     <th>Cover</th>
                     <th>Title</th>
                     <th>Author</th>
-                    <th>Type</th>
-                    <th>Uploaded By</th>
+                    <th>Channel</th>
+                    <th>Category</th>
+                    <th>Uploader</th>
+                    <th>Files</th>
                     <th>Submitted</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
-                <tbody id="booksPendingBody"></tbody>
+                <tbody id="booksSubmissionsBody"></tbody>
               </table>
             </div>
-            <div class="empty-state hidden" id="noPendingBooksState" style="padding: 40px;">
+            <div class="empty-state hidden" id="noSubmissionsState" style="padding: 40px;">
               <div class="empty-state__icon">✅</div>
-              <h3 class="empty-state__title">No pending books</h3>
-              <p class="empty-state__description">All user uploads have been reviewed.</p>
+              <h3 class="empty-state__title">No user submissions</h3>
+              <p class="empty-state__description">All community uploads have been reviewed.</p>
             </div>
           </div>
         </div>
