@@ -159,6 +159,14 @@ function initMobileNav() {
   });
 }
 
+// ── Get Moon Phase Glyph based on date ──
+function getMoonPhaseGlyph(dateStr, id) {
+  const date = new Date(dateStr);
+  const val = (date.getDate() + (id || 0)) % 4;
+  const glyphs = ['◐', '◑', '◒', '◓'];
+  return glyphs[val];
+}
+
 // ── Generate Story Card HTML ──
 function createStoryCard(story) {
   const card = document.createElement('div');
@@ -202,7 +210,7 @@ function createStoryCard(story) {
         </button>
         <span class="story-card__meta-item">💬 ${formatNumber(story.comment_count || 0)}</span>
       </div>
-      <span class="story-card__time">${formatDate(story.created_at)}</span>
+      <span class="story-card__time" title="Shared on ${formatDate(story.created_at)}">${getMoonPhaseGlyph(story.created_at, story.id)}</span>
     </div>
   `;
 

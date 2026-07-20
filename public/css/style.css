@@ -11,29 +11,41 @@
    BASE DESIGN TOKENS (dark midnight, shared site-wide)
    ═══════════════════════════════════════════════════════════ */
 :root {
+  /* ── Midnight/Candlelight Tokens ── */
+  --ms-bg: #0B0E1A;
+  --ms-surface: #12162A;
+  --ms-border: #262C4A;
+  --ms-text: #F1EDE4;
+  --ms-text-secondary: #9CA3BE;
+  --ms-text-muted: #6B7290;
+  --ms-accent: #E8C179;
+  --ms-accent-glow: rgba(232, 193, 121, 0.25);
+  --ms-accent-glow-sm: rgba(232, 193, 121, 0.12);
+  --ms-accent-quiet: #8B92B0;
+
   /* ── Surfaces ── */
-  --bg-primary: #0E0D1A;
-  --bg-secondary: #13111F;
-  --bg-tertiary: #1A1826;
-  --bg-card: rgba(26, 24, 44, 0.82);
-  --bg-card-hover: rgba(34, 31, 58, 0.92);
-  --bg-glass: rgba(255, 255, 255, 0.03);
-  --bg-glass-hover: rgba(255, 255, 255, 0.07);
-  --bg-input: rgba(255, 255, 255, 0.04);
-  --bg-input-focus: rgba(255, 255, 255, 0.08);
+  --bg-primary: var(--ms-bg);
+  --bg-secondary: var(--ms-surface);
+  --bg-tertiary: #171C33;
+  --bg-card: rgba(18, 22, 42, 0.82);
+  --bg-card-hover: rgba(26, 32, 60, 0.92);
+  --bg-glass: rgba(255, 255, 255, 0.02);
+  --bg-glass-hover: rgba(255, 255, 255, 0.05);
+  --bg-input: rgba(255, 255, 255, 0.03);
+  --bg-input-focus: rgba(255, 255, 255, 0.06);
 
-  /* ── Text (WCAG AA verified) ── */
-  --text-primary: #F0ECE4;        /* 12.5:1 on bg-primary */
-  --text-secondary: #A59FA8;      /* 5.2:1 on bg-primary  */
-  --text-tertiary: #7A7585;       /* 4.5:1 on bg-primary  */
-  --text-muted: #56526A;
+  /* ── Text ── */
+  --text-primary: var(--ms-text);
+  --text-secondary: var(--ms-text-secondary);
+  --text-tertiary: var(--ms-text-muted);
+  --text-muted: var(--ms-text-muted);
 
-  /* ── Page-level accent (overridden per page) ── */
-  --page-accent: #8B7FF0;
-  --page-accent-soft: #E4DCFF;
-  --page-accent-glow: rgba(139, 127, 240, 0.3);
-  --page-accent-glow-sm: rgba(139, 127, 240, 0.15);
-  --page-gradient: linear-gradient(135deg, #8B7FF0 0%, #b5acff 100%);
+  /* ── Page-level accent ── */
+  --page-accent: var(--ms-accent);
+  --page-accent-soft: #FCF9F2;
+  --page-accent-glow: var(--ms-accent-glow);
+  --page-accent-glow-sm: var(--ms-accent-glow-sm);
+  --page-gradient: linear-gradient(135deg, var(--ms-accent) 0%, #F5DCAC 100%);
   --page-hero-img: url('https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&w=1600&q=80');
   --page-hero-overlay: linear-gradient(to bottom, rgba(8,7,20,0.72) 0%, rgba(14,13,26,0.88) 100%);
 
@@ -2477,4 +2489,96 @@ img {
   content: ' ▾';
   font-size: 0.85em;
   opacity: 0.75;
+}
+
+/* ── Home Page Stat Cards & Empty State Styles ── */
+.community-stats {
+  background: none !important;
+  border: none !important;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+  gap: 20px !important;
+  padding: 0 !important;
+  margin: 40px 0 !important;
+}
+
+.community-stat {
+  background: var(--ms-surface) !important;
+  border: 1px solid var(--ms-border) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 10px !important;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.community-stat:hover {
+  border-color: var(--ms-accent) !important;
+  box-shadow: 0 0 20px var(--ms-accent-glow-sm) !important;
+}
+
+.community-stat__value {
+  font-size: 2.20rem !important;
+  font-weight: 700 !important;
+  color: var(--ms-accent) !important;
+  font-family: var(--font-display) !important;
+  margin: 0 !important;
+}
+
+.community-stat__label {
+  font-size: 0.90rem !important;
+  color: var(--ms-text-secondary) !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.community-stat__divider {
+  display: none !important;
+}
+
+/* Empty State Candlelight Redesign */
+.empty-state {
+  background: var(--ms-surface) !important;
+  border: 1px dashed var(--ms-border) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: 60px 40px !important;
+  text-align: center !important;
+  max-width: 600px !important;
+  margin: 40px auto !important;
+}
+
+.empty-state__icon {
+  font-size: 3rem !important;
+  color: var(--ms-accent) !important;
+  margin-bottom: 20px !important;
+  text-shadow: 0 0 15px var(--ms-accent-glow) !important;
+  display: block !important;
+}
+
+/* ── Like Button Candlelight Glow ── */
+.btn-like {
+  color: var(--ms-text-secondary) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid var(--ms-border) !important;
+  padding: 6px 12px !important;
+  border-radius: var(--radius-sm) !important;
+  transition: all var(--transition-fast) !important;
+}
+
+.btn-like.liked {
+  color: var(--ms-accent) !important;
+  border-color: var(--ms-accent) !important;
+  box-shadow: 0 0 12px var(--ms-accent-glow) !important;
+  text-shadow: 0 0 8px var(--ms-accent-glow) !important;
+  background: rgba(232, 193, 121, 0.05) !important;
+}
+
+.btn-like:hover {
+  background: rgba(232, 193, 121, 0.06) !important;
+  border-color: var(--ms-accent) !important;
+  color: var(--ms-accent) !important;
 }
