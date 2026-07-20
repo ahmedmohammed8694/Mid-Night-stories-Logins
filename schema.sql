@@ -1,4 +1,5 @@
 -- schema.sql — Unified D1 Database Schema for Midnight Stories
+PRAGMA foreign_keys = OFF;
 
 -- Drop existing tables if they exist
 DROP TABLE IF EXISTS admin_messages;
@@ -369,3 +370,5 @@ INSERT OR IGNORE INTO settings (key, value) VALUES ('rate_limit_comments_per_hou
 INSERT OR IGNORE INTO settings (key, value) VALUES ('auto_hide_report_threshold', '3');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('require_manual_approval', 'true');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('banned_keywords', '["kill yourself", "kys", "end it all"]');
+
+PRAGMA foreign_keys = ON;

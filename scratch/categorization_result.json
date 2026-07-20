@@ -1,0 +1,3872 @@
+[
+  {
+    "book_id": 8,
+    "title": "Aurelian",
+    "author": "Aaron Dembski Bowden",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 9,
+    "title": "Betrayer",
+    "author": "Aaron Dembski Bowden",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 10,
+    "title": "Blood and Fire",
+    "author": "Aaron Dembski Bowden",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 11,
+    "title": "Blood Reaver",
+    "author": "Aaron Dembski Bowden",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 12,
+    "title": "Cadian Blood",
+    "author": "Aaron Dembski Bowden",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 13,
+    "title": "The Emperor's Gift",
+    "author": "Aaron Dembski Bowden",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 14,
+    "title": "The Emporer's Gift",
+    "author": "Aaron Dembski Bowden",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 15,
+    "title": "Extinction",
+    "author": "Aaron Dembski Bowden",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 16,
+    "title": "The First Heretic",
+    "author": "Aaron Dembski Bowden",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 17,
+    "title": "For the Fallen",
+    "author": "Aaron Dembski Bowden",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 18,
+    "title": "Helsreach",
+    "author": "Aaron Dembski Bowden",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 19,
+    "title": "Soul Hunter",
+    "author": "Aaron Dembski Bowden",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 20,
+    "title": "Talon of Horus",
+    "author": "Aaron Dembski Bowden",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 21,
+    "title": "Void Stalker",
+    "author": "Aaron Dembski Bowden",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 22,
+    "title": "Day of the Daemon",
+    "author": "Aaron Rosenberg",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 23,
+    "title": "Hour of the Daemon",
+    "author": "Aaron Rosenberg",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 24,
+    "title": "Night of the Daemon",
+    "author": "Aaron Rosenberg",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 25,
+    "title": "The Arkunasha War",
+    "author": "Andy Chambers",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 26,
+    "title": "Bellathonis and the Shadow King",
+    "author": "Andy Chambers",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 27,
+    "title": "Midnight on the Street of Knives",
+    "author": "Andy Chambers",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 28,
+    "title": "Path of the Incubus",
+    "author": "Andy Chambers",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 29,
+    "title": "Path of the Renegade",
+    "author": "Andy Chambers",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 30,
+    "title": "Survival Instinct",
+    "author": "Andy Chambers",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 31,
+    "title": "The Masque of Vyle",
+    "author": "Andy Chambers",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 32,
+    "title": "Treasures of Biel Tanigh",
+    "author": "Andy Chambers",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 33,
+    "title": "Cold Trade",
+    "author": "Andy Hoare",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 34,
+    "title": "Commissar",
+    "author": "Andy Hoare",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 35,
+    "title": "Hunt for Voldorius",
+    "author": "Andy Hoare",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 36,
+    "title": "Rogue Star",
+    "author": "Andy Hoare",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 37,
+    "title": "Savage Scars",
+    "author": "Andy Hoare",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 38,
+    "title": "Star of Damocles",
+    "author": "Andy Hoare",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 39,
+    "title": "Flesh of Cretacia",
+    "author": "Andy Smillie",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 40,
+    "title": "Immortalis",
+    "author": "Andy Smillie",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 41,
+    "title": "Reparation",
+    "author": "Andy Smillie",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 42,
+    "title": "The Quickening",
+    "author": "Andy Smillie",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 43,
+    "title": "Dark Apostle",
+    "author": "Anthony Reynolds",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 44,
+    "title": "Dark Creed",
+    "author": "Anthony Reynolds",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 45,
+    "title": "Dark Disciple",
+    "author": "Anthony Reynolds",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 46,
+    "title": "Dark Heart (Digital Mondays)",
+    "author": "Anthony Reynolds",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 47,
+    "title": "Rest Eternal",
+    "author": "Anthony Reynolds",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 48,
+    "title": "The Blessing of Iron",
+    "author": "Anthony Reynolds",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 49,
+    "title": "Word Bearers",
+    "author": "Anthony Reynolds",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 50,
+    "title": "Battle for the Abyss",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 51,
+    "title": "Bleeding Chalice",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 52,
+    "title": "Black Flag: Guerrilla Warfare on the Western Border, 1861-1865",
+    "author": "Thomas Goodrich",
+    "primary_classification": "Educational",
+    "channel_type": "education",
+    "sub_category": "Academic References",
+    "sub_category_slug": "academic-references"
+  },
+  {
+    "book_id": 53,
+    "title": "Crimson Tears",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 54,
+    "title": "Daemon World",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 55,
+    "title": "Daenyathos",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 56,
+    "title": "Dark Adeptus",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 57,
+    "title": "Galaxy in Flames",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 58,
+    "title": "Grey Knights",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 59,
+    "title": "The Grey Knights Omnibus",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 60,
+    "title": "Hammer of Daemons",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 61,
+    "title": "Hellforged",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 62,
+    "title": "Irixa",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 63,
+    "title": "Phalanx",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 64,
+    "title": "Sacrifice",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 65,
+    "title": "Soul Drinker",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 66,
+    "title": "The Soul Drinker's Omnibus",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 67,
+    "title": "Van Horstmann",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 68,
+    "title": "Vermilion",
+    "author": "Ben Counter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 69,
+    "title": "Commander shadow",
+    "author": "Branden Campbell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 70,
+    "title": "Vermintide",
+    "author": "Bruno Lee",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 71,
+    "title": "A Choice of Hatreds",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 72,
+    "title": "Blood and Steel",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 73,
+    "title": "Blood for the Blood God",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 74,
+    "title": "Grey Seer",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 75,
+    "title": "Mark of Chaos",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 76,
+    "title": "Meat Wagon",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 77,
+    "title": "Palace of the Plague Lord",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 78,
+    "title": "Siege of Castellax",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 79,
+    "title": "Temple of the Serpent",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 80,
+    "title": "Thanquol's Doom",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 81,
+    "title": "The Red Duke",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 82,
+    "title": "Witch Finder",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 83,
+    "title": "Witch Hunter",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 84,
+    "title": "Witch Killer",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 85,
+    "title": "Witch Work",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 86,
+    "title": "Wulfrik",
+    "author": "C. L. Werner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 87,
+    "title": "Ascension",
+    "author": "C. S. Goto",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 88,
+    "title": "The blood of angels",
+    "author": "C. S. Goto",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 89,
+    "title": "Blood Ravens",
+    "author": "C. S. Goto",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 90,
+    "title": "Dawn of War",
+    "author": "C. S. Goto",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 91,
+    "title": "Eldar Prophecy",
+    "author": "C. S. Goto",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 92,
+    "title": "Tempest",
+    "author": "C. S. Goto",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 93,
+    "title": "Trials of Isador",
+    "author": "C. S. Goto",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 94,
+    "title": "Warrior Brood",
+    "author": "C. S. Goto",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 95,
+    "title": "Warrior Coven",
+    "author": "C. S. Goto",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 96,
+    "title": "Age of Darkness",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 97,
+    "title": "Bloodspire & Deathwolf (Space Marines Battles)",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 98,
+    "title": "Dark Vengeance",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 99,
+    "title": "Fear the Alien",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 100,
+    "title": "Issue 01",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 101,
+    "title": "Issue 02",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 102,
+    "title": "Issue 03",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 103,
+    "title": "Issue 04",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 104,
+    "title": "Issue 05",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 105,
+    "title": "Issue 06",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 106,
+    "title": "Issue 07",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 107,
+    "title": "Issue 08",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 108,
+    "title": "Issue 09",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 109,
+    "title": "Issue 16",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 110,
+    "title": "Legends of the Space Marines",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 111,
+    "title": "The Primarchs",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 112,
+    "title": "Shadows of Treachery",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 113,
+    "title": "Treacheries of the Space Marines",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 114,
+    "title": "Victories of the Space Marines",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 115,
+    "title": "Xenos Hunters",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 116,
+    "title": "Year One",
+    "author": "C. Z. Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 117,
+    "title": "Doom Flight",
+    "author": "Cavan Scott",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 118,
+    "title": "In The Shadow of The Emperor",
+    "author": "Chris Dows",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 119,
+    "title": "The Mouth of Chaos",
+    "author": "Chris Dows",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 120,
+    "title": "Dawn of War II",
+    "author": "Chris Roberson",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 121,
+    "title": "Battle of the Fang",
+    "author": "Chris Wraight",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 122,
+    "title": "Blood of Asaheim",
+    "author": "Chris Wraight",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 123,
+    "title": "Brothers of the Storm",
+    "author": "Chris Wraight",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 124,
+    "title": "Failure's Reward",
+    "author": "Chris Wraight",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 125,
+    "title": "Flesh",
+    "author": "Chris Wraight",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 126,
+    "title": "Iron Company",
+    "author": "Chris Wraight",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 127,
+    "title": "Kraken",
+    "author": "Chris Wraight",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 128,
+    "title": "Shardenus Prime",
+    "author": "Chris Wraight",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 129,
+    "title": "Sons of Russ",
+    "author": "Chris Wraight",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 130,
+    "title": "Sword of Vengeance",
+    "author": "Chris Wraight",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 131,
+    "title": "Wrath of Iron",
+    "author": "Chris Wraight",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 132,
+    "title": "Wulfen",
+    "author": "Chris Wraight",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 133,
+    "title": "Architect of Fate",
+    "author": "Christian Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 134,
+    "title": "Crucible of War",
+    "author": "Christian Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 135,
+    "title": "Easy Prey",
+    "author": "Christian Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 136,
+    "title": "Tales From the Dark Millennium",
+    "author": "Christian Dunn",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 137,
+    "title": "The Armour of Contempt",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 138,
+    "title": "Blood Pact",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 139,
+    "title": "The Blood Price",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 140,
+    "title": "Bloodstorm",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 141,
+    "title": "Born to Us",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 142,
+    "title": "Brothers of the Snake",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 143,
+    "title": "Daemon's Curse",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 144,
+    "title": "Double Eagle",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 145,
+    "title": "Eisenhorn Omnibus",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 146,
+    "title": "Fall of Malvolion",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 147,
+    "title": "Fell Cargo",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 148,
+    "title": "First & Only",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 149,
+    "title": "First and Only",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 150,
+    "title": "Ghostmaker",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 151,
+    "title": "The Guns of Tanith",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 152,
+    "title": "Hereticus",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 153,
+    "title": "His Last Command",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 154,
+    "title": "Honour Guard",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 155,
+    "title": "Horus Rising",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 156,
+    "title": "In Rememberance",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 157,
+    "title": "Kill Hill",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 158,
+    "title": "Know No Fear",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 159,
+    "title": "Legion",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 160,
+    "title": "Lord of Ruin",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 161,
+    "title": "Malleus",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 162,
+    "title": "Necropolis",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 163,
+    "title": "Only in Death",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 164,
+    "title": "Pariah",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 165,
+    "title": "Perihelion",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 166,
+    "title": "Prospero Burns",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 167,
+    "title": "Ravenor",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 168,
+    "title": "Ravenor Omnibus",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 169,
+    "title": "Ravenor Returned",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 170,
+    "title": "Ravenor Rogue",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 171,
+    "title": "Reaper of Souls",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 172,
+    "title": "Sabbat Martyr",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 173,
+    "title": "Sabbat Worlds",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 174,
+    "title": "Salvations Reach",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 175,
+    "title": "Straight Silver",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 176,
+    "title": "The strange demise of Titus Endor",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 177,
+    "title": "The Iron Star",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 178,
+    "title": "Titanicus",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 179,
+    "title": "Traitor General",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 180,
+    "title": "Warpsword",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 181,
+    "title": "Xenos",
+    "author": "Dan Abnett",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 182,
+    "title": "The Island of Blood",
+    "author": "Darius Hinks",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 183,
+    "title": "Razumov's Tomb",
+    "author": "Darius Hinks",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 184,
+    "title": "Sigvald",
+    "author": "Darius Hinks",
+    "primary_classification": "Educational",
+    "channel_type": "education",
+    "sub_category": "Academic References",
+    "sub_category_slug": "academic-references"
+  },
+  {
+    "book_id": 185,
+    "title": "Warrior Priest",
+    "author": "Darius Hinks",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 186,
+    "title": "The Carrion Anthem",
+    "author": "David Annandale",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 187,
+    "title": "Eclipse of Hope",
+    "author": "David Annandale",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 188,
+    "title": "Evil Eye",
+    "author": "David Annandale",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 189,
+    "title": "Mephiston Lord of Death",
+    "author": "David Annandale",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 190,
+    "title": "The Death of Antagonis",
+    "author": "David Annandale",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 191,
+    "title": "Yarrick",
+    "author": "David Annandale",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 192,
+    "title": "A Murder in Marienburg",
+    "author": "David Bishop",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 193,
+    "title": "Konrad",
+    "author": "David Ferring",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 194,
+    "title": "Shadowbreed",
+    "author": "David Ferring",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 195,
+    "title": "Warblade",
+    "author": "David Ferring",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 196,
+    "title": "Deliverance Detail",
+    "author": "David Guymer",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 197,
+    "title": "Voices",
+    "author": "David Guymer",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 198,
+    "title": "13Th Legion",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 199,
+    "title": "Angels of Darkness",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 200,
+    "title": "Annihilation Squad",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 201,
+    "title": "Battle_Brothers",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 202,
+    "title": "Catechism Of Hate",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 203,
+    "title": "Claws of Chaos",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 204,
+    "title": "Deliverance Lost",
+    "author": "Gavin Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 205,
+    "title": "Deliverence",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 206,
+    "title": "Grudgebearer",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 207,
+    "title": "Kill Team",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 208,
+    "title": "Path of the Outcast",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 209,
+    "title": "Path of the Seer",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 210,
+    "title": "Path of the Warrior",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 211,
+    "title": "Ravenwing",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 212,
+    "title": "The Blades of Chaos",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 213,
+    "title": "The Curse of Shaa_dom",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 214,
+    "title": "The Heart of Chaos",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 215,
+    "title": "The Last Chancers",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 216,
+    "title": "The Purging of Kadillus",
+    "author": "Gav Thorpe",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 217,
+    "title": "Blood Royal",
+    "author": "Gordon Rennie",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 218,
+    "title": "Shadow Point",
+    "author": "Gordon Rennie",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 219,
+    "title": "A Thousand Sons",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 220,
+    "title": "Angel Exterminatus",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 221,
+    "title": "Chapters Due",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 222,
+    "title": "Courage And Honour",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 223,
+    "title": "Dead Sky, Black Sun",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 224,
+    "title": "Death of a Silversmith",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 225,
+    "title": "Defenders of Ulthuan",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 226,
+    "title": "Dust",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 227,
+    "title": "Enemy of My Enemy",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 228,
+    "title": "False Gods",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 229,
+    "title": "Fulgrim",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 230,
+    "title": "Heraclitus effect",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 231,
+    "title": "Iron Warrior",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 232,
+    "title": "Iron Warriors",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 233,
+    "title": "Kryptos",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 234,
+    "title": "Mechanicum",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 235,
+    "title": "Nightbringer",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 236,
+    "title": "Sons of Ellyrion",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 237,
+    "title": "Storm of Iron",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 238,
+    "title": "The Beast of Calth",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 239,
+    "title": "The Iron Without",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 240,
+    "title": "The Kaban Project",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 241,
+    "title": "The Killing Ground",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 242,
+    "title": "The Omnibus",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 243,
+    "title": "The Outcast Dead",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 244,
+    "title": "The skull harvest",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 245,
+    "title": "The Ultramarines Omnibus",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 246,
+    "title": "The Ultramarines Second Omnibus",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 247,
+    "title": "Warriors Of Ultramar",
+    "author": "Graham McNeill",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 248,
+    "title": "Baneblade",
+    "author": "Guy Haley",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 249,
+    "title": "The Rite of Holos",
+    "author": "Guy Haley",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 250,
+    "title": "Stormlord",
+    "author": "Guy Haley",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 251,
+    "title": "25 For 25",
+    "author": "Hammer",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 252,
+    "title": "Blood Gorgons",
+    "author": "Henry Zou",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 253,
+    "title": "Emperor's Mercy",
+    "author": "Henry Zou",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 254,
+    "title": "Flesh And Iron",
+    "author": "Henry Zou",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 255,
+    "title": "Inquisitor",
+    "author": "Ian Watson",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 256,
+    "title": "Blood Cries for Blood",
+    "author": "James Peaty",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 257,
+    "title": "Black Tide",
+    "author": "James Swallow",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 258,
+    "title": "Blood Debt",
+    "author": "James Swallow",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 259,
+    "title": "Bloodline",
+    "author": "James Swallow",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 260,
+    "title": "Deus Encarmine",
+    "author": "James Swallow",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 261,
+    "title": "Deus Sanguinius",
+    "author": "James Swallow",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 262,
+    "title": "Faith and Fire",
+    "author": "James Swallow",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 263,
+    "title": "Fear to Tread",
+    "author": "James Swallow",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 264,
+    "title": "Hammer And Anvil",
+    "author": "James Swallow",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 265,
+    "title": "Honours",
+    "author": "James Swallow",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 266,
+    "title": "Nemesis",
+    "author": "James Swallow",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 267,
+    "title": "Red Fury",
+    "author": "James Swallow",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 268,
+    "title": "Redeemed",
+    "author": "James Swallow",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 269,
+    "title": "Relics",
+    "author": "James Swallow",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 270,
+    "title": "The Flight of the Eisenstein",
+    "author": "James Swallow",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 271,
+    "title": "Wings of Bone",
+    "author": "James Swallow",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 272,
+    "title": "Plague Ship",
+    "author": "Jim Alexander",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 273,
+    "title": "Witness",
+    "author": "Joe Parrino",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 274,
+    "title": "All is Dust",
+    "author": "John French",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 275,
+    "title": "Crucible",
+    "author": "John French",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 276,
+    "title": "Fateweaver",
+    "author": "John French",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 277,
+    "title": "Hunted",
+    "author": "John French",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 278,
+    "title": "Boyz in the Hive",
+    "author": "Jonathan Green",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 279,
+    "title": "Conquest of Armageddon",
+    "author": "Jonathan Green",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 280,
+    "title": "Crusade for Armageddon",
+    "author": "Jonathan Green",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 281,
+    "title": "Firestarter",
+    "author": "Jonathan Green",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 282,
+    "title": "Mama's Boys",
+    "author": "Jonathan Green",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 283,
+    "title": "The Relic",
+    "author": "Jonathan Green",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 284,
+    "title": "Charnel Congress",
+    "author": "Joshua Reynolds",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 285,
+    "title": "Forged in Battle",
+    "author": "Justin Hunter",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 286,
+    "title": "Last Watch",
+    "author": "L J Goulding",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 287,
+    "title": "Mark of Calth",
+    "author": "Laurie Goulding",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 288,
+    "title": "The Shadow of the Beast",
+    "author": "Laurie Goulding",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 289,
+    "title": "The Weakness of Others",
+    "author": "Laurie Goulding",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 290,
+    "title": "Sons of Fenris",
+    "author": "Lee Lightner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 291,
+    "title": "Wolf's Honour",
+    "author": "Lee Lightner",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 292,
+    "title": "Altar of Cyrene",
+    "author": "Lucien Soulban",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 293,
+    "title": "Desert Raiders",
+    "author": "Lucien Soulban",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 294,
+    "title": "Fleshworks",
+    "author": "Lucien Soulban",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 295,
+    "title": "Bringers of Death",
+    "author": "Marc Gascoigne",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 296,
+    "title": "Dark Imperium",
+    "author": "Marc Gascoigne",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 297,
+    "title": "Let the Galaxy Burn",
+    "author": "Marc Gascoigne",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 298,
+    "title": "Status_Deadzone",
+    "author": "Marc Gascoigne",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 299,
+    "title": "Tales from the Dark Millenium",
+    "author": "Marc Gascoigne",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 300,
+    "title": "Tales of the Old World",
+    "author": "Marc Gascoigne",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 301,
+    "title": "In Hrondir's tomb",
+    "author": "Mark Clapham",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 302,
+    "title": "Iron Guard",
+    "author": "Mark Clapham",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 303,
+    "title": "Junktion",
+    "author": "Matt Parrer",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 304,
+    "title": "Angron",
+    "author": "Matthew Farrer",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 305,
+    "title": "Blind",
+    "author": "Matthew Farrer",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 306,
+    "title": "Crossfire",
+    "author": "Matthew Farrer",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 307,
+    "title": "Execution Hour",
+    "author": "Matthew Farrer",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 308,
+    "title": "The Memory of Flesh",
+    "author": "Matthew Farrer",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 309,
+    "title": "Fallen Angels",
+    "author": "Mike Lee",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 310,
+    "title": "Nagash Immortal",
+    "author": "Mike Lee",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 311,
+    "title": "Nagash the Unbroken",
+    "author": "Mike Lee",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 312,
+    "title": "The Emperor's Chosen",
+    "author": "Mike Lee",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 313,
+    "title": "Call to Arms",
+    "author": "Mitchel Scanlon",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 314,
+    "title": "Descent of Angels",
+    "author": "Mitchel Scanlon",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 315,
+    "title": "Fifteen Hours",
+    "author": "Mitchel Scanlon",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 316,
+    "title": "Knee Deep",
+    "author": "Mitchel Scanlon",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 317,
+    "title": "Battle for Skull Pass",
+    "author": "Nathan Long",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 318,
+    "title": "Bloodborn",
+    "author": "Nathan Long",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 319,
+    "title": "Bloodforged",
+    "author": "Nathan Long",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 320,
+    "title": "Elfslayer",
+    "author": "Nathan Long",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 321,
+    "title": "Jane Carver of Waar",
+    "author": "Nathan Long",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 322,
+    "title": "Manslayer",
+    "author": "Nathan Long",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 323,
+    "title": "Orcslayer",
+    "author": "Nathan Long",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 324,
+    "title": "Shamanslayer",
+    "author": "Nathan Long",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 325,
+    "title": "Gotrek and Felix: The Anthology",
+    "author": "Various",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 326,
+    "title": "Zombieslayer",
+    "author": "Nathan Long",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 327,
+    "title": "Deathwing",
+    "author": "Neil Jones",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 328,
+    "title": "Star of Erengrad",
+    "author": "Neil McIntosh",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 329,
+    "title": "Assault on Black Reach",
+    "author": "Nick Kyme",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 330,
+    "title": "Fall of Damnos",
+    "author": "Nick Kyme",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 331,
+    "title": "Grimblades",
+    "author": "Nick Kyme",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 332,
+    "title": "Heroes of the Space Marines",
+    "author": "Nick Kyme",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 333,
+    "title": "Honourkeeper",
+    "author": "Nick Kyme",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 334,
+    "title": "Nocturne",
+    "author": "Nick Kyme",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 335,
+    "title": "Oathbreaker",
+    "author": "Nick Kyme",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 336,
+    "title": "On The Heels of Morkai",
+    "author": "Nick Kyme",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 337,
+    "title": "Only Ash Remains",
+    "author": "Nick Kyme",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 338,
+    "title": "Planetkill",
+    "author": "Nick Kyme",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 339,
+    "title": "Promethean Sun",
+    "author": "Nick Kyme",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 340,
+    "title": "Tales of Heresy",
+    "author": "Nick Kyme",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 341,
+    "title": "The Gates of Terra",
+    "author": "Nick Kyme",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 342,
+    "title": "The Third Wise Man",
+    "author": "Nik Vincent",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 343,
+    "title": "Fire Caste",
+    "author": "Peter Fehervari",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 344,
+    "title": "Out Caste",
+    "author": "Peter Fehervari",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 345,
+    "title": "Binding",
+    "author": "Ray Harrison",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 346,
+    "title": "Enemy Within",
+    "author": "Richard Lee Byers",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 347,
+    "title": "Imperial Glory",
+    "author": "Richard Williams",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 348,
+    "title": "Reiksguard",
+    "author": "Richard Williams",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 349,
+    "title": "Relentless",
+    "author": "Richard Williams",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 350,
+    "title": "Army of One",
+    "author": "Rob Sanders",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 351,
+    "title": "Atlas Infernal",
+    "author": "Rob Sanders",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 352,
+    "title": "Czevak to the Dark Tower Came",
+    "author": "Rob Sanders",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 353,
+    "title": "Distant Echos of Old Night",
+    "author": "Rob Sanders",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 354,
+    "title": "Legion of the Damned",
+    "author": "Rob Sanders",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 355,
+    "title": "Necessary Evil",
+    "author": "Rob Sanders",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 356,
+    "title": "Redemption Corps",
+    "author": "Rob Sanders",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 357,
+    "title": "Ancient Blood",
+    "author": "Robert Earl",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 358,
+    "title": "Broken Honour",
+    "author": "Robert Earl",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 359,
+    "title": "Honour of the Grave",
+    "author": "Robin D. Laws",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 360,
+    "title": "Sacred Flesh",
+    "author": "Robin D. Laws",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 361,
+    "title": "A Mug of Recaff",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 362,
+    "title": "Cain's Last Stand",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 363,
+    "title": "Caves of Ice",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 364,
+    "title": "Death or Glory",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 365,
+    "title": "Death's City",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 366,
+    "title": "Death's Legacy",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 367,
+    "title": "Death's Messenger",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 368,
+    "title": "Duty Calls",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 369,
+    "title": "Echoes of the Tomb",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 370,
+    "title": "Fight or Flight",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 371,
+    "title": "For the Emperor",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 372,
+    "title": "Innocence Proves Nothing",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 373,
+    "title": "Scourge the Heretic",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 374,
+    "title": "Sector Thirteen",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 375,
+    "title": "The Beguiling",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 376,
+    "title": "The Emperor's Finest",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 377,
+    "title": "The Greater Good",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 378,
+    "title": "The Last Ditch",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 379,
+    "title": "The Little Things",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 380,
+    "title": "The Smallest Detail",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 381,
+    "title": "Traitor's Gambit",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 382,
+    "title": "Traitor's Hand",
+    "author": "Sandy Mitchell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 383,
+    "title": "Action & Consequence",
+    "author": "Sarah Cawkwell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 384,
+    "title": "Bitter End",
+    "author": "Sarah Cawkwell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 385,
+    "title": "Blood Blessing",
+    "author": "Sarah Cawkwell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 386,
+    "title": "Cause & Effect",
+    "author": "Sarah Cawkwell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 387,
+    "title": "The Gildar Rift",
+    "author": "Sarah Cawkwell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 388,
+    "title": "Reaper",
+    "author": "Sarah Cawkwell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 389,
+    "title": "The Pact",
+    "author": "Sarah Cawkwell",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 390,
+    "title": "Fire Warrior",
+    "author": "Simon Spurrier",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 391,
+    "title": "Lord of the Night",
+    "author": "Simon Spurrier",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 392,
+    "title": "Better the Devil",
+    "author": "Steve Lyons",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 393,
+    "title": "Dead Men Walking",
+    "author": "Steve Lyons",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 394,
+    "title": "Death World",
+    "author": "Steve Lyons",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 395,
+    "title": "Down Amongst the Dead Men",
+    "author": "Steve Lyons",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 396,
+    "title": "Ice Guard",
+    "author": "Steve Lyons",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 397,
+    "title": "Waiting Death",
+    "author": "Steve Lyons",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 398,
+    "title": "Gunheads",
+    "author": "Steve Parker",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 399,
+    "title": "Rebel Winter",
+    "author": "Steve Parker",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 400,
+    "title": "Rynn's World",
+    "author": "Steve Parker",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 401,
+    "title": "Survivor",
+    "author": "Steve Parker",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 402,
+    "title": "The Citadel",
+    "author": "Steve Parker",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 403,
+    "title": "Curse of the Necrarch",
+    "author": "Steven Savile",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 404,
+    "title": "Inheritance",
+    "author": "Steven Savile",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 405,
+    "title": "Lesser evils",
+    "author": "Tom Foster",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 406,
+    "title": "Tower of Blood",
+    "author": "Tony Ballantyne",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 407,
+    "title": "Angel of Fire",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 408,
+    "title": "Beastslayer",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 409,
+    "title": "Blood of Aenarion",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 410,
+    "title": "Daemonslayer",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 411,
+    "title": "Death's Angels",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 412,
+    "title": "Dragonslayer",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 413,
+    "title": "Farseer",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 414,
+    "title": "Fist of Demetrius",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 415,
+    "title": "Giantslayer",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 416,
+    "title": "Grey Hunter",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 417,
+    "title": "Guardian of the Dawn",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 418,
+    "title": "In The Belly of The Beast",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 419,
+    "title": "Ragnar's Claw",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 420,
+    "title": "Shadowblood",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 421,
+    "title": "Skavenslayer",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 422,
+    "title": "Space Wolf",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 423,
+    "title": "Stealer of Flesh",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 424,
+    "title": "Sword of Caledor",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 425,
+    "title": "The Queen's Assassin",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 426,
+    "title": "The Serpent Tower",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 427,
+    "title": "Trollslayer",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 428,
+    "title": "Vampireslayer",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 429,
+    "title": "Wolfblade",
+    "author": "William King",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 430,
+    "title": "The Young Lion Hunter",
+    "author": "Zane Grey",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Sci-Fi Novel",
+    "sub_category_slug": "sci-fi-novel"
+  },
+  {
+    "book_id": 431,
+    "title": "Harry Potter 1 - Harry Potter and the Sorcerer's Stone",
+    "author": "J. K. Rowling",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Fantasy Novel",
+    "sub_category_slug": "fantasy-novel"
+  },
+  {
+    "book_id": 432,
+    "title": "Harry Potter 2 - Harry Potter and the Chamber of Secrets",
+    "author": "J. K. Rowling",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Fantasy Novel",
+    "sub_category_slug": "fantasy-novel"
+  },
+  {
+    "book_id": 433,
+    "title": "Harry Potter 3 - Harry Potter and the Prisoner of Azkaban",
+    "author": "J. K. Rowling",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Fantasy Novel",
+    "sub_category_slug": "fantasy-novel"
+  },
+  {
+    "book_id": 434,
+    "title": "Harry Potter 4 - Harry Potter and the Goblet of Fire",
+    "author": "J. K. Rowling",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Fantasy Novel",
+    "sub_category_slug": "fantasy-novel"
+  },
+  {
+    "book_id": 435,
+    "title": "Harry Potter 5 - Harry Potter and the Order of the Phoenix",
+    "author": "J. K. Rowling",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Fantasy Novel",
+    "sub_category_slug": "fantasy-novel"
+  },
+  {
+    "book_id": 436,
+    "title": "Harry Potter 6 - Harry Potter and the Half-Blood Prince",
+    "author": "J. K. Rowling",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Fantasy Novel",
+    "sub_category_slug": "fantasy-novel"
+  },
+  {
+    "book_id": 437,
+    "title": "Harry Potter 7 - Harry Potter and the Deathly Hallows",
+    "author": "J. K. Rowling",
+    "primary_classification": "Novel / Story",
+    "channel_type": "naval",
+    "sub_category": "Fantasy Novel",
+    "sub_category_slug": "fantasy-novel"
+  }
+]
