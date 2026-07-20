@@ -1927,8 +1927,6 @@ app.get('/api/users/me/support-inbox', requireUser, async (c) => {
   return c.json({ messages, reports });
 });
 
-});
-
 // ═════════════════════════════════════════════════════════
 // ██  BOOK LIBRARY & READER MODE ROUTES (Additive)
 // ═════════════════════════════════════════════════════════
