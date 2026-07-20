@@ -124,7 +124,99 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_comments_story ON comments(story_id);
     CREATE INDEX IF NOT EXISTS idx_reports_resolved ON reports(resolved);
     CREATE INDEX IF NOT EXISTS idx_banned_identifier ON banned_identifiers(identifier);
+
+    CREATE TABLE IF NOT EXISTS books (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      author TEXT NOT NULL,
+      description TEXT,
+      publisher TEXT,
+      language TEXT DEFAULT 'en',
+      isbn TEXT,
+      published_date TEXT,
+      page_count INTEGER,
+      est_read_minutes INTEGER,
+      cover_image_url TEXT,
+      file_url TEXT NOT NULL,
+      file_type TEXT NOT NULL CHECK(file_type IN ('epub', 'pdf')),
+      status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft', 'published', 'archived', 'pending')),
+      visibility TEXT NOT NULL DEFAULT 'public' CHECK(visibility IN ('public', 'restricted')),
+      uploaded_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      approved_by INTEGER REFERENCES admin_users(id) ON DELETE SET NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS book_categories (
+      book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+      category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+      PRIMARY KEY (book_id, category_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS tags (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      slug TEXT NOT NULL UNIQUE
+    );
+
+    CREATE TABLE IF NOT EXISTS book_tags (
+      book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+      tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+      PRIMARY KEY (book_id, tag_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS reading_progress (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+      location_cfi TEXT,
+      percent_complete REAL DEFAULT 0,
+      last_read_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, book_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS bookmarks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+      location_cfi TEXT NOT NULL,
+      label TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS highlights (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+      location_cfi_start TEXT NOT NULL,
+      location_cfi_end TEXT NOT NULL,
+      color TEXT NOT NULL DEFAULT 'yellow',
+      note_text TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS user_library (
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+      shelf_status TEXT NOT NULL CHECK(shelf_status IN ('want_to_read', 'currently_reading', 'finished')),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, book_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_books_status ON books(status);
+    CREATE INDEX IF NOT EXISTS idx_books_author ON books(author);
+    CREATE INDEX IF NOT EXISTS idx_reading_progress_user ON reading_progress(user_id);
+    CREATE INDEX IF NOT EXISTS idx_bookmarks_user_book ON bookmarks(user_id, book_id);
+    CREATE INDEX IF NOT EXISTS idx_highlights_user_book ON highlights(user_id, book_id);
+    CREATE INDEX IF NOT EXISTS idx_user_library_user ON user_library(user_id);
   `);
+
+  // Try altering categories to add parent_id (ignore if already exists)
+  try {
+    db.exec('ALTER TABLE categories ADD COLUMN parent_id INTEGER REFERENCES categories(id) ON DELETE SET NULL;');
+  } catch (e) {
+    // Column already exists, ignore
+  }
 
   // ── Seed Categories ──
   const defaultCategories = [
@@ -138,7 +230,15 @@ function initializeDatabase() {
     { name: 'Identity', slug: 'identity' },
     { name: 'Triumph', slug: 'triumph' },
     { name: 'LGBTQ+', slug: 'lgbtq' },
-    { name: 'Other', slug: 'other' }
+    { name: 'Other', slug: 'other' },
+    { name: 'Fiction', slug: 'fiction' },
+    { name: 'Non-Fiction', slug: 'non-fiction' },
+    { name: 'Sci-Fi', slug: 'sci-fi' },
+    { name: 'Romance', slug: 'romance' },
+    { name: 'Self-Help', slug: 'self-help' },
+    { name: 'Biography', slug: 'biography' },
+    { name: 'Academic', slug: 'academic' },
+    { name: 'Children', slug: 'children' }
   ];
 
 

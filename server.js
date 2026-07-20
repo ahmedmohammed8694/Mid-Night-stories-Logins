@@ -81,6 +81,89 @@ const upload = multer({
 // ── Admin Session Management (Simple Token-Based) ──
 const adminSessions = new Map();
 
+const JWT_SECRET = 'midnight_stories_user_secret_2026';
+
+// Custom JWT verify for Express
+async function verifyJWT(token, secret) {
+  const parts = token.split('.');
+  if (parts.length !== 3) throw new Error('Invalid token format');
+  const [header, payload, signature] = parts;
+  const data = `${header}.${payload}`;
+  
+  const hmac = crypto.createHmac('sha256', secret);
+  hmac.update(data);
+  const expectedSignature = hmac.digest('base64')
+    .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    
+  if (signature !== expectedSignature) {
+    throw new Error('Invalid token signature');
+  }
+  
+  const decoded = JSON.parse(Buffer.from(payload.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+  if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
+    throw new Error('Token expired');
+  }
+  return decoded;
+}
+
+async function requireUser(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Unauthorized. Please log in.' });
+  try {
+    req.user = await verifyJWT(token, JWT_SECRET);
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Session expired or invalid.' });
+  }
+}
+
+async function optionalUser(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token) {
+    try {
+      req.user = await verifyJWT(token, JWT_SECRET);
+    } catch (err) {}
+  }
+  next();
+}
+
+async function requireAdminOrUser(req, res, next) {
+  const adminToken = req.headers['x-admin-token'];
+  if (adminToken && adminSessions.has(adminToken)) {
+    req.admin = adminSessions.get(adminToken);
+    req.role = 'admin';
+    return next();
+  }
+  
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token) {
+    try {
+      req.user = await verifyJWT(token, JWT_SECRET);
+      req.role = 'user';
+      return next();
+    } catch (err) {}
+  }
+  
+  return res.status(401).json({ error: 'Unauthorized. Please log in.' });
+}
+
+const uploadBook = multer({
+  storage,
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.epub', '.pdf', '.jpg', '.jpeg', '.png', '.webp'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only EPUB, PDF, and image covers are allowed.'));
+    }
+  }
+});
+
 function generateAdminToken() {
   return crypto.randomBytes(32).toString('hex');
 }
@@ -741,10 +824,523 @@ app.delete('/api/admin/categories/:id', requireAdmin, (req, res) => {
   res.json({ message: 'Category deleted.' });
 });
 
+// ═════════════════════════════════════════════════════════
+// ██  BOOK LIBRARY & READER MODE ROUTES (Additive)
+// ═════════════════════════════════════════════════════════
+
+// ── POST /api/admin/books ──
+app.post('/api/admin/books', requireAdminOrUser, uploadBook.fields([{ name: 'book', maxCount: 1 }, { name: 'cover', maxCount: 1 }]), (req, res) => {
+  const db = getDb();
+  
+  if (!req.files || !req.files['book']) {
+    return res.status(400).json({ error: 'Book file is required.' });
+  }
+
+  const bookFile = req.files['book'][0];
+  const coverFile = req.files['cover'] ? req.files['cover'][0] : null;
+
+  const fileType = bookFile.originalname.endsWith('.pdf') ? 'pdf' : 'epub';
+  const fileUrl = `/uploads/${bookFile.filename}`;
+  const coverImageUrl = coverFile ? `/uploads/${coverFile.filename}` : '/images/default-cover.png';
+
+  const {
+    title, author, description, publisher, language = 'en', isbn,
+    published_date, page_count, est_read_minutes, visibility = 'public',
+    status: reqStatus = 'draft'
+  } = req.body;
+
+  if (!title || !author) {
+    return res.status(400).json({ error: 'Title and author are required.' });
+  }
+
+  let finalStatus = reqStatus;
+  let uploadedBy = null;
+  let approvedBy = null;
+
+  if (req.role === 'admin') {
+    approvedBy = req.admin.adminId;
+  } else {
+    uploadedBy = req.user.id;
+    finalStatus = 'pending';
+  }
+
+  let categoryIds = [];
+  if (req.body.category_ids) {
+    try {
+      categoryIds = JSON.parse(req.body.category_ids);
+    } catch (e) {
+      if (typeof req.body.category_ids === 'string') {
+        categoryIds = req.body.category_ids.split(',').map(id => id.trim());
+      } else if (Array.isArray(req.body.category_ids)) {
+        categoryIds = req.body.category_ids;
+      }
+    }
+  }
+
+  let tagsList = [];
+  if (req.body.tags) {
+    try {
+      tagsList = JSON.parse(req.body.tags);
+    } catch (e) {
+      if (typeof req.body.tags === 'string') {
+        tagsList = req.body.tags.split(',').map(t => t.trim());
+      } else if (Array.isArray(req.body.tags)) {
+        tagsList = req.body.tags;
+      }
+    }
+  }
+
+  try {
+    const bookId = insertBookTx({
+      title, author, description, publisher, language, isbn,
+      published_date, page_count: page_count ? parseInt(page_count) : null,
+      est_read_minutes: est_read_minutes ? parseInt(est_read_minutes) : null,
+      cover_image_url: coverImageUrl, file_url: fileUrl, file_type: fileType,
+      status: finalStatus, visibility, uploaded_by: uploadedBy, approved_by: approvedBy
+    }, categoryIds, tagsList);
+
+    res.status(201).json({
+      success: true,
+      bookId,
+      message: finalStatus === 'pending'
+        ? 'Book uploaded successfully and is awaiting moderation.'
+        : 'Book published successfully.'
+    });
+  } catch (err) {
+    console.error('Error saving book:', err);
+    res.status(500).json({ error: 'Failed to save book to database.' });
+  }
+});
+
+// Helper transaction executor definition
+const insertBookTx = (bookData, categoryIds, tagsList) => {
+  const db = getDb();
+  let bookId;
+  
+  const tx = db.transaction(() => {
+    const info = db.prepare(`
+      INSERT INTO books (title, author, description, publisher, language, isbn, published_date, page_count, est_read_minutes, cover_image_url, file_url, file_type, status, visibility, uploaded_by, approved_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      bookData.title, bookData.author, bookData.description, bookData.publisher, bookData.language, bookData.isbn,
+      bookData.published_date, bookData.page_count, bookData.est_read_minutes, bookData.cover_image_url, bookData.file_url,
+      bookData.file_type, bookData.status, bookData.visibility, bookData.uploaded_by, bookData.approved_by
+    );
+    
+    bookId = info.lastInsertRowid;
+    
+    const insertCat = db.prepare('INSERT OR IGNORE INTO book_categories (book_id, category_id) VALUES (?, ?)');
+    for (const catId of categoryIds) {
+      if (catId) insertCat.run(bookId, parseInt(catId));
+    }
+    
+    const insertTag = db.prepare('INSERT OR IGNORE INTO tags (name, slug) VALUES (?, ?)');
+    const getTag = db.prepare('SELECT id FROM tags WHERE slug = ?');
+    const insertBookTag = db.prepare('INSERT OR IGNORE INTO book_tags (book_id, tag_id) VALUES (?, ?)');
+    
+    for (const t of tagsList) {
+      if (t) {
+        const slug = t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        insertTag.run(t, slug);
+        const tag = getTag.get(slug);
+        if (tag) {
+          insertBookTag.run(bookId, tag.id);
+        }
+      }
+    }
+  });
+
+  tx();
+  return bookId;
+};
+
+// ── PUT /api/admin/books/:id ──
+app.put('/api/admin/books/:id', requireAdminOrUser, (req, res) => {
+  const db = getDb();
+  const bookId = parseInt(req.params.id);
+  
+  const book = db.prepare('SELECT * FROM books WHERE id = ?').get(bookId);
+  if (!book) return res.status(404).json({ error: 'Book not found.' });
+
+  if (req.role !== 'admin' && book.uploaded_by !== req.user.id) {
+    return res.status(403).json({ error: 'Unauthorized to edit this book.' });
+  }
+
+  const {
+    title, author, description, publisher, language, isbn,
+    published_date, page_count, est_read_minutes, visibility, status
+  } = req.body;
+
+  let finalStatus = status || book.status;
+  if (req.role !== 'admin') {
+    finalStatus = 'pending';
+  }
+
+  db.prepare(`
+    UPDATE books
+    SET title = ?, author = ?, description = ?, publisher = ?, language = ?, isbn = ?,
+        published_date = ?, page_count = ?, est_read_minutes = ?, visibility = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(
+    title || book.title, author || book.author, description || book.description,
+    publisher || book.publisher, language || book.language, isbn || book.isbn,
+    published_date || book.published_date, page_count ? parseInt(page_count) : book.page_count,
+    est_read_minutes ? parseInt(est_read_minutes) : book.est_read_minutes,
+    visibility || book.visibility, finalStatus, bookId
+  );
+
+  if (req.body.category_ids) {
+    let categoryIds = [];
+    try {
+      categoryIds = typeof req.body.category_ids === 'string' ? JSON.parse(req.body.category_ids) : req.body.category_ids;
+    } catch (e) {
+      categoryIds = req.body.category_ids.split(',').map(id => id.trim());
+    }
+    
+    db.prepare('DELETE FROM book_categories WHERE book_id = ?').run(bookId);
+    const insertCat = db.prepare('INSERT OR IGNORE INTO book_categories (book_id, category_id) VALUES (?, ?)');
+    for (const catId of categoryIds) {
+      if (catId) insertCat.run(bookId, parseInt(catId));
+    }
+  }
+
+  if (req.body.tags) {
+    let tagsList = [];
+    try {
+      tagsList = typeof req.body.tags === 'string' ? JSON.parse(req.body.tags) : req.body.tags;
+    } catch (e) {
+      tagsList = req.body.tags.split(',').map(t => t.trim());
+    }
+
+    db.prepare('DELETE FROM book_tags WHERE book_id = ?').run(bookId);
+    const insertTag = db.prepare('INSERT OR IGNORE INTO tags (name, slug) VALUES (?, ?)');
+    const getTag = db.prepare('SELECT id FROM tags WHERE slug = ?');
+    const insertBookTag = db.prepare('INSERT OR IGNORE INTO book_tags (book_id, tag_id) VALUES (?, ?)');
+    
+    for (const t of tagsList) {
+      if (t) {
+        const slug = t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        insertTag.run(t, slug);
+        const tag = getTag.get(slug);
+        if (tag) insertBookTag.run(bookId, tag.id);
+      }
+    }
+  }
+
+  res.json({ success: true, message: 'Book metadata updated successfully.' });
+});
+
+// ── DELETE /api/admin/books/:id ──
+app.delete('/api/admin/books/:id', requireAdminOrUser, (req, res) => {
+  const db = getDb();
+  const bookId = parseInt(req.params.id);
+
+  const book = db.prepare('SELECT * FROM books WHERE id = ?').get(bookId);
+  if (!book) return res.status(404).json({ error: 'Book not found.' });
+
+  if (req.role !== 'admin' && book.uploaded_by !== req.user.id) {
+    return res.status(403).json({ error: 'Unauthorized to delete this book.' });
+  }
+
+  db.prepare('DELETE FROM books WHERE id = ?').run(bookId);
+  res.json({ success: true, message: 'Book deleted successfully.' });
+});
+
+// ── GET /api/admin/books/pending ──
+app.get('/api/admin/books/pending', requireAdmin, (req, res) => {
+  const db = getDb();
+  const books = db.prepare(`
+    SELECT b.*, u.full_name as uploader_name
+    FROM books b
+    LEFT JOIN users u ON b.uploaded_by = u.id
+    WHERE b.status = 'pending'
+    ORDER BY b.created_at ASC
+  `).all();
+  res.json(books);
+});
+
+// ── POST /api/admin/books/:id/approve ──
+app.post('/api/admin/books/:id/approve', requireAdmin, (req, res) => {
+  const db = getDb();
+  const bookId = parseInt(req.params.id);
+
+  const book = db.prepare('SELECT id FROM books WHERE id = ?').get(bookId);
+  if (!book) return res.status(404).json({ error: 'Book not found.' });
+
+  db.prepare('UPDATE books SET status = "published", approved_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+    .run(req.admin.adminId, bookId);
+
+  res.json({ success: true, message: 'Book approved and published.' });
+});
+
+// ── GET /api/books ──
+app.get('/api/books', optionalUser, (req, res) => {
+  const db = getDb();
+  const { sort = 'newest', category, search, page = 1, limit = 12, shelf } = req.query;
+  const offset = (parseInt(page) - 1) * parseInt(limit);
+
+  let where = "WHERE b.status = 'published'";
+  const params = [];
+
+  if (!req.user) {
+    where += " AND b.visibility = 'public'";
+  }
+
+  if (category && category !== 'all') {
+    where += ' AND b.id IN (SELECT book_id FROM book_categories bc JOIN categories c ON bc.category_id = c.id WHERE c.slug = ?)';
+    params.push(category);
+  }
+
+  if (search) {
+    where += ' AND (b.title LIKE ? OR b.author LIKE ? OR b.description LIKE ? OR b.id IN (SELECT book_id FROM book_tags bt JOIN tags t ON bt.tag_id = t.id WHERE t.name LIKE ?))';
+    const term = `%${search}%`;
+    params.push(term, term, term, term);
+  }
+
+  if (shelf && req.user) {
+    where += ' AND b.id IN (SELECT book_id FROM user_library WHERE user_id = ? AND shelf_status = ?)';
+    params.push(req.user.id, shelf);
+  }
+
+  let orderBy;
+  switch (sort) {
+    case 'title': orderBy = 'b.title ASC'; break;
+    case 'popular': orderBy = 'b.id DESC'; break;
+    default: orderBy = 'b.created_at DESC';
+  }
+
+  const total = db.prepare(`SELECT COUNT(*) as total FROM books b ${where}`).get(...params).total;
+
+  const sql = `
+    SELECT b.*,
+      GROUP_CONCAT(DISTINCT c.name) as category_names,
+      GROUP_CONCAT(DISTINCT t.name) as tag_names
+    FROM books b
+    LEFT JOIN book_categories bc ON b.id = bc.book_id
+    LEFT JOIN categories c ON bc.category_id = c.id
+    LEFT JOIN book_tags bt ON b.id = bt.book_id
+    LEFT JOIN tags t ON bt.tag_id = t.id
+    ${where}
+    GROUP BY b.id
+    ORDER BY ${orderBy}
+    LIMIT ? OFFSET ?
+  `;
+
+  const books = db.prepare(sql).all(...params, parseInt(limit), offset);
+
+  if (req.user && books.length > 0) {
+    const bookIds = books.map(b => b.id);
+    const placeholders = bookIds.map(() => '?').join(',');
+    
+    const progressRows = db.prepare(`
+      SELECT book_id, percent_complete, location_cfi
+      FROM reading_progress
+      WHERE user_id = ? AND book_id IN (${placeholders})
+    `).all(req.user.id, ...bookIds);
+    
+    const shelfRows = db.prepare(`
+      SELECT book_id, shelf_status
+      FROM user_library
+      WHERE user_id = ? AND book_id IN (${placeholders})
+    `).all(req.user.id, ...bookIds);
+    
+    const progressMap = new Map(progressRows.map(p => [p.book_id, p]));
+    const shelfMap = new Map(shelfRows.map(s => [s.book_id, s.shelf_status]));
+    
+    books.forEach(b => {
+      b.progress = progressMap.get(b.id) || null;
+      b.shelf_status = shelfMap.get(b.id) || null;
+    });
+  }
+
+  res.json({
+    books,
+    total,
+    page: parseInt(page),
+    totalPages: Math.ceil(total / parseInt(limit))
+  });
+});
+
+// ── GET /api/books/:id ──
+app.get('/api/books/:id', optionalUser, (req, res) => {
+  const db = getDb();
+  const bookId = parseInt(req.params.id);
+
+  const book = db.prepare(`
+    SELECT b.*,
+      GROUP_CONCAT(DISTINCT c.name) as category_names,
+      GROUP_CONCAT(DISTINCT c.id) as category_ids,
+      GROUP_CONCAT(DISTINCT t.name) as tag_names
+    FROM books b
+    LEFT JOIN book_categories bc ON b.id = bc.book_id
+    LEFT JOIN categories c ON bc.category_id = c.id
+    LEFT JOIN book_tags bt ON b.id = bt.book_id
+    LEFT JOIN tags t ON bt.tag_id = t.id
+    WHERE b.id = ?
+    GROUP BY b.id
+  `).get(bookId);
+
+  if (!book) return res.status(404).json({ error: 'Book not found.' });
+  if (book.status !== 'published' && (!req.user || book.uploaded_by !== req.user.id) && !req.admin) {
+    return res.status(403).json({ error: 'Access denied.' });
+  }
+
+  if (req.user) {
+    book.progress = db.prepare('SELECT percent_complete, location_cfi FROM reading_progress WHERE user_id = ? AND book_id = ?').get(req.user.id, bookId) || null;
+    book.shelf_status = (db.prepare('SELECT shelf_status FROM user_library WHERE user_id = ? AND book_id = ?').get(req.user.id, bookId) || {}).shelf_status || null;
+  }
+
+  res.json(book);
+});
+
+// ── GET /api/books/:id/file ──
+app.get('/api/books/:id/file', optionalUser, (req, res) => {
+  const db = getDb();
+  const bookId = parseInt(req.params.id);
+
+  const book = db.prepare('SELECT file_url, status, visibility, uploaded_by FROM books WHERE id = ?').get(bookId);
+  if (!book) return res.status(404).json({ error: 'Book not found.' });
+
+  if (book.status !== 'published' && (!req.user || book.uploaded_by !== req.user.id) && !req.admin) {
+    return res.status(403).json({ error: 'Access denied.' });
+  }
+  if (book.visibility === 'restricted' && !req.user && !req.admin) {
+    return res.status(401).json({ error: 'Authentication required to read this book.' });
+  }
+
+  const filePath = path.join(__dirname, 'public', book.file_url);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'File not found on disk.' });
+  }
+
+  res.sendFile(filePath);
+});
+
+// ── GET /api/books/:id/progress ──
+app.get('/api/books/:id/progress', requireUser, (req, res) => {
+  const db = getDb();
+  const bookId = parseInt(req.params.id);
+  const progress = db.prepare('SELECT * FROM reading_progress WHERE user_id = ? AND book_id = ?').get(req.user.id, bookId);
+  res.json(progress || { location_cfi: null, percent_complete: 0 });
+});
+
+// ── POST /api/books/:id/progress ──
+app.post('/api/books/:id/progress', requireUser, (req, res) => {
+  const db = getDb();
+  const bookId = parseInt(req.params.id);
+  const { location_cfi, percent_complete } = req.body;
+
+  db.prepare(`
+    INSERT INTO reading_progress (user_id, book_id, location_cfi, percent_complete, last_read_at)
+    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(user_id, book_id) DO UPDATE SET
+      location_cfi = ?, percent_complete = ?, last_read_at = CURRENT_TIMESTAMP
+  `).run(req.user.id, bookId, location_cfi, percent_complete, location_cfi, percent_complete);
+
+  const shelf = db.prepare('SELECT shelf_status FROM user_library WHERE user_id = ? AND book_id = ?').get(req.user.id, bookId);
+  if (!shelf) {
+    db.prepare('INSERT INTO user_library (user_id, book_id, shelf_status) VALUES (?, ?, "currently_reading")').run(req.user.id, bookId);
+  } else if (shelf.shelf_status === 'want_to_read') {
+    db.prepare('UPDATE user_library SET shelf_status = "currently_reading" WHERE user_id = ? AND book_id = ?').run(req.user.id, bookId);
+  }
+
+  res.json({ success: true });
+});
+
+// ── GET /api/books/:id/bookmarks ──
+app.get('/api/books/:id/bookmarks', requireUser, (req, res) => {
+  const db = getDb();
+  const bookId = parseInt(req.params.id);
+  const bookmarks = db.prepare('SELECT * FROM bookmarks WHERE user_id = ? AND book_id = ? ORDER BY created_at DESC').all(req.user.id, bookId);
+  res.json(bookmarks);
+});
+
+// ── POST /api/books/:id/bookmarks ──
+app.post('/api/books/:id/bookmarks', requireUser, (req, res) => {
+  const db = getDb();
+  const bookId = parseInt(req.params.id);
+  const { location_cfi, label } = req.body;
+
+  if (!location_cfi) return res.status(400).json({ error: 'Location CFI is required.' });
+
+  const result = db.prepare('INSERT INTO bookmarks (user_id, book_id, location_cfi, label) VALUES (?, ?, ?, ?)')
+    .run(req.user.id, bookId, location_cfi, label || `Bookmark at ${new Date().toLocaleDateString()}`);
+
+  res.status(201).json({ success: true, bookmarkId: result.lastInsertRowid });
+});
+
+// ── DELETE /api/books/:id/bookmarks/:bookmarkId ──
+app.delete('/api/books/:id/bookmarks/:bookmarkId', requireUser, (req, res) => {
+  const db = getDb();
+  const bookmarkId = parseInt(req.params.bookmarkId);
+  const bookId = parseInt(req.params.id);
+  
+  db.prepare('DELETE FROM bookmarks WHERE id = ? AND user_id = ? AND book_id = ?').run(bookmarkId, req.user.id, bookId);
+  res.json({ success: true });
+});
+
+// ── GET /api/books/:id/highlights ──
+app.get('/api/books/:id/highlights', requireUser, (req, res) => {
+  const db = getDb();
+  const bookId = parseInt(req.params.id);
+  const highlights = db.prepare('SELECT * FROM highlights WHERE user_id = ? AND book_id = ? ORDER BY created_at DESC').all(req.user.id, bookId);
+  res.json(highlights);
+});
+
+// ── POST /api/books/:id/highlights ──
+app.post('/api/books/:id/highlights', requireUser, (req, res) => {
+  const db = getDb();
+  const bookId = parseInt(req.params.id);
+  const { location_cfi_start, location_cfi_end, color = 'yellow', note_text } = req.body;
+
+  if (!location_cfi_start || !location_cfi_end) {
+    return res.status(400).json({ error: 'Start and end CFIs are required.' });
+  }
+
+  const result = db.prepare('INSERT INTO highlights (user_id, book_id, location_cfi_start, location_cfi_end, color, note_text) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(req.user.id, bookId, location_cfi_start, location_cfi_end, color, note_text || null);
+
+  res.status(201).json({ success: true, highlightId: result.lastInsertRowid });
+});
+
+// ── DELETE /api/books/:id/highlights/:highlightId ──
+app.delete('/api/books/:id/highlights/:highlightId', requireUser, (req, res) => {
+  const db = getDb();
+  const highlightId = parseInt(req.params.highlightId);
+  const bookId = parseInt(req.params.id);
+
+  db.prepare('DELETE FROM highlights WHERE id = ? AND user_id = ? AND book_id = ?').run(highlightId, req.user.id, bookId);
+  res.json({ success: true });
+});
+
+// ── POST /api/books/:id/shelf ──
+app.post('/api/books/:id/shelf', requireUser, (req, res) => {
+  const db = getDb();
+  const bookId = parseInt(req.params.id);
+  const { shelf_status } = req.body;
+
+  if (shelf_status === null) {
+    db.prepare('DELETE FROM user_library WHERE user_id = ? AND book_id = ?').run(req.user.id, bookId);
+    return res.json({ success: true, message: 'Removed from shelf.' });
+  }
+
+  if (!['want_to_read', 'currently_reading', 'finished'].includes(shelf_status)) {
+    return res.status(400).json({ error: 'Invalid shelf status.' });
+  }
+
+  db.prepare(`
+    INSERT INTO user_library (user_id, book_id, shelf_status)
+    VALUES (?, ?, ?)
+    ON CONFLICT(user_id, book_id) DO UPDATE SET shelf_status = ?
+  `).run(req.user.id, bookId, shelf_status, shelf_status);
+
+  res.json({ success: true, message: `Added to ${shelf_status} shelf.` });
+});
+
 // ── Fallback: serve index.html for SPA-like navigation ──
 app.get('*', (req, res) => {
   // Only serve HTML pages for known routes
-  const knownPages = ['submit', 'story', 'resources', 'about', 'terms', 'privacy', 'guidelines', 'admin'];
+  const knownPages = ['submit', 'story', 'resources', 'about', 'terms', 'privacy', 'guidelines', 'admin', 'library', 'reader'];
   const requestedPage = req.path.split('/').filter(Boolean)[0];
 
   if (knownPages.includes(requestedPage)) {

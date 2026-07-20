@@ -107,6 +107,7 @@
     // Load panel-specific data
     switch (panelName) {
       case 'overview': loadStats(); break;
+      case 'books': loadBooks(); break;
       case 'stories-queue': loadStoriesQueue(); break;
       case 'comments-queue': loadCommentsQueue(); break;
       case 'reports': loadReports(); break;
@@ -819,7 +820,328 @@
     // Enable MFA
     const enableMfaBtn = document.getElementById('enableMfaBtn');
     if (enableMfaBtn) enableMfaBtn.addEventListener('click', enableMFA);
+
+    // Book tab triggers
+    const btnBooksListTab = document.getElementById('btnBooksListTab');
+    const btnBooksUploadTab = document.getElementById('btnBooksUploadTab');
+    const btnBooksPendingTab = document.getElementById('btnBooksPendingTab');
+
+    if (btnBooksListTab) btnBooksListTab.addEventListener('click', () => switchBookTab('booksListTabSection', 'btnBooksListTab'));
+    if (btnBooksUploadTab) btnBooksUploadTab.addEventListener('click', () => switchBookTab('booksUploadTabSection', 'btnBooksUploadTab'));
+    if (btnBooksPendingTab) btnBooksPendingTab.addEventListener('click', () => switchBookTab('booksPendingTabSection', 'btnBooksPendingTab'));
+
+    // Book File select listener (for auto-fill metadata)
+    const bookFileInput = document.getElementById('bookFile');
+    if (bookFileInput) bookFileInput.addEventListener('change', handleEpubSelect);
+
+    // Book Form submit
+    const adminBookUploadForm = document.getElementById('adminBookUploadForm');
+    if (adminBookUploadForm) adminBookUploadForm.addEventListener('submit', handleBookSubmit);
   });
+
+  // ── Books Management & Client-side EPUB Parsing ──
+  let extractedCoverFile = null;
+
+  async function handleEpubSelect(e) {
+    const file = e.target.files[0];
+    if (!file || !file.name.endsWith('.epub')) {
+      document.getElementById('epubExtractHint').textContent = "Selected file is not an EPUB. Auto-fill disabled.";
+      return;
+    }
+
+    document.getElementById('epubExtractHint').textContent = "Extracting metadata...";
+    extractedCoverFile = null;
+
+    try {
+      const zip = await JSZip.loadAsync(file);
+      
+      const containerFile = zip.file("META-INF/container.xml");
+      if (!containerFile) throw new Error("Invalid EPUB: missing container.xml");
+      
+      const containerText = await containerFile.async("string");
+      const parser = new DOMParser();
+      const containerXml = parser.parseFromString(containerText, "text/xml");
+      const rootfile = containerXml.querySelector("rootfile");
+      if (!rootfile) throw new Error("Invalid EPUB: missing rootfile in container.xml");
+      
+      const opfPath = rootfile.getAttribute("full-path");
+      
+      const opfFile = zip.file(opfPath);
+      if (!opfFile) throw new Error(`Invalid EPUB: missing OPF file at ${opfPath}`);
+      
+      const opfText = await opfFile.async("string");
+      const opfXml = parser.parseFromString(opfText, "text/xml");
+      
+      const title = opfXml.querySelector("title")?.textContent || opfXml.querySelector("dc\\:title")?.textContent || "";
+      const author = opfXml.querySelector("creator")?.textContent || opfXml.querySelector("dc\\:creator")?.textContent || "";
+      const description = opfXml.querySelector("description")?.textContent || opfXml.querySelector("dc\\:description")?.textContent || "";
+      const publisher = opfXml.querySelector("publisher")?.textContent || opfXml.querySelector("dc\\:publisher")?.textContent || "";
+      const language = opfXml.querySelector("language")?.textContent || opfXml.querySelector("dc\\:language")?.textContent || "en";
+      
+      if (title) document.getElementById('bookTitle').value = title;
+      if (author) document.getElementById('bookAuthor').value = author;
+      if (description) document.getElementById('bookDescription').value = description;
+      if (publisher) document.getElementById('bookPublisher').value = publisher;
+      if (language) {
+        const langVal = language.substring(0, 2).toLowerCase();
+        const select = document.getElementById('bookLanguage');
+        if (Array.from(select.options).some(opt => opt.value === langVal)) {
+          select.value = langVal;
+        } else {
+          select.value = 'other';
+        }
+      }
+
+      document.getElementById('epubExtractHint').textContent = "Metadata extracted successfully!";
+
+      let coverId = null;
+      const metaCover = opfXml.querySelector("meta[name='cover']");
+      if (metaCover) {
+        coverId = metaCover.getAttribute("content");
+      }
+
+      if (coverId) {
+        const manifestItem = opfXml.querySelector(`item[id='${coverId}']`) || opfXml.querySelector(`[id='${coverId}']`);
+        if (manifestItem) {
+          const coverHref = manifestItem.getAttribute("href");
+          const opfDir = opfPath.includes('/') ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
+          const coverPath = opfDir + coverHref;
+          const coverZipFile = zip.file(coverPath) || zip.file(decodeURIComponent(coverPath));
+          if (coverZipFile) {
+            const coverBlob = await coverZipFile.async("blob");
+            const ext = coverHref.substring(coverHref.lastIndexOf('.') + 1) || 'png';
+            extractedCoverFile = new File([coverBlob], `extracted_cover.${ext}`, { type: coverBlob.type || `image/${ext}` });
+            showCoverPreview(extractedCoverFile);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("EPUB metadata extraction failed:", err);
+      document.getElementById('epubExtractHint').textContent = "Failed to parse EPUB metadata: " + err.message;
+    }
+  }
+
+  function showCoverPreview(file) {
+    let previewImg = document.getElementById('extractedCoverPreview');
+    if (!previewImg) {
+      previewImg = document.createElement('img');
+      previewImg.id = 'extractedCoverPreview';
+      previewImg.style.width = '60px';
+      previewImg.style.height = '90px';
+      previewImg.style.objectFit = 'cover';
+      previewImg.style.borderRadius = '4px';
+      previewImg.style.marginTop = '8px';
+      previewImg.style.border = '1px solid var(--border-card)';
+      document.getElementById('bookCover').parentNode.appendChild(previewImg);
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function loadBooks() {
+    try {
+      const data = await api('/api/books?limit=100&sort=newest');
+      const booksListBody = document.getElementById('booksListBody');
+      const noBooksState = document.getElementById('noBooksState');
+
+      booksListBody.innerHTML = '';
+      
+      if (data.books && data.books.length > 0) {
+        noBooksState.classList.add('hidden');
+        document.getElementById('booksListTable').parentNode.classList.remove('hidden');
+
+        data.books.forEach(book => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><img src="${book.cover_image_url || '/images/default-cover.png'}" style="width: 40px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-card);"></td>
+            <td style="font-weight: 500;">${escapeHtml(book.title)}</td>
+            <td>${escapeHtml(book.author)}</td>
+            <td><span class="filter-chip" style="font-size: 0.75rem;">${book.file_type.toUpperCase()}</span></td>
+            <td><span class="status-badge status-badge--${book.visibility === 'public' ? 'approved' : 'pending'}">${book.visibility}</span></td>
+            <td><span class="status-badge status-badge--${book.status === 'published' ? 'approved' : 'pending'}">${book.status}</span></td>
+            <td>${book.uploaded_by ? `User ID: ${book.uploaded_by}` : 'Admin'}</td>
+            <td>
+              <div class="flex gap-8">
+                <button class="btn btn--danger btn--sm" onclick="window.deleteBook(${book.id})">Delete</button>
+              </div>
+            </td>
+          `;
+          booksListBody.appendChild(tr);
+        });
+      } else {
+        noBooksState.classList.remove('hidden');
+        document.getElementById('booksListTable').parentNode.classList.add('hidden');
+      }
+
+      loadPendingBooks();
+      loadCategoriesForBooksForm();
+    } catch (err) {
+      showToast('Failed to load books: ' + err.message, 'error');
+    }
+  }
+
+  async function loadPendingBooks() {
+    try {
+      const books = await api('/api/admin/books/pending');
+      const booksPendingBody = document.getElementById('booksPendingBody');
+      const noPendingBooksState = document.getElementById('noPendingBooksState');
+      const pendingBooksCount = document.getElementById('pendingBooksCount');
+
+      booksPendingBody.innerHTML = '';
+      pendingBooksCount.textContent = books.length;
+
+      if (books && books.length > 0) {
+        noPendingBooksState.classList.add('hidden');
+        document.getElementById('booksPendingTable').parentNode.classList.remove('hidden');
+
+        books.forEach(book => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><img src="${book.cover_image_url || '/images/default-cover.png'}" style="width: 40px; height: 60px; object-fit: cover; border-radius: 4px;"></td>
+            <td style="font-weight: 500;">${escapeHtml(book.title)}</td>
+            <td>${escapeHtml(book.author)}</td>
+            <td><span class="filter-chip" style="font-size: 0.75rem;">${book.file_type.toUpperCase()}</span></td>
+            <td>${escapeHtml(book.uploader_name || `User ID: ${book.uploaded_by}`)}</td>
+            <td>${new Date(book.created_at).toLocaleDateString()}</td>
+            <td>
+              <div class="flex gap-8" style="display: flex; gap: 8px;">
+                <button class="btn btn--primary btn--sm" onclick="window.approveBook(${book.id})">Approve</button>
+                <button class="btn btn--danger btn--sm" onclick="window.deleteBook(${book.id})">Reject</button>
+              </div>
+            </td>
+          `;
+          booksPendingBody.appendChild(tr);
+        });
+      } else {
+        noPendingBooksState.classList.remove('hidden');
+        document.getElementById('booksPendingTable').parentNode.classList.add('hidden');
+      }
+    } catch (err) {
+      showToast('Failed to load pending books: ' + err.message, 'error');
+    }
+  }
+
+  async function loadCategoriesForBooksForm() {
+    try {
+      const categories = await api('/api/categories');
+      const container = document.getElementById('bookCategoryList');
+      if (!container) return;
+
+      container.innerHTML = '';
+      categories.forEach(cat => {
+        const label = document.createElement('label');
+        label.className = 'checkbox-label';
+        label.style.display = 'flex';
+        label.style.alignItems = 'center';
+        label.style.gap = '8px';
+        label.style.fontSize = '0.85rem';
+        label.innerHTML = `
+          <input type="checkbox" name="book_categories" value="${cat.id}">
+          <span>${escapeHtml(cat.name)}</span>
+        `;
+        container.appendChild(label);
+      });
+    } catch (err) {
+      console.error('Failed to load categories for form:', err);
+    }
+  }
+
+  async function handleBookSubmit(e) {
+    e.preventDefault();
+    const submitBtn = document.getElementById('btnSubmitBook');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving Book...';
+
+    const formData = new FormData();
+    const bookFile = document.getElementById('bookFile').files[0];
+    const coverFileInput = document.getElementById('bookCover').files[0];
+
+    formData.append('book', bookFile);
+    if (coverFileInput) {
+      formData.append('cover', coverFileInput);
+    } else if (extractedCoverFile) {
+      formData.append('cover', extractedCoverFile);
+    }
+
+    formData.append('title', document.getElementById('bookTitle').value.trim());
+    formData.append('author', document.getElementById('bookAuthor').value.trim());
+    formData.append('description', document.getElementById('bookDescription').value.trim());
+    formData.append('publisher', document.getElementById('bookPublisher').value.trim());
+    formData.append('language', document.getElementById('bookLanguage').value);
+    formData.append('isbn', document.getElementById('bookIsbn').value.trim());
+    
+    const pageCount = document.getElementById('bookPageCount').value;
+    if (pageCount) formData.append('page_count', pageCount);
+    
+    const readTime = document.getElementById('bookReadTime').value;
+    if (readTime) formData.append('est_read_minutes', readTime);
+
+    const selectedCats = Array.from(document.querySelectorAll('input[name="book_categories"]:checked')).map(cb => cb.value);
+    formData.append('category_ids', JSON.stringify(selectedCats));
+
+    const tags = document.getElementById('bookTags').value.split(',').map(t => t.trim()).filter(Boolean);
+    formData.append('tags', JSON.stringify(tags));
+
+    formData.append('visibility', document.getElementById('bookVisibility').value);
+    formData.append('status', document.getElementById('bookStatus').value);
+
+    try {
+      const res = await api('/api/admin/books', {
+        method: 'POST',
+        body: formData
+      });
+
+      showToast(res.message || 'Book saved successfully!', 'success');
+      document.getElementById('adminBookUploadForm').reset();
+      extractedCoverFile = null;
+      const previewImg = document.getElementById('extractedCoverPreview');
+      if (previewImg) previewImg.remove();
+
+      switchBookTab('booksListTabSection', 'btnBooksListTab');
+      loadBooks();
+    } catch (err) {
+      showToast(err.message || 'Failed to save book.', 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '💾 Upload & Save Book';
+    }
+  }
+
+  window.switchBookTab = function(activeSectionId, activeTabId) {
+    ['booksListTabSection', 'booksUploadTabSection', 'booksPendingTabSection'].forEach(s => {
+      document.getElementById(s).classList.add('hidden');
+    });
+    ['btnBooksListTab', 'btnBooksUploadTab', 'btnBooksPendingTab'].forEach(t => {
+      document.getElementById(t).classList.remove('active');
+    });
+
+    document.getElementById(activeSectionId).classList.remove('hidden');
+    document.getElementById(activeTabId).classList.add('active');
+  }
+
+  window.deleteBook = async function(bookId) {
+    if (!confirm('Are you sure you want to delete this book? This will permanently remove all text, bookmarks, and highlights.')) return;
+    try {
+      await api(`/api/admin/books/${bookId}`, { method: 'DELETE' });
+      showToast('Book deleted successfully.', 'success');
+      loadBooks();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  window.approveBook = async function(bookId) {
+    try {
+      await api(`/api/admin/books/${bookId}/approve`, { method: 'POST' });
+      showToast('Book approved and published!', 'success');
+      loadBooks();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
 
   window.loadUserAuditData = async function(userId) {
     if (!userId || userId === 'Unknown') {

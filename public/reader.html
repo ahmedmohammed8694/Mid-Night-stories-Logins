@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-page="reader">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reader Mode — Midnight Stories</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/reader.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  
+  <!-- CDNs for rendering engine libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+  
+  <style>
+    /* Brightness Overlay */
+    #brightnessOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: black;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 9999;
+      transition: opacity 0.15s ease;
+    }
+    
+    /* Highlight popup picker */
+    .highlight-picker {
+      position: absolute;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 8px;
+      display: flex;
+      gap: 6px;
+      box-shadow: var(--shadow-lg);
+      z-index: 1000;
+      animation: dropdown 0.15s ease;
+    }
+    
+    .color-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: transform 0.15s;
+    }
+    
+    .color-dot:hover {
+      transform: scale(1.15);
+    }
+    
+    .color-dot.selected {
+      border-color: var(--page-accent);
+    }
+  </style>
+</head>
+<body class="reader-body">
+  
+  <!-- Screen dim overlay controlled by settings -->
+  <div id="brightnessOverlay"></div>
+
+  <!-- Header -->
+  <header class="reader-header">
+    <div class="reader-header__left">
+      <button class="btn btn--secondary btn--sm" onclick="location.href='/library'">← Library</button>
+      <button class="btn btn--ghost btn--sm" id="sidebarToggleBtn" aria-label="Toggle sidebar">☰ Menu</button>
+      <h1 class="reader-header__title" id="bookTitle">Loading Book...</h1>
+    </div>
+    
+    <div class="reader-header__right">
+      <button class="btn btn--ghost btn--sm" id="addBookmarkBtn" title="Bookmark page">🔖 Bookmark</button>
+      <button class="btn btn--ghost btn--sm" id="comfortToggleBtn" title="Reader options">⚙️ Settings</button>
+      <button class="btn btn--ghost btn--sm" id="fullscreenToggleBtn" title="Fullscreen mode">⛶ Fullscreen</button>
+    </div>
+  </header>
+
+  <!-- Comfort Customizations Panel (Absolute positioning dropdown) -->
+  <div class="comfort-panel" id="comfortPanel">
+    
+    <!-- Theme Selection -->
+    <div class="comfort-option">
+      <span class="comfort-option__label">Comfort Theme</span>
+      <div class="theme-grid">
+        <button class="theme-btn theme-btn--light" data-theme-val="light">Light</button>
+        <button class="theme-btn theme-btn--sepia" data-theme-val="sepia">Sepia</button>
+        <button class="theme-btn theme-btn--dark active" data-theme-val="dark">Dark</button>
+        <button class="theme-btn theme-btn--dim" data-theme-val="dim">Dim</button>
+      </div>
+    </div>
+
+    <!-- Font Family -->
+    <div class="comfort-option">
+      <span class="comfort-option__label">Font Family</span>
+      <div class="btn-group">
+        <button class="btn-group-item active" data-font-val="serif" style="font-family: Georgia, serif;">Serif</button>
+        <button class="btn-group-item" data-font-val="sans" style="font-family: var(--font-primary);">Sans</button>
+        <button class="btn-group-item" data-font-val="dyslexic" style="font-family: 'OpenDyslexic', sans-serif;">Dyslexic</button>
+      </div>
+    </div>
+
+    <!-- Font Size -->
+    <div class="comfort-option">
+      <span class="comfort-option__label">Font Size</span>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <button class="btn btn--secondary btn--sm" id="fontSizeDecBtn" style="flex:1;">A-</button>
+        <span id="fontSizeDisplay" style="font-weight:600; min-width: 48px; text-align:center;">100%</span>
+        <button class="btn btn--secondary btn--sm" id="fontSizeIncBtn" style="flex:1;">A+</button>
+      </div>
+    </div>
+
+    <!-- Screen Brightness (In-App Dimmer) -->
+    <div class="comfort-option">
+      <span class="comfort-option__label">Dim Level</span>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span>☀️</span>
+        <input type="range" class="progress-slider" id="brightnessSlider" min="0" max="80" value="0" style="flex-grow:1;">
+        <span>🌙</span>
+      </div>
+    </div>
+
+    <!-- Margin Size / Width -->
+    <div class="comfort-option">
+      <span class="comfort-option__label">Page Margins</span>
+      <div class="btn-group">
+        <button class="btn-group-item" data-margin-val="narrow">Narrow</button>
+        <button class="btn-group-item active" data-margin-val="medium">Medium</button>
+        <button class="btn-group-item" data-margin-val="wide">Wide</button>
+      </div>
+    </div>
+
+    <!-- Reading Mode Scroll Layout -->
+    <div class="comfort-option">
+      <span class="comfort-option__label">Layout Style</span>
+      <div class="btn-group">
+        <button class="btn-group-item active" id="layoutPaginatedBtn">Paginated (Flip)</button>
+        <button class="btn-group-item" id="layoutScrollBtn">Continuous (Scroll)</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Viewport Workspace -->
+  <div class="reader-viewport sidebar-open" id="readerViewport">
+    
+    <!-- Sidebar Left Panels -->
+    <aside class="reader-sidebar" id="readerSidebar">
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" data-tab="toc">Chapters</button>
+        <button class="sidebar-tab" data-tab="search">Search</button>
+        <button class="sidebar-tab" data-tab="bookmarks">Bookmarks</button>
+        <button class="sidebar-tab" data-tab="highlights">Highlights</button>
+      </div>
+      
+      <!-- Tab 1: TOC Chapters -->
+      <div class="sidebar-content" id="tab-toc">
+        <div id="tocContainer" style="display: flex; flex-direction: column;">
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Loading Table of Contents...</p>
+        </div>
+      </div>
+      
+      <!-- Tab 2: Book Search inside Text -->
+      <div class="sidebar-content hidden" id="tab-search">
+        <div class="form-group" style="margin-bottom: 12px; display: flex; gap: 8px;">
+          <input type="text" class="form-input" id="searchInBookInput" placeholder="Find word or phrase..." style="flex-grow: 1; height: 36px; font-size: 0.9rem;">
+          <button class="btn btn--primary btn--sm" id="searchInBookBtn">Search</button>
+        </div>
+        <div id="searchBookResults" style="display: flex; flex-direction: column; gap: 10px;">
+          <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center;">Enter search phrase above.</p>
+        </div>
+      </div>
+      
+      <!-- Tab 3: Bookmarks -->
+      <div class="sidebar-content hidden" id="tab-bookmarks">
+        <div id="bookmarksList" style="display: flex; flex-direction: column; gap: 10px;">
+          <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center;">No bookmarks saved yet.</p>
+        </div>
+      </div>
+      
+      <!-- Tab 4: Highlights & Notes -->
+      <div class="sidebar-content hidden" id="tab-highlights">
+        <div id="highlightsList" style="display: flex; flex-direction: column;">
+          <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center;">No highlights or notes saved yet.</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Rendering Area -->
+    <div class="reader-canvas" id="readerCanvas">
+      
+      <!-- Overlay Arrows -->
+      <button class="nav-arrow nav-arrow--prev" id="prevPageBtn" aria-label="Previous Page">◀</button>
+      
+      <!-- Frame where EPUB renders -->
+      <div class="reader-frame" id="readerFrame"></div>
+      
+      <button class="nav-arrow nav-arrow--next" id="nextPageBtn" aria-label="Next Page">▶</button>
+      
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="reader-footer">
+    <span id="readingProgressText">Progress: 0%</span>
+    <div class="progress-slider-container">
+      <input type="range" class="progress-slider" id="progressRange" min="0" max="100" value="0">
+    </div>
+    <span id="locationsDisplay">Loading location...</span>
+  </footer>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Highlight popup template (created dynamically, template for styling reference) -->
+  <div id="highlightPickerTemplate" class="highlight-picker" style="display: none;">
+    <div class="color-dot selected" data-color="yellow" style="background: rgba(254, 240, 138, 0.6);"></div>
+    <div class="color-dot" data-color="green" style="background: rgba(187, 247, 208, 0.6);"></div>
+    <div class="color-dot" data-color="blue" style="background: rgba(191, 219, 254, 0.6);"></div>
+    <div class="color-dot" data-color="pink" style="background: rgba(fbcfe8, 244, 114, 0.6);"></div>
+    <button class="btn btn--primary btn--sm" id="btnSaveHighlight" style="padding: 2px 6px; font-size: 11px;">✍️ Note</button>
+    <button class="btn btn--secondary btn--sm" id="btnRemoveHighlightSelection" style="padding: 2px 6px; font-size: 11px;">✕</button>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/reader.js"></script>
+</body>
+</html>
