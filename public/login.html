@@ -8,13 +8,101 @@
   <link rel="canonical" href="https://midnightstories.dpdns.org/login.html" />
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    .auth-container { max-width: 400px; margin: 100px auto; padding: 2rem; }
-    .auth-form { display: flex; flex-direction: column; gap: 1rem; }
-    .auth-input { padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: inherit; }
-    .auth-btn { padding: 0.75rem; border-radius: 8px; cursor: pointer; font-weight: bold; border: none; }
-    .btn-primary { background: var(--primary, #5c6ac4); color: white; }
-    .btn-google { background: white; color: #333; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; }
-    .auth-links { text-align: center; margin-top: 1rem; font-size: 0.9em; opacity: 0.8; }
+    body {
+      background-color: var(--ms-bg) !important;
+      color: var(--ms-text) !important;
+      font-family: var(--font-primary) !important;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .auth-container {
+      max-width: 420px;
+      width: 100%;
+      margin: 40px auto;
+      padding: 36px;
+      background: var(--ms-surface);
+      border: 1px solid var(--ms-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    .auth-container:hover {
+      border-color: var(--ms-accent);
+      box-shadow: 0 4px 20px var(--ms-accent-glow-sm);
+    }
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .auth-input {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--ms-border);
+      background: var(--bg-input);
+      color: var(--ms-text);
+      font-family: var(--font-primary);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+      outline: none;
+    }
+    .auth-input:focus {
+      border-color: var(--ms-accent);
+      box-shadow: 0 0 10px var(--ms-accent-glow-sm);
+      background: var(--bg-input-focus);
+    }
+    .auth-btn {
+      padding: 0.85rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-weight: 600;
+      border: none;
+      font-family: var(--font-primary);
+      transition: all var(--transition-fast);
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-primary {
+      background: var(--ms-accent);
+      color: var(--ms-bg);
+    }
+    .btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+    .btn-google {
+      background: var(--ms-surface);
+      color: var(--ms-text-secondary);
+      border: 1px solid var(--ms-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .btn-google:hover {
+      border-color: var(--ms-accent);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--ms-text);
+    }
+    .auth-links {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.9em;
+      color: var(--ms-text-secondary);
+    }
+    .auth-links a {
+      color: var(--ms-accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .auth-links a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>

@@ -141,7 +141,7 @@ async function runTests() {
       const approvedBookId = bookRes.lastInsertRowid;
 
       db.prepare('INSERT INTO book_categories (book_id, category_id) VALUES (?, ?)').run(approvedBookId, subRow.category_id);
-      db.prepare('UPDATE user_book_submissions SET status = "approved" WHERE id = ?').run(submissionId);
+      db.prepare("UPDATE user_book_submissions SET status = 'approved' WHERE id = ?").run(submissionId);
       return approvedBookId;
     });
 

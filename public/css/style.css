@@ -11,7 +11,61 @@
    BASE DESIGN TOKENS (dark midnight, shared site-wide)
    ═══════════════════════════════════════════════════════════ */
 :root {
-  /* ── Midnight/Candlelight Tokens ── */
+  /* ── Light Mode (Classic Warm Book Theme) ── */
+  --ms-bg: #FAF6EE;
+  --ms-surface: #FFFFFF;
+  --ms-border: #E6DFD3;
+  --ms-text: #1A202C;
+  --ms-text-secondary: #4A5568;
+  --ms-text-muted: #718096;
+  --ms-accent: #801D2C;
+  --ms-accent-glow: rgba(128, 29, 44, 0.12);
+  --ms-accent-glow-sm: rgba(128, 29, 44, 0.06);
+  --ms-accent-quiet: #5E697D;
+
+  /* ── Surfaces ── */
+  --bg-primary: var(--ms-bg);
+  --bg-secondary: var(--ms-surface);
+  --bg-tertiary: #F0EAE1;
+  --bg-card: var(--ms-surface);
+  --bg-card-hover: #F6F1E6;
+  --bg-glass: rgba(0, 0, 0, 0.02);
+  --bg-glass-hover: rgba(0, 0, 0, 0.04);
+  --bg-input: #FFFFFF;
+  --bg-input-focus: #FFFFFF;
+
+  /* ── Text ── */
+  --text-primary: var(--ms-text);
+  --text-secondary: var(--ms-text-secondary);
+  --text-tertiary: var(--ms-text-muted);
+  --text-muted: var(--ms-text-muted);
+
+  /* ── Page-level accent ── */
+  --page-accent: var(--ms-accent);
+  --page-accent-soft: #F5EBEB;
+  --page-accent-glow: var(--ms-accent-glow);
+  --page-accent-glow-sm: var(--ms-accent-glow-sm);
+  --page-gradient: linear-gradient(135deg, var(--ms-accent) 0%, #B84A59 100%);
+  --page-hero-img: url('https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&w=1600&q=80');
+  --page-hero-overlay: linear-gradient(to bottom, rgba(250,246,238,0.72) 0%, rgba(240,234,225,0.88) 100%);
+
+  /* ── Fixed accent colors for UI states ── */
+  --accent-rose: #C53030;
+  --accent-rose-glow: rgba(197, 48, 48, 0.12);
+  --accent-emerald: #2F855A;
+  --accent-emerald-glow: rgba(47, 133, 90, 0.12);
+  --accent-amber: #C05621;
+  --accent-amber-glow: rgba(192, 86, 33, 0.12);
+
+  /* ── Borders ── */
+  --border-subtle: var(--ms-border);
+  --border-card: var(--ms-border);
+  --border-hover: rgba(128, 29, 44, 0.3);
+  --border-focus: rgba(128, 29, 44, 0.5);
+}
+
+:root[data-theme="dark"] {
+  /* ── Dark Mode (Midnight Blue & Candlelight Gold) ── */
   --ms-bg: #0B0E1A;
   --ms-surface: #12162A;
   --ms-border: #262C4A;
@@ -46,22 +100,22 @@
   --page-accent-glow: var(--ms-accent-glow);
   --page-accent-glow-sm: var(--ms-accent-glow-sm);
   --page-gradient: linear-gradient(135deg, var(--ms-accent) 0%, #F5DCAC 100%);
-  --page-hero-img: url('https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&w=1600&q=80');
   --page-hero-overlay: linear-gradient(to bottom, rgba(8,7,20,0.72) 0%, rgba(14,13,26,0.88) 100%);
 
   /* ── Fixed accent colors for UI states ── */
-  --accent-rose: #f87171;
+  --accent-rose: #F87171;
   --accent-rose-glow: rgba(248, 113, 113, 0.18);
-  --accent-emerald: #34d399;
+  --accent-emerald: #34D399;
   --accent-emerald-glow: rgba(52, 211, 153, 0.18);
-  --accent-amber: #fbbf24;
+  --accent-amber: #FBBF24;
   --accent-amber-glow: rgba(251, 191, 36, 0.18);
 
   /* ── Borders ── */
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-card: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(139, 127, 240, 0.35);
-  --border-focus: rgba(139, 127, 240, 0.55);
+  --border-subtle: var(--ms-border);
+  --border-card: var(--ms-border);
+  --border-hover: rgba(232, 193, 121, 0.35);
+  --border-focus: rgba(232, 193, 121, 0.55);
+}
 
   /* ── Shadows ── */
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.45);
@@ -2702,4 +2756,312 @@ img {
 .shelf-status-select:focus {
   border-color: var(--ms-accent) !important;
   box-shadow: 0 0 8px var(--ms-accent-glow-sm) !important;
+}
+
+/* ── Premium Navbar & Story Card Styles ── */
+.header {
+  background: var(--ms-surface) !important;
+  border-bottom: 1px solid var(--ms-border) !important;
+  box-shadow: 0 1px 10px rgba(0,0,0,0.03) !important;
+}
+
+.logo__text {
+  font-family: var(--font-display) !important;
+  font-weight: 700 !important;
+  color: var(--ms-accent) !important;
+  letter-spacing: -0.5px !important;
+}
+
+.nav-link {
+  font-family: var(--font-primary) !important;
+  font-weight: 500 !important;
+  color: var(--ms-text-secondary) !important;
+  transition: color var(--transition-fast) !important;
+}
+
+.nav-link:hover, .nav-link.active {
+  color: var(--ms-accent) !important;
+}
+
+/* Story Card Overrides */
+.story-card {
+  background: var(--ms-surface) !important;
+  border: 1px solid var(--ms-border) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 24px !important;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast) !important;
+}
+
+.story-card:hover {
+  border-color: var(--ms-accent) !important;
+  box-shadow: 0 4px 20px var(--ms-accent-glow-sm) !important;
+  transform: translateY(-2px) !important;
+}
+
+.story-card__title {
+  font-family: var(--font-display) !important;
+  color: var(--ms-text) !important;
+  font-size: 1.35rem !important;
+  margin-bottom: 8px !important;
+}
+
+.story-card__excerpt {
+  font-family: var(--font-display) !important;
+  font-style: italic !important;
+  color: var(--ms-text-secondary) !important;
+  line-height: 1.65 !important;
+  margin-bottom: 16px !important;
+}
+
+/* ── Submit Story Page Overrides ── */
+.form-textarea {
+  min-height: 250px !important;
+  font-size: 1.1rem !important;
+  line-height: 1.75 !important;
+  font-family: var(--font-display) !important; /* Serif font for storytelling input */
+  background: var(--ms-surface) !important;
+  border: 1px solid var(--ms-border) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 20px !important;
+  color: var(--ms-text) !important;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast) !important;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.02) !important;
+  width: 100% !important;
+}
+
+.form-textarea:focus {
+  border-color: var(--ms-accent) !important;
+  box-shadow: 0 0 15px var(--ms-accent-glow-sm) !important;
+  outline: none !important;
+}
+
+/* Soothing warning colors for PII Warning instead of alarming red/yellow */
+.pii-warning {
+  background: rgba(128, 29, 44, 0.03) !important;
+  border: 1px solid rgba(128, 29, 44, 0.15) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 16px !important;
+  color: var(--ms-text-secondary) !important;
+  display: flex !important;
+  gap: 12px !important;
+  align-items: flex-start !important;
+  margin-top: 16px !important;
+}
+
+.pii-warning__icon {
+  font-size: 1.25rem !important;
+  color: var(--ms-accent) !important;
+}
+
+/* Crisis Check Modal Redesign */
+.modal-overlay {
+  background-color: rgba(11, 14, 26, 0.8) !important;
+  backdrop-filter: blur(4px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.modal {
+  background: var(--ms-surface) !important;
+  border: 1px solid var(--ms-border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-xl) !important;
+  padding: 32px !important;
+  max-width: 500px !important;
+  width: 90% !important;
+  animation: modalEnter 0.3s var(--transition-bounce) !important;
+}
+
+@keyframes modalEnter {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modal__title {
+  font-family: var(--font-display) !important;
+  color: var(--ms-accent) !important;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 8px !important;
+}
+
+.modal__description {
+  color: var(--ms-text-secondary) !important;
+  font-size: 0.95rem !important;
+  line-height: 1.5 !important;
+}
+
+/* ── Resources Page Spacing and Typography Overrides ── */
+.resource-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)) !important;
+  gap: 24px !important;
+  margin-top: 32px !important;
+}
+
+.resource-card {
+  background: var(--ms-surface) !important;
+  border: 1px solid var(--ms-border) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 28px !important;
+  box-shadow: var(--shadow-sm) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+}
+
+.resource-card__icon {
+  font-size: 2.2rem !important;
+  margin-bottom: 4px !important;
+}
+
+.resource-card__category {
+  font-family: var(--font-display) !important;
+  color: var(--ms-accent) !important;
+  font-size: 1.4rem !important;
+  font-weight: 700 !important;
+  margin: 0 0 8px 0 !important;
+}
+
+.resource-item {
+  border-top: 1px solid var(--ms-border) !important;
+  padding-top: 16px !important;
+  margin-top: 8px !important;
+}
+
+.resource-item:first-of-type {
+  border-top: none !important;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+.resource-item__name {
+  font-family: var(--font-primary) !important;
+  font-weight: 600 !important;
+  color: var(--ms-text) !important;
+  font-size: 1rem !important;
+  margin-bottom: 4px !important;
+}
+
+.resource-item__contact {
+  font-family: var(--font-primary) !important;
+  font-weight: 700 !important;
+  font-size: 1.05rem !important;
+  margin-bottom: 4px !important;
+}
+
+.resource-item__contact a {
+  color: var(--ms-accent) !important;
+  text-decoration: underline !important;
+  transition: color var(--transition-fast) !important;
+}
+
+.resource-item__contact a:hover {
+  color: var(--ms-text) !important;
+}
+
+.resource-item__meta {
+  font-size: 0.85rem !important;
+  color: var(--ms-text-muted) !important;
+}
+
+/* ── About Page Editorial Layout Overrides ── */
+.static-page h2 {
+  font-family: var(--font-display) !important;
+  color: var(--ms-accent) !important;
+  font-size: 1.8rem !important;
+  margin-top: 48px !important;
+  margin-bottom: 20px !important;
+  border-top: 1px solid var(--ms-border) !important;
+  padding-top: 32px !important;
+}
+
+.static-page h2:first-of-type {
+  border-top: none !important;
+  padding-top: 0 !important;
+  margin-top: 24px !important;
+}
+
+/* Mission Pull-Quote Selector */
+.static-page h2:first-of-type + p {
+  font-family: var(--font-display) !important;
+  font-style: italic !important;
+  font-size: 1.35rem !important;
+  line-height: 1.75 !important;
+  color: var(--ms-accent) !important;
+  padding: 24px 32px !important;
+  border-left: 4px solid var(--ms-accent) !important;
+  background: rgba(128, 29, 44, 0.02) !important;
+  margin: 32px 0 !important;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0 !important;
+}
+
+.static-page p {
+  font-size: 1.05rem !important;
+  line-height: 1.75 !important;
+  color: var(--ms-text-secondary) !important;
+  margin-bottom: 20px !important;
+}
+
+.static-page ul {
+  margin-bottom: 28px !important;
+  padding-left: 24px !important;
+}
+
+.static-page li {
+  font-size: 1.02rem !important;
+  line-height: 1.70 !important;
+  color: var(--ms-text-secondary) !important;
+  margin-bottom: 12px !important;
+}
+
+.static-page li strong {
+  color: var(--ms-text) !important;
+}
+
+/* ── Guidelines Page Custom Overrides ── */
+/* Welcome List (First UL following the first H2) */
+.static-page h2:nth-of-type(1) + ul {
+  background: rgba(47, 133, 90, 0.03) !important;
+  border: 1px solid rgba(47, 133, 90, 0.2) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 24px 24px 24px 40px !important;
+  margin-top: 16px !important;
+  margin-bottom: 32px !important;
+}
+
+/* Boundaries lists (All ULs after 2nd H2) */
+.static-page h2:nth-of-type(2) ~ ul {
+  background: rgba(197, 48, 48, 0.02) !important;
+  border-left: 3px solid rgba(197, 48, 48, 0.3) !important;
+  padding: 12px 16px 12px 32px !important;
+  margin-bottom: 16px !important;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0 !important;
+}
+
+/* Reset for subsequent lists (after the 3rd H2 "Reporting Content") */
+.static-page h2:nth-of-type(3) ~ ul {
+  background: none !important;
+  border-left: none !important;
+  padding: 0 !important;
+  margin-bottom: 24px !important;
+  border-radius: 0 !important;
+}
+
+/* ── Terms Page Scanability & Numbered Lists ── */
+.static-page ol {
+  margin-bottom: 28px !important;
+  padding-left: 24px !important;
+}
+
+.static-page ol li {
+  font-size: 1.02rem !important;
+  line-height: 1.70 !important;
+  color: var(--ms-text-secondary) !important;
+  margin-bottom: 16px !important;
+}
+
+.static-page ol li strong {
+  color: var(--ms-text) !important;
 }

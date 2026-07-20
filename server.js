@@ -1454,7 +1454,7 @@ app.post('/api/admin/submissions/:id/approve', requireAdmin, (req, res) => {
     `).run(bookId, sub.category_id);
 
     // 3. Mark submission as approved
-    db.prepare('UPDATE user_book_submissions SET status = "approved" WHERE id = ?').run(submissionId);
+    db.prepare("UPDATE user_book_submissions SET status = 'approved' WHERE id = ?").run(submissionId);
     
     // 4. Send notification to the user
     db.prepare(`

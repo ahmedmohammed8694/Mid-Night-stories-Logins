@@ -9,18 +9,20 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <style>
     .upload-zone {
-      border: 2px dashed var(--border-card);
-      border-radius: var(--radius-md);
-      padding: 30px;
-      text-align: center;
-      background: rgba(255,255,255,0.01);
-      cursor: pointer;
-      transition: border-color var(--transition-fast), background var(--transition-fast);
-      margin-bottom: 8px;
+      border: 2px dashed var(--ms-border) !important;
+      border-radius: var(--radius-md) !important;
+      padding: 30px !important;
+      text-align: center !important;
+      background: rgba(255,255,255,0.01) !important;
+      cursor: pointer !important;
+      transition: border-color var(--transition-fast), background var(--transition-fast) !important;
+      margin-bottom: 8px !important;
+      color: var(--ms-text-secondary) !important;
     }
     .upload-zone:hover, .upload-zone.dragover {
-      border-color: var(--page-accent);
-      background: rgba(139, 127, 240, 0.05);
+      border-color: var(--ms-accent) !important;
+      background: var(--ms-accent-glow) !important;
+      color: var(--ms-text) !important;
     }
     .upload-zone__icon {
       font-size: 2.2rem;
@@ -28,18 +30,18 @@
     }
     .upload-zone__text {
       font-size: 0.95rem;
-      color: var(--text-secondary);
+      color: var(--ms-text-secondary) !important;
       line-height: 1.5;
     }
     .file-preview {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-card);
-      border-radius: var(--radius-sm);
-      margin-top: 10px;
+      display: flex !important;
+      align-items: center !important;
+      gap: 12px !important;
+      padding: 12px !important;
+      background: var(--ms-surface) !important;
+      border: 1px solid var(--ms-border) !important;
+      border-radius: var(--radius-sm) !important;
+      margin-top: 10px !important;
     }
     .file-preview img {
       width: 45px;
