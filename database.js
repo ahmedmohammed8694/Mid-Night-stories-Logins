@@ -30,6 +30,24 @@ function initializeDatabase() {
 
   // ── Create Tables ──
   db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT UNIQUE,
+      full_name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT,
+      google_id TEXT,
+      dob TEXT,
+      phone_number TEXT,
+      bio TEXT,
+      profile_pic TEXT,
+      privacy_settings TEXT DEFAULT '{"show_phone":false,"show_email":false}',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      account_status TEXT DEFAULT 'active' CHECK(account_status IN ('active','suspended','banned','shadowbanned')),
+      dm_permission TEXT DEFAULT 'full' CHECK(dm_permission IN ('full','text_only','suspended'))
+    );
+
     CREATE TABLE IF NOT EXISTS categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL UNIQUE,
@@ -209,6 +227,65 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_bookmarks_user_book ON bookmarks(user_id, book_id);
     CREATE INDEX IF NOT EXISTS idx_highlights_user_book ON highlights(user_id, book_id);
     CREATE INDEX IF NOT EXISTS idx_user_library_user ON user_library(user_id);
+
+    CREATE TABLE IF NOT EXISTS follows (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      follower_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      following_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(follower_id, following_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS reads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      story_id INTEGER NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
+      read_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, story_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_rooms (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_participants (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      room_id INTEGER NOT NULL REFERENCES chat_rooms(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(room_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      room_id INTEGER NOT NULL REFERENCES chat_rooms(id) ON DELETE CASCADE,
+      sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      body TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      source_id INTEGER,
+      read INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS admin_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      admin_id INTEGER NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+    CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
   `);
 
   // Try altering categories to add parent_id (ignore if already exists)

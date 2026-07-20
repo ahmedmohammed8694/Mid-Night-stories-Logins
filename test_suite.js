@@ -49,10 +49,17 @@ async function runTests() {
     console.log('4️⃣  Testing book insertion & relationships...');
     // Begin transaction
     const transaction = db.transaction(() => {
+      // Insert dummy user first to satisfy foreign keys
+      db.prepare(`
+        INSERT OR IGNORE INTO users (id, user_id, full_name, email)
+        VALUES (?, ?, ?, ?)
+      `).run(999, 'test_user_999', 'Test User', 'testuser999@test.com');
+      console.log('   - Ensured dummy user exists.');
+
       // Insert dummy book
       const bookStmt = db.prepare(`
-        INSERT INTO books (title, author, description, file_path, cover_image_url, file_type, file_size, visibility, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO books (title, author, description, file_url, cover_image_url, file_type, visibility, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `);
       const bookRes = bookStmt.run(
         'Test Suite Book',
@@ -61,7 +68,6 @@ async function runTests() {
         '/uploads/test_book.epub',
         '/uploads/test_cover.png',
         'epub',
-        10240,
         'public',
         'published'
       );
@@ -77,9 +83,9 @@ async function runTests() {
       console.log(`   - Linked book to category [${categories[0].name}]`);
 
       // Bind tags
-      const tagInsert = db.prepare('INSERT OR IGNORE INTO tags (name) VALUES (?)');
-      tagInsert.run('testing');
-      tagInsert.run('automation');
+      const tagInsert = db.prepare('INSERT OR IGNORE INTO tags (name, slug) VALUES (?, ?)');
+      tagInsert.run('testing', 'testing');
+      tagInsert.run('automation', 'automation');
       
       const tag1 = db.prepare('SELECT id FROM tags WHERE name = ?').get('testing').id;
       const tag2 = db.prepare('SELECT id FROM tags WHERE name = ?').get('automation').id;
@@ -114,7 +120,7 @@ async function runTests() {
       ON CONFLICT(user_id, book_id) DO UPDATE SET
         location_cfi = excluded.location_cfi,
         percent_complete = excluded.percent_complete,
-        updated_at = CURRENT_TIMESTAMP
+        last_read_at = CURRENT_TIMESTAMP
     `).run(testUserId, bookId, 'epubcfi(/6/4[chap-2]!/4/2/10/1:0)', 45.5);
     console.log('   - Saved reading progress: 45.5% complete');
 
@@ -169,7 +175,8 @@ async function runTests() {
     db.prepare('DELETE FROM book_tags WHERE book_id = ?').run(bookId);
     db.prepare('DELETE FROM book_categories WHERE book_id = ?').run(bookId);
     db.prepare('DELETE FROM books WHERE id = ?').run(bookId);
-    console.log('   - Test book and dependent records successfully purged.');
+    db.prepare('DELETE FROM users WHERE id = ?').run(testUserId);
+    console.log('   - Test book, dummy user, and dependent records successfully purged.');
     console.log('✅ Cleanup finished.\n');
 
     console.log('🎉 ALL INTEGRATION TESTS PASSED SUCCESSFULLY! The library schema and endpoints are 100% correct.');
