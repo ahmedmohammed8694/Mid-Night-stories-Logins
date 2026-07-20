@@ -1188,7 +1188,7 @@ app.get('/api/books/:id', optionalUser, (req, res) => {
   const book = db.prepare(`
     SELECT b.*,
       (SELECT GROUP_CONCAT(c.name) FROM book_categories bc JOIN categories c ON bc.category_id = c.id WHERE bc.book_id = b.id) as category_names,
-      (SELECT GROUP_CONCAT(c.id) FROM book_categories bc WHERE bc.book_id = b.id) as category_ids,
+      (SELECT GROUP_CONCAT(bc.category_id) FROM book_categories bc WHERE bc.book_id = b.id) as category_ids,
       (SELECT GROUP_CONCAT(t.name) FROM book_tags bt JOIN tags t ON bt.tag_id = t.id WHERE bt.book_id = b.id) as tag_names
     FROM books b
     WHERE b.id = ?

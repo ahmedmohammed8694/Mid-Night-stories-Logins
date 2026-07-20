@@ -2582,3 +2582,124 @@ img {
   border-color: var(--ms-accent) !important;
   color: var(--ms-accent) !important;
 }
+
+/* ── Library Page Sidebar & Book Catalog Styles ── */
+.filter-sidebar {
+  background: var(--ms-surface) !important;
+  border: 1px solid var(--ms-border) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: 24px !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.filter-section__title {
+  font-family: var(--font-primary) !important;
+  color: var(--ms-text) !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  border-bottom: 1px solid var(--ms-border) !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 16px !important;
+}
+
+.checkbox-label {
+  color: var(--ms-text-secondary) !important;
+  font-size: 0.90rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  margin-bottom: 10px !important;
+  transition: color var(--transition-fast) !important;
+}
+
+.checkbox-label:hover {
+  color: var(--ms-accent) !important;
+}
+
+.checkbox-input {
+  accent-color: var(--ms-accent) !important;
+  width: 15px !important;
+  height: 15px !important;
+  cursor: pointer !important;
+}
+
+/* Book Card Custom Styling */
+.book-card {
+  background: var(--ms-surface) !important;
+  border: 1px solid var(--ms-border) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast) !important;
+}
+
+.book-card:hover {
+  border-color: var(--ms-accent) !important;
+  box-shadow: 0 0 15px var(--ms-accent-glow-sm) !important;
+}
+
+.book-card__title {
+  font-family: var(--font-display) !important;
+  color: var(--ms-text) !important;
+  font-size: 1.15rem !important;
+  font-weight: 600 !important;
+  margin: 12px 0 4px 0 !important;
+  cursor: pointer !important;
+  transition: color var(--transition-fast) !important;
+}
+
+.book-card__title:hover {
+  color: var(--ms-accent) !important;
+}
+
+.book-card__author {
+  font-family: var(--font-primary) !important;
+  color: var(--ms-text-secondary) !important;
+  font-size: 0.85rem !important;
+  margin-bottom: 12px !important;
+}
+
+.book-card__badge {
+  background: var(--ms-accent) !important;
+  color: var(--ms-bg) !important;
+  font-family: var(--font-primary) !important;
+  font-weight: 700 !important;
+  font-size: 0.70rem !important;
+  letter-spacing: 0.5px !important;
+  padding: 4px 8px !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+/* Library Progress Bar & Select Input overrides */
+.book-card__progress-container {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: var(--radius-full) !important;
+  height: 6px !important;
+  margin-top: 10px !important;
+  overflow: hidden !important;
+}
+
+.book-card__progress-bar {
+  background: var(--ms-accent) !important;
+  box-shadow: 0 0 8px var(--ms-accent-glow) !important;
+  height: 100% !important;
+}
+
+.shelf-status-select {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid var(--ms-border) !important;
+  border-radius: var(--radius-sm) !important;
+  color: var(--ms-text-secondary) !important;
+  padding: 4px 8px !important;
+  transition: all var(--transition-fast) !important;
+  outline: none !important;
+}
+
+.shelf-status-select:focus {
+  border-color: var(--ms-accent) !important;
+  box-shadow: 0 0 8px var(--ms-accent-glow-sm) !important;
+}
