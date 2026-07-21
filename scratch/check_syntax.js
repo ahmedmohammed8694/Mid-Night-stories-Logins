@@ -1,16 +1,16 @@
 const fs = require('fs');
 const vm = require('vm');
 
-function checkFile(path) {
+function checkSyntax(filePath) {
   try {
-    const code = fs.readFileSync(path, 'utf8');
-    new vm.Script(code);
-    console.log(path + " parsed successfully!");
-  } catch (e) {
-    console.log("Error in " + path + ": " + e.message);
+    const code = fs.readFileSync(filePath, 'utf8');
+    vm.compileFunction(code);
+    console.log(`✅ Syntax OK: ${filePath}`);
+  } catch (err) {
+    console.error(`❌ Syntax Error in ${filePath}:`, err.message);
   }
 }
 
-checkFile('public/js/app.js');
-checkFile('public/js/admin.js');
-checkFile('admin/public/js/admin.js');
+checkSyntax('public/js/admin.js');
+checkSyntax('admin/public/js/admin.js');
+checkSyntax('public/js/app.js');

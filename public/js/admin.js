@@ -6,6 +6,8 @@
 
   // ── Check Auth State ──
   function checkAuth() {
+    // Sync with the token that may have been set by the inline login handler
+    adminToken = sessionStorage.getItem('adminToken');
     if (adminToken) {
       showDashboard();
       loadDashboardData();
@@ -122,8 +124,11 @@
 
   // ── Load Dashboard Data ──
   function loadDashboardData() {
+    adminToken = sessionStorage.getItem('adminToken'); // always refresh from storage
     loadStats();
   }
+  // Expose globally so inline login handler in admin.html can call it
+  window.loadDashboardData = loadDashboardData;
 
   // ── Stats ──
   async function loadStats() {
