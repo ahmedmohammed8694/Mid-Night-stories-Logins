@@ -18,7 +18,7 @@
   let currentFont = localStorage.getItem('reader_font') || 'serif';
   let fontSizePercent = parseInt(localStorage.getItem('reader_font_size')) || 100;
   let pageMargin = localStorage.getItem('reader_margin') || 'medium';
-  let layoutStyle = localStorage.getItem('reader_layout') || 'paginated'; // 'paginated' or 'scroll'
+  let layoutStyle = localStorage.getItem('reader_layout') || 'scroll'; // 'paginated' or 'scroll'
 
   // DOM elements
   const readerFrame = document.getElementById('readerFrame');
@@ -72,8 +72,10 @@
       loadUserBookmarks();
       loadUserHighlights();
 
-      // Bind global keys
+      // Bind global keys & touch events
       document.addEventListener('keydown', handleKeyNavigation);
+      bindTouchSwipeGestures();
+      bindResizeHandler();
 
       // Start periodic autosave progress (every 8 seconds)
       saveProgressInterval = setInterval(saveCurrentProgress, 8000);
@@ -144,7 +146,9 @@
       try {
         const savedProgress = await api(`/api/books/${bookId}/progress`);
         if (savedProgress && savedProgress.location_cfi) {
-          epubRendition.display(savedProgress.location_cfi);
+          epubRendition.display(savedProgress.location_cfi).catch(() => {
+            epubRendition.display();
+          });
           showToast('Resuming last read position...', 'info');
         } else {
           epubRendition.display();
@@ -203,21 +207,32 @@
       return;
     }
 
-    toc.forEach(chapter => {
-      const link = document.createElement('a');
-      link.className = 'toc-item';
-      link.textContent = chapter.label.trim();
-      link.href = '#';
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        epubRendition.display(chapter.href);
-        // Mobile sidebar close
-        if (window.innerWidth <= 768) {
-          readerViewport.classList.remove('sidebar-open');
+    function renderItems(items, depth = 0) {
+      items.forEach(chapter => {
+        if (!chapter.label || !chapter.label.trim()) return;
+        const link = document.createElement('a');
+        link.className = 'toc-item';
+        link.style.paddingLeft = `${12 + depth * 16}px`;
+        link.textContent = chapter.label.trim();
+        link.href = '#';
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          if (chapter.href) {
+            epubRendition.display(chapter.href).catch(() => epubRendition.display());
+          }
+          if (window.innerWidth <= 768) {
+            readerViewport.classList.remove('sidebar-open');
+          }
+        });
+        container.appendChild(link);
+
+        if (chapter.subitems && chapter.subitems.length > 0) {
+          renderItems(chapter.subitems, depth + 1);
         }
       });
-      container.appendChild(link);
-    });
+    }
+
+    renderItems(toc);
   }
 
   // ── PDF RENDERING (PDF.JS) ──
@@ -366,9 +381,14 @@
     if (currentFont === 'sans') fontFamily = 'var(--font-primary), sans-serif';
     if (currentFont === 'dyslexic') fontFamily = 'OpenDyslexic, sans-serif';
 
-    let paddingStr = '0px 80px';
-    if (pageMargin === 'narrow') paddingStr = '0px 20px';
-    if (pageMargin === 'wide') paddingStr = '0px 140px';
+    const readerFrame = document.getElementById('readerFrame');
+    if (window.innerWidth <= 768) {
+      readerFrame.style.padding = '0 16px';
+    } else {
+      if (pageMargin === 'narrow') readerFrame.style.padding = '0 24px';
+      else if (pageMargin === 'wide') readerFrame.style.padding = '0 120px';
+      else readerFrame.style.padding = '0 60px';
+    }
 
     const rules = {
       "body": {
@@ -383,12 +403,11 @@
 
     epubRendition.themes.default(rules);
     
-    // Set theme colors inside EPUB iframe
     const themesConfig = {
-      light: { body: { background: "#ffffff", color: "#1a1a1a" } },
-      sepia: { body: { background: "#f4ecd8", color: "#5c4033" } },
-      dark: { body: { background: "#121218", color: "#e0e0e8" } },
-      dim: { body: { background: "#08080f", color: "#8888aa" } }
+      light: { body: { background: "#ffffff !important", color: "#1a1a1a !important" }, "p, div, span, h1, h2, h3, h4, h5, h6, a, li": { color: "#1a1a1a !important" } },
+      sepia: { body: { background: "#f4ecd8 !important", color: "#5c4033 !important" }, "p, div, span, h1, h2, h3, h4, h5, h6, a, li": { color: "#5c4033 !important" } },
+      dark: { body: { background: "#121218 !important", color: "#e0e0e8 !important" }, "p, div, span, h1, h2, h3, h4, h5, h6, a, li": { color: "#e0e0e8 !important" } },
+      dim: { body: { background: "#08080f !important", color: "#8888aa !important" }, "p, div, span, h1, h2, h3, h4, h5, h6, a, li": { color: "#8888aa !important" } }
     };
 
     Object.keys(themesConfig).forEach(tName => {
@@ -896,6 +915,48 @@
     const start = Math.max(0, idx - 40);
     const end = Math.min(text.length, idx + query.length + 40);
     return text.substring(start, end);
+  }
+
+  // ── TOUCH GESTURES & RESPONSIVE RESIZING ──
+  function bindTouchSwipeGestures() {
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    readerViewport.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    readerViewport.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      const diff = touchEndX - touchStartX;
+      if (Math.abs(diff) > 50) {
+        if (diff < 0) {
+          // Swipe Left -> Next Page
+          if (epubRendition) epubRendition.next();
+          else if (pdfDoc && pdfCurrentPage < totalPdfPages) { pdfCurrentPage++; renderPdfPage(pdfCurrentPage); }
+        } else {
+          // Swipe Right -> Prev Page
+          if (epubRendition) epubRendition.prev();
+          else if (pdfDoc && pdfCurrentPage > 1) { pdfCurrentPage--; renderPdfPage(pdfCurrentPage); }
+        }
+      }
+    }, { passive: true });
+  }
+
+  function bindResizeHandler() {
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (epubRendition) {
+          epubRendition.resize("100%", "100%");
+          applyRenditionComfortStyles();
+        }
+        if (pdfDoc) {
+          renderPdfPage(pdfCurrentPage);
+        }
+      }, 200);
+    });
   }
 
   // Cleanup on close

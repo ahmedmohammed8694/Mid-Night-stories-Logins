@@ -1,0 +1,2 @@
+INSERT INTO admin_users (username, email, password_hash, mfa_secret, mfa_enabled, role)
+VALUES ('admin', 'admin@lifestories.com', '$2a$12$B3jY4uybR49eR181dL/ZYOu13iuwWc7URaYrSet/CL7RtpnONc7Ny', 'DUTW62S6AYDGANAO', 0, 'superadmin');
