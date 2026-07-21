@@ -734,7 +734,7 @@
   }
 
   // ── Event Bindings ──
-  document.addEventListener('DOMContentLoaded', () => {
+  function initAdminPanel() {
     checkAuth();
 
     // Login form
@@ -799,9 +799,14 @@
     const saveSettingsBtn = document.getElementById('saveSettingsBtn');
     if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveSettings);
 
-    // Enable MFA
     const enableMfaBtn = document.getElementById('enableMfaBtn');
     if (enableMfaBtn) enableMfaBtn.addEventListener('click', enableMFA);
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAdminPanel);
+  } else {
+    initAdminPanel();
+  }
 })();
 

@@ -754,7 +754,7 @@
   }
 
   // ── Event Bindings ──
-  document.addEventListener('DOMContentLoaded', () => {
+  function initAdminPanel() {
     checkAuth();
 
     // Login form
@@ -839,7 +839,13 @@
     // Book Form submit
     const adminBookUploadForm = document.getElementById('adminBookUploadForm');
     if (adminBookUploadForm) adminBookUploadForm.addEventListener('submit', handleBookSubmit);
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAdminPanel);
+  } else {
+    initAdminPanel();
+  }
 
   // ── Books Management & Client-side EPUB Parsing ──
   let extractedCoverFile = null;
