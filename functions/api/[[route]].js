@@ -440,6 +440,38 @@ app.get('/crisis-resources', (c) => {
 // ██  ADMIN API ROUTES
 // ═════════════════════════════════════════════════════════
 
+// ── ONE-TIME ADMIN SETUP (POST /api/admin/setup) ──
+// Creates the default admin user if none exists yet.
+// Auto-disables once any admin user is present. Safe to leave in code.
+app.post('/admin/setup', async (c) => {
+  const db = c.env.DB;
+  const body = await c.req.json().catch(() => ({}));
+
+  if (body.secret !== 'MIDNIGHT_SETUP_2026') {
+    return c.json({ error: 'Forbidden.' }, 403);
+  }
+
+  const existing = await db.prepare('SELECT COUNT(*) as cnt FROM admin_users').first();
+  if (existing && existing.cnt > 0) {
+    return c.json({ error: 'Admin already configured. Endpoint disabled.' }, 409);
+  }
+
+  const bcrypt = require('bcryptjs');
+  const hash = bcrypt.hashSync('Admin@2026!', 10);
+
+  await db.prepare(
+    `INSERT INTO admin_users (username, email, password_hash, mfa_secret, mfa_enabled, role)
+     VALUES ('admin', 'admin@midnightstories.com', ?, 'JBSWY3DPEHPK3PXP', 0, 'superadmin')`
+  ).bind(hash).run();
+
+  return c.json({
+    success: true,
+    username: 'admin',
+    password: 'Admin@2026!',
+    note: 'Admin created. This endpoint is now permanently disabled.'
+  });
+});
+
 // ── POST /api/admin/login ──
 app.post('/admin/login', rateLimit('admin-login', 10), async (c) => {
   const db = c.env.DB;
