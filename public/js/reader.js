@@ -126,36 +126,72 @@
     const reader = new FileReader();
     reader.onload = async (e) => {
       const arrayBuffer = e.target.result;
-      epubBook = ePub(arrayBuffer);
-      
-      // Load table of contents
-      epubBook.loaded.navigation.then(nav => {
-        populateEpubTOC(nav.toc);
-      });
-
-      // Prepare layout settings
-      const flowType = layoutStyle === 'scroll' ? 'scrolled-doc' : 'paginated';
-      epubRendition = epubBook.renderTo("readerFrame", {
-        width: "100%",
-        height: "100%",
-        flow: flowType,
-        spread: "none"
-      });
-
-      // Load last reading position
       try {
-        const savedProgress = await api(`/api/books/${bookId}/progress`);
-        if (savedProgress && savedProgress.location_cfi) {
-          epubRendition.display(savedProgress.location_cfi).catch(() => {
+        epubBook = ePub(arrayBuffer);
+        
+        // Load table of contents
+        epubBook.loaded.navigation.then(nav => {
+          populateEpubTOC(nav.toc);
+        });
+
+        // Prepare layout settings
+        const flowType = layoutStyle === 'scroll' ? 'scrolled-doc' : 'paginated';
+        epubRendition = epubBook.renderTo("readerFrame", {
+          width: "100%",
+          height: "100%",
+          flow: flowType,
+          spread: "none"
+        });
+
+        // Load last reading position
+        try {
+          const savedProgress = await api(`/api/books/${bookId}/progress`);
+          if (savedProgress && savedProgress.location_cfi) {
+            epubRendition.display(savedProgress.location_cfi).catch(() => {
+              epubRendition.display();
+            });
+            showToast('Resuming last read position...', 'info');
+          } else {
             epubRendition.display();
-          });
-          showToast('Resuming last read position...', 'info');
-        } else {
+          }
+        } catch (e) {
           epubRendition.display();
         }
-      } catch (e) {
-        epubRendition.display();
+      } catch (err) {
+        console.warn('EPUB parsing failed, rendering text view:', err);
+        renderTextDocument(arrayBuffer);
       }
+    };
+    reader.readAsArrayBuffer(blob);
+  }
+
+  function renderTextDocument(arrayBuffer) {
+    const textDecoder = new TextDecoder('utf-8');
+    const text = textDecoder.decode(arrayBuffer);
+    const container = document.getElementById('readerFrame');
+    container.style.overflowY = 'auto';
+    container.style.padding = '40px 24px';
+    container.style.maxWidth = '820px';
+    container.style.margin = '0 auto';
+    container.style.lineHeight = '1.8';
+    container.style.fontSize = '1.05rem';
+    
+    container.innerHTML = `
+      <div class="reader-text-document" style="text-align: left;">
+        <h1 style="font-family: 'Fraunces', serif; font-size: 2rem; margin-bottom: 8px; color: var(--text-primary);">${escapeHtml(bookMeta ? bookMeta.title : 'Book')}</h1>
+        <p style="color: var(--text-secondary); margin-bottom: 24px; font-weight: 500;">By ${escapeHtml(bookMeta ? bookMeta.author : 'Author')}</p>
+        <hr style="border: 0; border-top: 1px solid var(--border-card); margin-bottom: 24px;">
+        <div style="white-space: pre-wrap; font-family: inherit; color: var(--text-primary);">${escapeHtml(text)}</div>
+      </div>
+    `;
+
+    const tocContainer = document.getElementById('tocContainer');
+    if (tocContainer) {
+      tocContainer.innerHTML = `
+        <button class="toc-item active" style="text-align: left; padding: 8px 12px; background: none; border: none; color: var(--text-primary); font-size: 0.9rem; cursor: pointer;">📖 Full Document</button>
+      `;
+    }
+  }
 
       // Track location and update progress slider
       epubRendition.on("relocated", (location) => {
