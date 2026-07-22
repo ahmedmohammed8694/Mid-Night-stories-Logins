@@ -1454,7 +1454,7 @@ app.post('/api/admin/login', rateLimit('admin-login', 10), async (c) => {
 
 app.get('/api/admin/users', requireAdmin, async (c) => {
   const db = c.env.DB;
-  const { results } = await db.prepare('SELECT id, full_name, email, created_at FROM users ORDER BY created_at DESC').all();
+  const { results } = await db.prepare('SELECT id, user_id, full_name, email, account_status, created_at FROM users ORDER BY created_at DESC').all();
   return c.json(results);
 });
 
