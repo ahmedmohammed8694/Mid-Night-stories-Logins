@@ -6,10 +6,9 @@ main = "src/worker.js"
 compatibility_date = "2026-07-15"
 compatibility_flags = ["nodejs_compat"]
 
-# ── Route: Admin subdomain ──
-routes = [
-  { pattern = "admin.midnightstories.dpdns.org/*", zone_name = "dpdns.org" }
-]
+# routes = [
+#   { pattern = "admin.midnightstories.dpdns.org/*", zone_name = "dpdns.org" }
+# ]
 
 # ── Serve admin static files from public/ directory ──
 [assets]

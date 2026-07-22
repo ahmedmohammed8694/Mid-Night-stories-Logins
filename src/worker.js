@@ -80,6 +80,20 @@ app.get('/education', (c) => c.redirect('/books?category=education', 301));
 app.get('/naval-books', (c) => c.redirect('/books?category=naval', 301));
 app.get('/library', (c) => c.redirect('/books', 301));
 
+app.get('/books', async (c) => {
+  const url = new URL(c.req.url);
+  url.pathname = '/books.html';
+  const res = await fetch(url.toString(), c.req.raw);
+  return new Response(res.body, res);
+});
+
+app.get('/stories', async (c) => {
+  const url = new URL(c.req.url);
+  url.pathname = '/stories.html';
+  const res = await fetch(url.toString(), c.req.raw);
+  return new Response(res.body, res);
+});
+
 app.get('/stories/:slug', async (c, next) => {
   const slug = c.req.param('slug');
   if (slug.includes('.') || slug === 'all') {

@@ -425,34 +425,8 @@ function initAuthLayout() {
         <span class="header__logo-text" style="font-weight: bold; font-size: 1.15rem; letter-spacing: 0.5px;">Midnight Stories</span>
       </a>
       <nav class="header__nav" style="display: flex; gap: 24px; align-items: center; margin-left: auto; margin-right: 24px;">
-        <a href="/" class="nav-link ${path === '/' || path === '/index.html' ? 'active' : ''}">Browse</a>
-        
-        <!-- Education Books Dropdown -->
-        <div class="nav-dropdown">
-          <a href="/library?channel=education" class="nav-link dropdown-toggle" id="navEdBooks">Education Books</a>
-          <div class="dropdown-menu">
-            <a href="/library?channel=education&category=computer-science">Computer Science</a>
-            <a href="/library?channel=education&category=engineering">Engineering</a>
-            <a href="/library?channel=education&category=mathematics">Mathematics</a>
-            <a href="/library?channel=education&category=competitive-exams">Competitive Exams</a>
-            <a href="/library?channel=education&category=general-science">General Science</a>
-            <a href="/library?channel=education&category=academic-references">Academic References</a>
-          </div>
-        </div>
-        
-        <!-- Naval Books Dropdown -->
-        <div class="nav-dropdown">
-          <a href="/library?channel=naval" class="nav-link dropdown-toggle" id="navNavalBooks">Naval Books</a>
-          <div class="dropdown-menu">
-            <a href="/library?channel=naval&category=naval-history">Naval History</a>
-            <a href="/library?channel=naval&category=maritime-engineering">Maritime Engineering</a>
-            <a href="/library?channel=naval&category=naval-tactics-strategy">Naval Tactics & Strategy</a>
-            <a href="/library?channel=naval&category=nautical-studies">Nautical Studies</a>
-            <a href="/library?channel=naval&category=ship-design-architecture">Ship Design & Architecture</a>
-            <a href="/library?channel=naval&category=submarine-operations">Submarine Operations</a>
-          </div>
-        </div>
-
+        <a href="/stories" class="nav-link ${path === '/stories' || path === '/stories.html' ? 'active' : ''}">People stories</a>
+        <a href="/books" class="nav-link ${path === '/books' || path === '/books.html' || path === '/library' ? 'active' : ''}">Books</a>
         <a href="/submit" class="nav-link ${path === '/submit.html' ? 'active' : ''}">Share Story</a>
         <a href="/profile" class="nav-link ${path === '/profile.html' ? 'active' : ''}">Find User</a>
         ${token ? `<a href="/chat" class="nav-link ${path === '/chat.html' ? 'active' : ''}">Chats</a>` : ''}
