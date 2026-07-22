@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark" data-page="home">
+<html lang="en" data-theme="dark" data-page="stories">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Home | Midnight Stories</title>
+  <title>Stories | Midnight Stories</title>
   <meta name="description" content="A safe, anonymous platform where you can share your personal story and connect with others who understand. Every story deserves to be heard, even the ones told in whispers.">
-  <link rel="canonical" href="https://midnightstories.dpdns.org/" />
-  <meta property="og:title" content="Midnight Stories">
+  <link rel="canonical" href="https://midnightstories.dpdns.org/stories" />
+  <meta property="og:title" content="Midnight Stories - Stories">
   <meta property="og:description" content="Every story deserves to be heard, even the ones told in whispers. Share your story anonymously.">
   <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,7 +28,7 @@
           <span class="header__logo-text">Midnight Stories</span>
         </a>
         <nav class="header__nav" id="mainNav">
-          <a href="/stories" class="nav-link">Stories</a>
+          <a href="/stories" class="nav-link active">Stories</a>
           <a href="/books" class="nav-link" id="navBooks">Books</a>
           <a href="/submit" class="nav-link">Share Story</a>
           <a href="/resources" class="nav-link">Resources</a>
@@ -56,19 +56,17 @@
     <!-- Mobile Nav -->
     <div class="mobile-nav" id="mobileNav">
       <button class="mobile-nav__close" id="mobileNavClose">✕</button>
-      <a href="/stories" class="nav-link">Stories</a>
+      <a href="/stories" class="nav-link active">Stories</a>
       <a href="/books" class="nav-link">Books</a>
       <a href="/submit" class="nav-link">Share Your Story</a>
       <a href="/resources" class="nav-link">Crisis Resources</a>
       <a href="/about" class="nav-link">About</a>
-      <a href="/guidelines" class="nav-link">Guidelines</a>
     </div>
 
     <!-- Main Content -->
     <main class="page-content">
       <div class="container">
         <!-- Hero -->
-        <!-- Slideshow Hero -->
         <section class="hero" id="hero">
           <div class="slideshow-slide active" style="background-image: url('https://images.unsplash.com/photo-1436891620584-47fd0e565afb?auto=format&fit=crop&w=1600&q=80')"></div>
           <div class="slideshow-slide" style="background-image: url('https://images.unsplash.com/photo-1488866022504-f2584929ca5f?auto=format&fit=crop&w=1600&q=80')"></div>
@@ -111,10 +109,11 @@
             <span class="community-stat__label">Comments</span>
           </div>
         </div>
+
         <section class="intro-section" style="margin-bottom: 2rem; padding: 1.5rem; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-card);">
           <h2 style="font-size: 1.25rem; font-family: 'Fraunces', serif; margin-bottom: 0.5rem; color: var(--text-primary);">Welcome to Midnight Stories</h2>
           <p style="font-size: 1rem; line-height: 1.6; color: var(--text-secondary); margin: 0;">
-            Midnight Stories is a secure, anonymous platform dedicated to providing a safe space for people to share their most personal experiences, thoughts, and reflections. We believe in the healing power of shared narratives. Whether you are dealing with trauma, seeking connection, or simply need to express what you cannot say out loud, our supportive community is here to listen without judgment. Browse the anonymous stories below, or take a deep breath and share your own.
+            Midnight Stories is a secure, anonymous platform dedicated to providing a safe space for people to share their most personal experiences, thoughts, and reflections. We believe in the healing power of shared narratives. Browse the anonymous stories below, or take a deep breath and share your own.
           </p>
         </section>
 
@@ -123,7 +122,6 @@
           <div class="controls-bar__left" id="categoryFilters">
             <button class="filter-chip auth-only" id="feedToggle" style="display:none; border:1px solid var(--primary); background:rgba(92,106,196,0.2);">Following Feed</button>
             <button class="filter-chip active" data-category="all">All Stories</button>
-            <!-- Categories will be loaded dynamically -->
           </div>
           <div class="controls-bar__right">
             <div class="search-box">
@@ -140,7 +138,6 @@
 
         <!-- Story Grid -->
         <div class="story-grid" id="storyGrid">
-          <!-- Stories loaded dynamically -->
           <div class="card skeleton skeleton--card"></div>
           <div class="card skeleton skeleton--card"></div>
           <div class="card skeleton skeleton--card"></div>
@@ -171,7 +168,7 @@
         <div>
           <h4 class="footer__heading">Navigate</h4>
           <ul class="footer__links">
-            <li><a href="/" class="footer__link">Browse Stories</a></li>
+            <li><a href="/stories" class="footer__link">Browse Stories</a></li>
             <li><a href="/submit" class="footer__link">Share a Story</a></li>
             <li><a href="/resources" class="footer__link">Crisis Resources</a></li>
             <li><a href="/about" class="footer__link">About</a></li>
@@ -207,10 +204,9 @@
     </div>
   </div>
 
-  <!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
 
   <script src="/js/app.js"></script>
-  <script src="/js/feed.js"></script>
+  <script src="/js/stories.js"></script>
 </body>
 </html>

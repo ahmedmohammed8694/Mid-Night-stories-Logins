@@ -3065,3 +3065,85 @@ img {
 .static-page ol li strong {
   color: var(--ms-text) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   STORY READER MODE & BOOK DETAILS MODAL STYLES
+   ═══════════════════════════════════════════════════════════ */
+
+/* Reader Mode Active States */
+body.reader-mode-active {
+  background: var(--reader-bg, #ffffff) !important;
+  color: var(--reader-color, #1a1a1a) !important;
+  transition: background 0.3s, color 0.3s;
+}
+
+body.reader-mode-active .header,
+body.reader-mode-active .footer,
+body.reader-mode-active .page-hero,
+body.reader-mode-active .comments-section,
+body.reader-mode-active .story-detail__actions,
+body.reader-mode-active .crisis-banner,
+body.reader-mode-active .mobile-menu-toggle {
+  display: none !important;
+}
+
+/* Ensure the main article container is centered and readable */
+body.reader-mode-active .page-content {
+  padding-top: 60px !important;
+  padding-bottom: 120px !important;
+  background: var(--reader-bg, #ffffff) !important;
+  min-height: 100vh;
+}
+
+body.reader-mode-active .story-detail {
+  max-width: 740px !important;
+  margin: 0 auto !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 20px !important;
+}
+
+body.reader-mode-active .story-detail__title {
+  color: var(--reader-color, #1a1a1a) !important;
+  font-family: var(--reader-font-family, 'Merriweather', Georgia, serif) !important;
+  font-size: clamp(2rem, 5vw, 2.7rem) !important;
+  line-height: 1.25 !important;
+  margin-bottom: 24px !important;
+  text-align: left !important;
+}
+
+body.reader-mode-active .story-detail__body {
+  color: var(--reader-color, #1a1a1a) !important;
+  font-family: var(--reader-font-family, 'Merriweather', Georgia, serif) !important;
+  font-size: var(--reader-font-size, 18px) !important;
+  line-height: var(--reader-line-height, 1.6) !important;
+  white-space: pre-wrap !important;
+}
+
+body.reader-mode-active .story-detail__meta,
+body.reader-mode-active .story-detail__category,
+body.reader-mode-active #btnEnterReaderMode {
+  display: none !important;
+}
+
+/* Book Modal & Preview Styles */
+.book-modal {
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.reader-theme-btn {
+  transition: transform 0.15s, border-color 0.15s;
+}
+.reader-theme-btn:hover {
+  transform: scale(1.1);
+}
+.reader-size-btn {
+  min-width: 32px !important;
+}
+

@@ -105,8 +105,11 @@ function formatNumber(num) {
   return String(num);
 }
 
-function getStoryUrl(storyId) {
-  return `/story?id=${storyId}`;
+function getStoryUrl(story) {
+  const id = typeof story === 'object' ? story.id : story;
+  const title = typeof story === 'object' ? (story.title || 'story') : 'story';
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return `/stories/${slug}-${id}`;
 }
 
 function debounce(fn, delay) {
@@ -175,7 +178,7 @@ function createStoryCard(story) {
 
   card.addEventListener('click', (e) => {
     if (!e.target.closest('a') && !e.target.closest('button')) {
-      window.location.href = getStoryUrl(story.id);
+      window.location.href = getStoryUrl(story);
     }
   });
 

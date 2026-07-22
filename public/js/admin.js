@@ -3,6 +3,7 @@
 (function () {
   let adminToken = sessionStorage.getItem('adminToken');
   let preToken = null;
+  let allBooksList = [];
 
   // ── Check Auth State ──
   function checkAuth() {
@@ -853,6 +854,89 @@
     // Book Form submit
     const adminBookUploadForm = document.getElementById('adminBookUploadForm');
     if (adminBookUploadForm) adminBookUploadForm.addEventListener('submit', handleBookSubmit);
+
+    // Book Search and Category filters
+    const categoryFilter = document.getElementById('adminBookCategoryFilter');
+    if (categoryFilter) categoryFilter.addEventListener('change', renderFilteredBooks);
+
+    const searchInput = document.getElementById('adminBookSearch');
+    if (searchInput) {
+      searchInput.addEventListener('input', debounce(() => {
+        renderFilteredBooks();
+      }, 400));
+    }
+
+    // Bulk selection controls
+    const selectAll = document.getElementById('selectAllBooks');
+    if (selectAll) {
+      selectAll.addEventListener('change', () => {
+        document.querySelectorAll('.book-select-checkbox').forEach(cb => {
+          cb.checked = selectAll.checked;
+        });
+        updateBatchActionBar();
+      });
+    }
+
+    const btnCancelBulk = document.getElementById('btnCancelBulkSelection');
+    if (btnCancelBulk) {
+      btnCancelBulk.addEventListener('click', () => {
+        document.querySelectorAll('.book-select-checkbox').forEach(cb => {
+          cb.checked = false;
+        });
+        if (selectAll) selectAll.checked = false;
+        updateBatchActionBar();
+      });
+    }
+
+    // Bulk Move operations
+    const btnMove = document.getElementById('btnBulkMove');
+    if (btnMove) {
+      btnMove.addEventListener('click', () => {
+        const select = document.getElementById('bulkCategorySelect');
+        const targetId = select.value;
+        if (!targetId) {
+          showToast('Please select a target category.', 'warning');
+          return;
+        }
+        const targetName = select.options[select.selectedIndex].textContent;
+        const count = document.querySelectorAll('.book-select-checkbox:checked').length;
+        document.getElementById('bulkConfirmMessage').innerHTML = `Are you sure you want to move <strong>${count}</strong> selected book(s) to <strong>${escapeHtml(targetName)}</strong>?`;
+        document.getElementById('bulkConfirmModal').classList.remove('hidden');
+      });
+    }
+
+    const btnBulkCancel = document.getElementById('btnBulkCancel');
+    if (btnBulkCancel) {
+      btnBulkCancel.addEventListener('click', () => {
+        document.getElementById('bulkConfirmModal').classList.add('hidden');
+      });
+    }
+
+    const btnBulkConfirm = document.getElementById('btnBulkConfirm');
+    if (btnBulkConfirm) {
+      btnBulkConfirm.addEventListener('click', async () => {
+        btnBulkConfirm.disabled = true;
+        btnBulkConfirm.textContent = 'Updating...';
+        const select = document.getElementById('bulkCategorySelect');
+        const targetId = select.value;
+        const bookIds = Array.from(document.querySelectorAll('.book-select-checkbox:checked')).map(cb => cb.dataset.bookId);
+
+        try {
+          const res = await api('/api/admin/books/bulk-update-category', {
+            method: 'PATCH',
+            body: JSON.stringify({ book_ids: bookIds, target_category_id: targetId })
+          });
+          showToast(res.message || 'Books updated successfully.', 'success');
+          document.getElementById('bulkConfirmModal').classList.add('hidden');
+          loadBooks();
+        } catch (err) {
+          showToast('Bulk update failed: ' + err.message, 'error');
+        } finally {
+          btnBulkConfirm.disabled = false;
+          btnBulkConfirm.textContent = 'Confirm & Update';
+        }
+      });
+    }
   }
 
   if (document.readyState === 'loading') {
@@ -965,47 +1049,91 @@
 
   async function loadBooks() {
     try {
-      const data = await api('/api/books?limit=100&sort=newest');
-      const booksListBody = document.getElementById('booksListBody');
-      const noBooksState = document.getElementById('noBooksState');
-
-      booksListBody.innerHTML = '';
-      
-      if (data.books && data.books.length > 0) {
-        noBooksState.classList.add('hidden');
-        document.getElementById('booksListTable').parentNode.classList.remove('hidden');
-
-        data.books.forEach(book => {
-          const tr = document.createElement('tr');
-          const fileType = (book.file_type || '').toUpperCase();
-          const visibility = book.visibility || 'public';
-          const status = book.status || 'draft';
-          
-          tr.innerHTML = `
-            <td><img src="${book.cover_image_url || '/images/default-cover.png'}" style="width: 40px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-card);"></td>
-            <td style="font-weight: 500;">${escapeHtml(book.title || '')}</td>
-            <td>${escapeHtml(book.author || '')}</td>
-            <td><span class="filter-chip" style="font-size: 0.75rem;">${fileType}</span></td>
-            <td><span class="status-badge status-badge--${visibility === 'public' ? 'approved' : 'pending'}">${visibility}</span></td>
-            <td><span class="status-badge status-badge--${status === 'published' ? 'approved' : 'pending'}">${status}</span></td>
-            <td>${book.uploaded_by ? `User ID: ${book.uploaded_by}` : 'Admin'}</td>
-            <td>
-              <div class="flex gap-8">
-                <button class="btn btn--danger btn--sm" onclick="window.deleteBook(${book.id})">Delete</button>
-              </div>
-            </td>
-          `;
-          booksListBody.appendChild(tr);
-        });
-      } else {
-        noBooksState.classList.remove('hidden');
-        document.getElementById('booksListTable').parentNode.classList.add('hidden');
-      }
+      const data = await api('/api/books?limit=250&sort=newest');
+      allBooksList = data.books || [];
+      renderFilteredBooks();
 
       loadUserSubmissions();
       loadCategoriesForBooksForm();
     } catch (err) {
       showToast('Failed to load books: ' + err.message, 'error');
+    }
+  }
+
+  function renderFilteredBooks() {
+    const tbody = document.getElementById('booksListBody');
+    const noBooksState = document.getElementById('noBooksState');
+    const selectAllCheckbox = document.getElementById('selectAllBooks');
+
+    tbody.innerHTML = '';
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    updateBatchActionBar();
+
+    const categoryId = document.getElementById('adminBookCategoryFilter').value;
+    const query = document.getElementById('adminBookSearch').value.toLowerCase().trim();
+
+    let filtered = allBooksList;
+    if (categoryId !== 'all') {
+      filtered = filtered.filter(b => b.category_id == categoryId || b.category_slug === categoryId || (b.categories && b.categories.some(c => c.id == categoryId)));
+    }
+    if (query) {
+      filtered = filtered.filter(b => {
+        const title = (b.title || '').toLowerCase();
+        const author = (b.author || '').toLowerCase();
+        const isbn = (b.isbn || '').toLowerCase();
+        return title.includes(query) || author.includes(query) || isbn.includes(query);
+      });
+    }
+
+    if (filtered.length > 0) {
+      noBooksState.classList.add('hidden');
+      document.getElementById('booksListTable').parentNode.classList.remove('hidden');
+
+      filtered.forEach(book => {
+        const tr = document.createElement('tr');
+        const fileType = (book.file_type || '').toUpperCase();
+        const visibility = book.visibility || 'public';
+        const status = book.status || 'draft';
+        
+        tr.innerHTML = `
+          <td><input type="checkbox" class="book-select-checkbox" data-book-id="${book.id}" style="cursor:pointer; transform:scale(1.25);"></td>
+          <td><img src="${book.cover_image_url || '/images/default-cover.png'}" style="width: 40px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-card);"></td>
+          <td style="font-weight: 500;">${escapeHtml(book.title || '')}</td>
+          <td>${escapeHtml(book.author || '')}</td>
+          <td><span class="filter-chip" style="font-size: 0.75rem;">${fileType}</span></td>
+          <td><span class="status-badge status-badge--${visibility === 'public' ? 'approved' : 'pending'}">${visibility}</span></td>
+          <td><span class="status-badge status-badge--${status === 'published' ? 'approved' : 'pending'}">${status}</span></td>
+          <td>${book.uploaded_by ? `User ID: ${book.uploaded_by}` : 'Admin'}</td>
+          <td>
+            <div class="flex gap-8">
+              <button class="btn btn--danger btn--sm" onclick="window.deleteBook(${book.id})">Delete</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Bind checkbox event listeners
+      document.querySelectorAll('.book-select-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateBatchActionBar);
+      });
+    } else {
+      noBooksState.classList.remove('hidden');
+      document.getElementById('booksListTable').parentNode.classList.add('hidden');
+    }
+  }
+
+  function updateBatchActionBar() {
+    const checkboxes = document.querySelectorAll('.book-select-checkbox:checked');
+    const count = checkboxes.length;
+    const bar = document.getElementById('batchActionBar');
+    const countText = document.getElementById('selectedCountText');
+
+    if (count > 0) {
+      if (countText) countText.textContent = `${count} book(s) selected`;
+      if (bar) bar.classList.remove('hidden');
+    } else {
+      if (bar) bar.classList.add('hidden');
     }
   }
 
@@ -1060,22 +1188,49 @@
     try {
       const categories = await api('/api/categories');
       const container = document.getElementById('bookCategoryList');
-      if (!container) return;
+      if (container) {
+        container.innerHTML = '';
+        categories.forEach(cat => {
+          const label = document.createElement('label');
+          label.className = 'checkbox-label';
+          label.style.display = 'flex';
+          label.style.alignItems = 'center';
+          label.style.gap = '8px';
+          label.style.fontSize = '0.85rem';
+          label.innerHTML = `
+            <input type="checkbox" name="book_categories" value="${cat.id}">
+            <span>${escapeHtml(cat.name)}</span>
+          `;
+          container.appendChild(label);
+        });
+      }
 
-      container.innerHTML = '';
-      categories.forEach(cat => {
-        const label = document.createElement('label');
-        label.className = 'checkbox-label';
-        label.style.display = 'flex';
-        label.style.alignItems = 'center';
-        label.style.gap = '8px';
-        label.style.fontSize = '0.85rem';
-        label.innerHTML = `
-          <input type="checkbox" name="book_categories" value="${cat.id}">
-          <span>${escapeHtml(cat.name)}</span>
-        `;
-        container.appendChild(label);
-      });
+      // Sync category filters in Books list and Bulk reassignment
+      const categoryFilter = document.getElementById('adminBookCategoryFilter');
+      const bulkSelect = document.getElementById('bulkCategorySelect');
+
+      if (categoryFilter && bulkSelect) {
+        const prevFilter = categoryFilter.value;
+        const prevBulk = bulkSelect.value;
+
+        categoryFilter.innerHTML = '<option value="all">All Categories</option>';
+        bulkSelect.innerHTML = '<option value="">Move to Category...</option>';
+
+        categories.forEach(cat => {
+          const optFilter = document.createElement('option');
+          optFilter.value = cat.id;
+          optFilter.textContent = cat.name;
+          categoryFilter.appendChild(optFilter);
+
+          const optBulk = document.createElement('option');
+          optBulk.value = cat.id;
+          optBulk.textContent = cat.name;
+          bulkSelect.appendChild(optBulk);
+        });
+
+        categoryFilter.value = prevFilter || 'all';
+        bulkSelect.value = prevBulk || '';
+      }
     } catch (err) {
       console.error('Failed to load categories for form:', err);
     }

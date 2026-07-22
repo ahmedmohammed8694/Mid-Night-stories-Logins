@@ -75,6 +75,23 @@ async function createNotification(db, userId, actorId, type, targetId, content) 
 
 const app = new Hono();
 
+// ── Navigation Redirects & Clean Slug Routing ──
+app.get('/education', (c) => c.redirect('/books?category=education', 301));
+app.get('/naval-books', (c) => c.redirect('/books?category=naval', 301));
+app.get('/library', (c) => c.redirect('/books', 301));
+
+app.get('/stories/:slug', async (c, next) => {
+  const slug = c.req.param('slug');
+  if (slug.includes('.') || slug === 'all') {
+    return next();
+  }
+  // Serve public/story.html directly from local Origin/Assets
+  const url = new URL(c.req.url);
+  url.pathname = '/story.html';
+  const res = await fetch(url.toString(), c.req.raw);
+  return new Response(res.body, res);
+});
+
 // ── Global Security Headers ──
 app.use('*', async (c, next) => {
   await next();
@@ -2637,6 +2654,59 @@ app.post('/api/admin/categories', requireAdmin, async (c) => {
     return c.json({ message: 'Category created.' });
   } catch (e) {
     return c.json({ error: 'Category already exists.' }, 400);
+  }
+});
+
+// ── PATCH /api/admin/books/bulk-update-category ──
+app.patch('/api/admin/books/bulk-update-category', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { book_ids, target_category_id } = await c.req.json();
+
+  if (!book_ids || !Array.isArray(book_ids) || book_ids.length === 0) {
+    return c.json({ error: 'book_ids must be a non-empty array.' }, 400);
+  }
+  if (!target_category_id) {
+    return c.json({ error: 'target_category_id is required.' }, 400);
+  }
+
+  const parsedBookIds = book_ids.map(id => {
+    if (typeof id === 'string') {
+      const num = id.replace(/[^0-9]/g, '');
+      return parseInt(num);
+    }
+    return parseInt(id);
+  }).filter(id => !isNaN(id));
+
+  const targetCategoryIdInt = typeof target_category_id === 'string'
+    ? parseInt(target_category_id.replace(/[^0-9]/g, ''))
+    : parseInt(target_category_id);
+
+  if (parsedBookIds.length === 0 || isNaN(targetCategoryIdInt)) {
+    return c.json({ error: 'Invalid book_ids or target_category_id format.' }, 400);
+  }
+
+  const targetCategory = await db.prepare('SELECT name FROM categories WHERE id = ?')
+    .bind(targetCategoryIdInt)
+    .first();
+  const categoryName = targetCategory ? targetCategory.name : 'Target Category';
+
+  try {
+    const statements = [];
+    for (const bookId of parsedBookIds) {
+      statements.push(db.prepare('DELETE FROM book_categories WHERE book_id = ?').bind(bookId));
+      statements.push(db.prepare('INSERT INTO book_categories (book_id, category_id) VALUES (?, ?)').bind(bookId, targetCategoryIdInt));
+      statements.push(db.prepare('UPDATE books SET updated_at = datetime("now") WHERE id = ?').bind(bookId));
+    }
+    await db.batch(statements);
+
+    return c.json({
+      success: true,
+      updated_count: parsedBookIds.length,
+      message: `${parsedBookIds.length} books successfully reassigned to ${categoryName} category.`
+    });
+  } catch (err) {
+    console.error('Bulk update failed:', err);
+    return c.json({ error: 'Database update failed.' }, 500);
   }
 });
 

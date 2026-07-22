@@ -5,6 +5,11 @@
 
   // ── Get Story ID from URL ──
   function getStoryId() {
+    const path = window.location.pathname;
+    const match = path.match(/\/stories\/.*-(\d+)$/);
+    if (match) return match[1];
+    
+    // Fallback to legacy ?id=
     const params = new URLSearchParams(window.location.search);
     return params.get('id');
   }
@@ -315,5 +320,119 @@
 
     const shareFbBtn = document.getElementById('shareFbBtn');
     if (shareFbBtn) shareFbBtn.addEventListener('click', shareFacebook);
+
+    initReaderMode();
   });
+
+  // ── Reader Mode Logic ──
+  function initReaderMode() {
+    const btnEnter = document.getElementById('btnEnterReaderMode');
+    const btnExit = document.getElementById('btnExitReaderMode');
+    const toolbar = document.getElementById('readerToolbar');
+
+    if (!btnEnter || !toolbar) return;
+
+    // Default settings
+    let theme = localStorage.getItem('reader-theme') || 'light';
+    let size = localStorage.getItem('reader-size') || '18px';
+    let fontFamily = localStorage.getItem('reader-font-family') || "'Merriweather', Georgia, serif";
+    let spacing = localStorage.getItem('reader-line-spacing') || '1.6';
+
+    function applySettings() {
+      // Apply CSS variables
+      document.body.style.setProperty('--reader-font-size', size);
+      document.body.style.setProperty('--reader-font-family', fontFamily);
+      document.body.style.setProperty('--reader-line-height', spacing);
+
+      if (theme === 'light') {
+        document.body.style.setProperty('--reader-bg', '#ffffff');
+        document.body.style.setProperty('--reader-color', '#1a1a1a');
+      } else if (theme === 'sepia') {
+        document.body.style.setProperty('--reader-bg', '#FBF0D9');
+        document.body.style.setProperty('--reader-color', '#2D2319');
+      } else if (theme === 'dark') {
+        document.body.style.setProperty('--reader-bg', '#121212');
+        document.body.style.setProperty('--reader-color', '#E0E0E0');
+      }
+
+      // Highlight active buttons
+      document.querySelectorAll('.reader-theme-btn').forEach(btn => {
+        if (btn.dataset.theme === theme) {
+          btn.style.border = '2px solid #5c6ac4';
+          btn.style.transform = 'scale(1.15)';
+        } else {
+          btn.style.border = '1px solid var(--border-card)';
+          btn.style.transform = 'none';
+        }
+      });
+
+      document.querySelectorAll('.reader-size-btn').forEach(btn => {
+        if (btn.dataset.size === size) {
+          btn.className = 'reader-size-btn btn btn--primary btn--sm';
+        } else {
+          btn.className = 'reader-size-btn btn btn--secondary btn--sm';
+        }
+      });
+
+      const fontSelect = document.getElementById('readerFontSelect');
+      if (fontSelect) fontSelect.value = fontFamily;
+
+      const spacingSelect = document.getElementById('readerSpacingSelect');
+      if (spacingSelect) spacingSelect.value = spacing;
+    }
+
+    btnEnter.addEventListener('click', () => {
+      document.body.classList.add('reader-mode-active');
+      toolbar.classList.remove('hidden');
+      applySettings();
+    });
+
+    btnExit.addEventListener('click', () => {
+      document.body.classList.remove('reader-mode-active');
+      toolbar.classList.add('hidden');
+      document.body.style.removeProperty('--reader-bg');
+      document.body.style.removeProperty('--reader-color');
+      document.body.style.removeProperty('--reader-font-size');
+      document.body.style.removeProperty('--reader-font-family');
+      document.body.style.removeProperty('--reader-line-height');
+    });
+
+    // Theme buttons
+    document.querySelectorAll('.reader-theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        theme = btn.dataset.theme;
+        localStorage.setItem('reader-theme', theme);
+        applySettings();
+      });
+    });
+
+    // Size buttons
+    document.querySelectorAll('.reader-size-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        size = btn.dataset.size;
+        localStorage.setItem('reader-size', size);
+        applySettings();
+      });
+    });
+
+    // Font select
+    const fontSelect = document.getElementById('readerFontSelect');
+    if (fontSelect) {
+      fontSelect.addEventListener('change', () => {
+        fontFamily = fontSelect.value;
+        localStorage.setItem('reader-font-family', fontFamily);
+        applySettings();
+      });
+    }
+
+    // Spacing select
+    const spacingSelect = document.getElementById('readerSpacingSelect');
+    if (spacingSelect) {
+      spacingSelect.addEventListener('change', () => {
+        spacing = spacingSelect.value;
+        localStorage.setItem('reader-line-spacing', spacing);
+        applySettings();
+      });
+    }
+  }
 })();

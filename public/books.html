@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-page="books">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Books | Midnight Stories</title>
+  <meta name="description" content="Explore and read books in our library, track your reading progress, add notes, and save highlights in distraction-free Reader Mode.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/reader.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- Header -->
+    <header class="header" id="header">
+      <div class="header__inner">
+        <a href="/" class="header__logo">
+          <div class="header__logo-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+              <path d="M60 20c0 22-18 40-40 40-2 0-5 0-7-.5 7 13.5 21 22.5 37 22.5 24.8 0 45-20.2 45-45 0-16-8.5-30-22-37 .5 2 .5 5 .5 7z"/>
+            </svg>
+          </div>
+          <span class="header__logo-text">Midnight Stories</span>
+        </a>
+        <nav class="header__nav" id="mainNav">
+          <a href="/stories" class="nav-link">Stories</a>
+          <a href="/books" class="nav-link active" id="navBooks">Books</a>
+          <a href="/submit" class="nav-link">Share Story</a>
+          <a href="/resources" class="nav-link">Resources</a>
+          <a href="/about" class="nav-link">About</a>
+        </nav>
+        <div class="header__actions" id="authActions">
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
+          
+          <!-- Guest Links -->
+          <a href="/login" class="btn btn--secondary btn--sm guest-only">Login</a>
+          <a href="/signup" class="btn btn--primary btn--sm guest-only">Sign Up</a>
+          <a href="/login?redirect=/upload-book" class="btn btn--secondary btn--sm guest-only">📤 Upload Book</a>
+          
+          <!-- Auth Links -->
+          <a href="/profile" class="btn btn--secondary btn--sm auth-only" style="display:none;">Profile</a>
+          <button id="logoutBtn" class="btn btn--secondary btn--sm auth-only" style="display:none;">Logout</button>
+          <a href="/submit" class="btn btn--secondary btn--sm auth-only" style="display:none;">✍️ Share Story</a>
+          <a href="/upload-book" class="btn btn--primary btn--sm auth-only" style="display:none;">📤 Upload Book</a>
+
+          <button class="mobile-menu-toggle" id="mobileMenuBtn" aria-label="Open menu">☰</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Mobile Nav -->
+    <div class="mobile-nav" id="mobileNav">
+      <button class="mobile-nav__close" id="mobileNavClose">✕</button>
+      <a href="/stories" class="nav-link">Stories</a>
+      <a href="/books" class="nav-link active">Books</a>
+      <a href="/submit" class="nav-link">Share Your Story</a>
+      <a href="/resources" class="nav-link">Crisis Resources</a>
+      <a href="/about" class="nav-link">About</a>
+    </div>
+
+    <!-- Main Content -->
+    <main class="page-content" style="padding-top: 0;">
+      <div class="container">
+        
+        <!-- Hero Section -->
+        <section class="hero" id="hero" style="min-height: 250px; margin-bottom: 2rem;">
+          <div class="slideshow-slide active" style="background-image: url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80')"></div>
+          <div class="hero__overlay"></div>
+          <div class="hero__content">
+            <h1 class="hero__title">Book Library</h1>
+            <p class="hero__subtitle">Find books, read in our distraction-free reader, and continue where you left off.</p>
+          </div>
+        </section>
+
+        <!-- Library Grid Layout -->
+        <div class="library-layout">
+          
+          <!-- Sidebar Filters -->
+          <aside class="filter-sidebar">
+            <!-- Search bar inside sidebar -->
+            <div class="filter-section">
+              <h3 class="filter-section__title">Search Catalog</h3>
+              <div class="search-box" style="width: 100%;">
+                <span class="search-box__icon">🔍</span>
+                <input type="text" class="search-box__input" id="libSearchInput" placeholder="Title, author, tags...">
+              </div>
+            </div>
+
+            <!-- Channels Filter -->
+            <div class="filter-section">
+              <h3 class="filter-section__title">Library Channels</h3>
+              <div class="checkbox-group">
+                <label class="checkbox-label">
+                  <input type="radio" name="channel_filter" class="channel-radio" value="all" checked style="cursor:pointer;">
+                  <span>All Channels</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="radio" name="channel_filter" class="channel-radio" value="education" style="cursor:pointer;">
+                  <span>Educational Books</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="radio" name="channel_filter" class="channel-radio" value="naval" style="cursor:pointer;">
+                  <span>Naval Books</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Shelf Status (Auth Only) -->
+            <div class="filter-section auth-only" style="display: none;" id="shelfFilterSection">
+              <h3 class="filter-section__title">My Shelf</h3>
+              <select class="sort-select" id="shelfSelect" style="width: 100%; height: 42px; padding: 0 12px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary);">
+                <option value="">All Books</option>
+                <option value="currently_reading">Currently Reading</option>
+                <option value="want_to_read">Want to Read</option>
+                <option value="finished">Finished</option>
+              </select>
+            </div>
+
+            <!-- Categories -->
+            <div class="filter-section">
+              <h3 class="filter-section__title">Categories</h3>
+              <div class="checkbox-group" id="libCategoryFilters">
+                <!-- Dynamically loaded categories -->
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Loading categories...</p>
+              </div>
+            </div>
+
+            <!-- Languages -->
+            <div class="filter-section">
+              <h3 class="filter-section__title">Languages</h3>
+              <div class="checkbox-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" class="checkbox-input lang-filter" value="en" checked>
+                  <span>English</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" class="checkbox-input lang-filter" value="es">
+                  <span>Spanish</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" class="checkbox-input lang-filter" value="fr">
+                  <span>French</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" class="checkbox-input lang-filter" value="de">
+                  <span>German</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" class="checkbox-input lang-filter" value="ar">
+                  <span>Arabic</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" class="checkbox-input lang-filter" value="other">
+                  <span>Other</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- File Types -->
+            <div class="filter-section">
+              <h3 class="filter-section__title">File Types</h3>
+              <div class="checkbox-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" class="checkbox-input type-filter" value="epub" checked>
+                  <span>EPUB</span>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" class="checkbox-input type-filter" value="pdf" checked>
+                  <span>PDF</span>
+                </label>
+              </div>
+            </div>
+
+          </aside>
+
+          <!-- Main Books Display -->
+          <div class="books-container" id="booksContainer">
+            
+            <!-- Controls top bar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 12px 20px; border-radius: var(--radius-md); border: 1px solid var(--border-card);">
+              <div style="color: var(--text-secondary); font-size: 0.95rem;">
+                Showing <span id="displayedBooksCount">0</span> of <span id="totalBooksCount">0</span> books
+              </div>
+              <div style="display: flex; gap: 16px; align-items: center;">
+                <select class="sort-select" id="libSortSelect" style="height: 36px; padding: 0 10px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer;">
+                  <option value="newest">Newest Added</option>
+                  <option value="title">Title A-Z</option>
+                </select>
+                <button class="btn btn--secondary btn--sm" id="viewToggleBtn" style="padding: 6px 12px; font-size: 14px;">🎛️ List View</button>
+              </div>
+            </div>
+
+            <!-- Book Cards Grid -->
+            <div class="books-grid" id="booksGrid">
+              <!-- Dynamically populated -->
+              <div class="card skeleton skeleton--card"></div>
+              <div class="card skeleton skeleton--card"></div>
+              <div class="card skeleton skeleton--card"></div>
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state hidden" id="libEmptyState" style="padding: 60px;">
+              <div class="empty-state__icon">📚</div>
+              <h3 class="empty-state__title">No books match your filters</h3>
+              <p class="empty-state__description">Try broadening your search or choosing other genres.</p>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination" id="libPagination"></div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Book Detail Modal -->
+  <div class="modal-overlay hidden" id="bookDetailModal" style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; backdrop-filter: blur(4px);">
+    <div class="modal book-modal" style="max-width: 700px; padding: 24px; width: 90%; background: var(--bg-card); border-radius: var(--radius-lg); position: relative; border: 1px solid var(--border-card); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);">
+      <button class="modal__close" id="closeBookModalBtn" style="position: absolute; right: 16px; top: 16px; background: none; border: none; font-size: 1.25rem; color: var(--text-muted); cursor: pointer;">✕</button>
+      
+      <div id="bookModalMainContent">
+        <div style="display: grid; grid-template-columns: minmax(120px, 160px) 1fr; gap: 24px; margin-bottom: 20px; text-align: left;">
+          <div>
+            <img id="modalBookCover" src="/images/default-cover.png" style="width:100%; height: 240px; object-fit: cover; border-radius: var(--radius-md); border: 1px solid var(--border-card);" alt="">
+          </div>
+          <div>
+            <span class="story-card__category" id="modalBookCategory" style="margin-bottom:8px; display:inline-block;">Category</span>
+            <h2 id="modalBookTitle" style="font-family:'Fraunces', serif; font-size: 1.6rem; color:var(--text-primary); margin-bottom: 8px;">Book Title</h2>
+            <p id="modalBookAuthor" style="font-size: 1.05rem; color:var(--text-secondary); margin-bottom: 12px; font-weight:500;">By Author</p>
+            <p id="modalBookDescription" style="font-size: 0.95rem; color:var(--text-tertiary); line-height: 1.6; margin-bottom: 16px; max-height: 110px; overflow-y: auto;">Description...</p>
+          </div>
+        </div>
+
+        <!-- Table of Contents Accordion -->
+        <div style="margin-bottom: 24px; border: 1px solid var(--border-card); border-radius: var(--radius-md); overflow: hidden; text-align: left;">
+          <button id="modalTocTrigger" style="width: 100%; background: var(--bg-secondary); border: none; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; color: var(--text-primary); font-weight: 600; cursor: pointer; text-align: left; font-size: 0.95rem;">
+            <span>📖 Table of Contents</span>
+            <span id="modalTocArrow">▼</span>
+          </button>
+          <div id="modalTocContent" style="padding: 16px; background: var(--bg-card); border-top: 1px solid var(--border-card); display: none;">
+            <ul id="modalTocList" style="margin: 0; padding-left: 20px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem;">
+              <li>Chapter 1: Introduction</li>
+              <li>Chapter 2: Core Concepts</li>
+              <li>Chapter 3: Detailed Methodology</li>
+              <li>Chapter 4: Results & Analysis</li>
+              <li>Chapter 5: Conclusion & Future Outlook</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- CTAs -->
+        <div style="display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap;">
+          <button class="btn btn--secondary btn--sm" id="modalBtnPreview">📖 Read Preview</button>
+          <a class="btn btn--secondary btn--sm" id="modalBtnDownload" target="_blank">📥 Download Book</a>
+          <button class="btn btn--primary btn--sm" id="modalBtnRead">📖 Read Full Book</button>
+        </div>
+      </div>
+
+      <!-- Preview Container inside modal -->
+      <div id="bookModalPreviewContent" class="hidden" style="text-align: left;">
+        <h3 style="font-family:'Fraunces', serif; font-size: 1.3rem; margin-bottom: 12px; color: var(--text-primary);">Preview: <span id="previewBookTitle">Title</span></h3>
+        <div id="previewTextContent" style="min-height: 200px; padding: 16px; background: var(--bg-secondary); border-radius: var(--radius-md); font-family: 'Merriweather', Georgia, serif; line-height: 1.7; font-size: 1rem; color: var(--text-secondary); margin-bottom: 16px; max-height: 260px; overflow-y: auto; border: 1px solid var(--border-card);">
+          <!-- Preview paragraphs -->
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <button class="btn btn--secondary btn--sm" id="btnPrevPreviewPage" disabled>← Previous Page</button>
+          <span style="font-size: 0.85rem; color: var(--text-muted);" id="previewPageIndicator">Page 1 of 3</span>
+          <button class="btn btn--secondary btn--sm" id="btnNextPreviewPage">Next Page →</button>
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+          <button class="btn btn--secondary btn--sm" id="closePreviewBtn">Close Preview</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/books.js"></script>
+</body>
+</html>
