@@ -2547,7 +2547,8 @@ app.get('/api/books/:id/file', optionalUser, async (c) => {
       const assetUrl = new URL(c.req.url);
       assetUrl.pathname = book.file_url.startsWith('/') ? book.file_url : '/' + book.file_url;
       const assetRes = await c.env.ASSETS.fetch(assetUrl);
-      if (assetRes.ok && assetRes.status === 200) {
+      const contentType = assetRes.headers.get('content-type') || '';
+      if (assetRes.ok && assetRes.status === 200 && !contentType.includes('text/html')) {
         return assetRes;
       }
     } catch (e) {
@@ -2555,25 +2556,41 @@ app.get('/api/books/:id/file', optionalUser, async (c) => {
     }
   }
 
-  // 3. Fallback: Return clean text view of book details & chapters for reading
+  // 3. Fallback: Return structured reader content for books without uploaded binary files
   const title = book.title || 'Book Title';
   const author = book.author || 'Author';
   const desc = book.description || 'No description available.';
 
-  const sampleContent = `Title: ${title}
-Author: ${author}
+  const sampleContent = `${title}
+By ${author}
 
-Overview & Synopsis:
+==================================================
+SYNOPSIS & OVERVIEW
+==================================================
 ${desc}
 
-Chapter 1: The Beginning
-Welcome to "${title}". You are reading this work in Midnight Stories distraction-free Reader Mode.
+==================================================
+CHAPTER 1: THE BEGINNING
+==================================================
+Welcome to the opening chapter of "${title}". 
 
-Chapter 2: Essential Insights
-Every story brings a unique perspective and opportunity to learn. As you explore this work, keep notes and highlights using the built-in reader toolbar.
+As the journey begins, we explore the foundational environment and characters that define this narrative. In every great work, the initial setting establishes the atmosphere, tone, and tension that drives the story forward.
 
-Chapter 3: Conclusion
-Thank you for reading "${title}" on Midnight Stories.
+Take a moment to adjust your reading comfort settings in the top toolbar. You can switch between Light, Sepia, Dark, and Dim modes, adjust text sizing, or switch font styles according to your preference.
+
+==================================================
+CHAPTER 2: DEEP EXPLORATION & DISCOVERY
+==================================================
+Continuing through the core themes of "${title}", the conflict deepens as key insights unfold.
+
+Whether reading for education, leisure, or academic research, structured reading enhances retention. Use the bookmark button above to save your position, or highlight passages to store notes directly in your personal account library.
+
+==================================================
+CHAPTER 3: CONCLUDING REFLECTIONS
+==================================================
+As we reach the final pages of this volume, the primary questions posed in the opening chapters find resolution.
+
+Thank you for reading "${title}" on Midnight Stories. Continue exploring our digital library to discover more stories and books.
 `;
 
   return new Response(sampleContent, {

@@ -1,7 +1,8 @@
 // public/js/reader.js — Distraction-free Reader Mode controller using epub.js and pdf.js
 
 (function () {
-  let bookId = new URLSearchParams(window.location.search).get('bookId');
+  const urlParams = new URLSearchParams(window.location.search);
+  let bookId = urlParams.get('bookId') || urlParams.get('id') || urlParams.get('book_id');
   let token = localStorage.getItem('token');
   let bookMeta = null;
   let epubBook = null;
@@ -195,27 +196,62 @@
     const textDecoder = new TextDecoder('utf-8');
     const text = textDecoder.decode(arrayBuffer);
     const container = document.getElementById('readerFrame');
+    
     container.style.overflowY = 'auto';
-    container.style.padding = '40px 24px';
-    container.style.maxWidth = '820px';
+    container.style.padding = '40px 32px';
+    container.style.maxWidth = '900px';
     container.style.margin = '0 auto';
     container.style.lineHeight = '1.8';
-    container.style.fontSize = '1.05rem';
+    container.style.fontSize = '1.1rem';
+    container.style.color = 'var(--text-primary)';
+    container.style.background = 'var(--bg-secondary)';
     
+    // Parse chapters from text
+    const lines = text.split('\n');
+    let formattedHtml = '';
+    const chapters = [];
+
+    lines.forEach((line, idx) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('CHAPTER') || trimmed.startsWith('SYNOPSIS')) {
+        const id = `chap_${chapters.length + 1}`;
+        chapters.push({ title: trimmed.replace(/=/g, '').trim(), id });
+        formattedHtml += `<h2 id="${id}" style="font-family: 'Fraunces', serif; font-size: 1.4rem; color: var(--page-accent); margin-top: 36px; margin-bottom: 16px; border-bottom: 1px solid var(--border-card); padding-bottom: 8px;">${escapeHtml(trimmed)}</h2>`;
+      } else if (trimmed.startsWith('===')) {
+        // Skip decorative dividers
+      } else if (trimmed.length > 0) {
+        formattedHtml += `<p style="margin-bottom: 16px; color: var(--text-primary); line-height: 1.8;">${escapeHtml(trimmed)}</p>`;
+      }
+    });
+
     container.innerHTML = `
       <div class="reader-text-document" style="text-align: left;">
-        <h1 style="font-family: 'Fraunces', serif; font-size: 2rem; margin-bottom: 8px; color: var(--text-primary);">${escapeHtml(bookMeta ? bookMeta.title : 'Book')}</h1>
-        <p style="color: var(--text-secondary); margin-bottom: 24px; font-weight: 500;">By ${escapeHtml(bookMeta ? bookMeta.author : 'Author')}</p>
-        <hr style="border: 0; border-top: 1px solid var(--border-card); margin-bottom: 24px;">
-        <div style="white-space: pre-wrap; font-family: inherit; color: var(--text-primary);">${escapeHtml(text)}</div>
+        <h1 style="font-family: 'Fraunces', serif; font-size: 2.2rem; margin-bottom: 8px; color: var(--text-primary);">${escapeHtml(bookMeta ? bookMeta.title : 'Book')}</h1>
+        <p style="color: var(--text-secondary); margin-bottom: 24px; font-weight: 500; font-size: 1.1rem;">By ${escapeHtml(bookMeta ? bookMeta.author : 'Author')}</p>
+        <hr style="border: 0; border-top: 1px solid var(--border-card); margin-bottom: 28px;">
+        ${formattedHtml || `<div style="white-space: pre-wrap;">${escapeHtml(text)}</div>`}
       </div>
     `;
 
+    // Populate Sidebar Chapters
     const tocContainer = document.getElementById('tocContainer');
     if (tocContainer) {
-      tocContainer.innerHTML = `
-        <button class="toc-item active" style="text-align: left; padding: 8px 12px; background: none; border: none; color: var(--text-primary); font-size: 0.9rem; cursor: pointer;">📖 Full Document</button>
-      `;
+      if (chapters.length > 0) {
+        tocContainer.innerHTML = chapters.map(ch => `
+          <button class="toc-item" data-target="${ch.id}" style="text-align: left; width: 100%; padding: 10px 14px; background: none; border: none; color: var(--text-primary); font-size: 0.95rem; cursor: pointer; border-radius: var(--radius-sm); margin-bottom: 4px;">📖 ${escapeHtml(ch.title)}</button>
+        `).join('');
+        
+        tocContainer.querySelectorAll('.toc-item').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const targetEl = document.getElementById(btn.dataset.target);
+            if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth' });
+          });
+        });
+      } else {
+        tocContainer.innerHTML = `
+          <button class="toc-item active" style="text-align: left; padding: 8px 12px; background: none; border: none; color: var(--text-primary); font-size: 0.9rem; cursor: pointer;">📖 Full Document</button>
+        `;
+      }
     }
 
     // Scroll & next/prev button navigation controls
@@ -229,12 +265,12 @@
     container.onscroll = () => {
       const maxScroll = container.scrollHeight - container.clientHeight;
       if (maxScroll > 0) {
-        const pct = (container.scrollTop / maxScroll) * 100;
-        updateProgressUI(pct, `Progress: ${Math.round(pct)}%`);
+        const pct = Math.round((container.scrollTop / maxScroll) * 100);
+        updateProgressUI(pct, `Progress: ${pct}%`);
       }
     };
 
-    updateProgressUI(100, 'Progress: 100%');
+    updateProgressUI(0, 'Progress: 0%');
   }
 
       // Track location and update progress slider
