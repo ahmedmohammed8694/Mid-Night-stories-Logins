@@ -262,9 +262,14 @@ app.get('/api/admin/stats', requireAdmin, async (c) => {
   const totalComments = (await db.prepare('SELECT COUNT(*) as c FROM comments').first()).c;
   const pendingComments = (await db.prepare("SELECT COUNT(*) as c FROM comments WHERE status = 'pending'").first()).c;
   const totalUsers = (await db.prepare('SELECT COUNT(*) as c FROM users').first()).c;
-  const totalLikes = (await db.prepare('SELECT COALESCE(SUM(likes_count), 0) as c FROM stories').first()).c;
-  const openReports = (await db.prepare('SELECT COUNT(*) as c FROM reports WHERE resolved = 0').first()).c;
+  const totalLikes = (await db.prepare('SELECT COALESCE(SUM(like_count), 0) as c FROM stories').first()).c;
+  const openReports = (await db.prepare("SELECT COUNT(*) as c FROM reports WHERE ticket_status != 'resolved' AND ticket_status != 'closed'").first()).c;
   const bannedIPs = (await db.prepare('SELECT COUNT(*) as c FROM banned_identifiers').first()).c;
+
+  // Book stats
+  const totalBooks = (await db.prepare('SELECT COUNT(*) as c FROM books').first()).c;
+  const pendingBooks = (await db.prepare("SELECT COUNT(*) as c FROM books WHERE is_user_submission = 1 AND submission_status = 'pending'").first()).c;
+  const totalCategories = (await db.prepare('SELECT COUNT(*) as c FROM categories').first()).c;
 
   const dailyStories = await db.prepare(`
     SELECT date(created_at) as date, COUNT(*) as count
@@ -277,7 +282,9 @@ app.get('/api/admin/stats', requireAdmin, async (c) => {
   return c.json({
     totalStories, pendingStories, approvedStories, rejectedStories,
     totalComments, pendingComments, totalUsers, totalLikes,
-    openReports, bannedIPs, dailyStories: dailyStories.results || []
+    openReports, bannedIPs, 
+    totalBooks, pendingBooks, totalCategories,
+    dailyStories: dailyStories.results || []
   });
 });
 
@@ -581,7 +588,7 @@ app.get('*', async (c) => {
 
 
 // ---------------------------------------------------------
-// ��  ADVANCED MODERATION & AUDITING API
+// ██  ADVANCED MODERATION & AUDITING API
 // ---------------------------------------------------------
 
 app.get('/api/admin/users/:id/audit', requireAdmin, async (c) => {
@@ -638,7 +645,7 @@ app.get('/api/admin/reports/aggregated', requireAdmin, async (c) => {
   const db = c.env.DB;
   const { results } = await db.prepare(`SELECT target_type, target_id, COUNT(*) as incident_count, MAX(created_at) as last_reported_at
     FROM reports
-    WHERE resolved = 0
+    WHERE ticket_status != 'resolved' AND ticket_status != 'closed'
     GROUP BY target_type, target_id
     ORDER BY incident_count DESC`).all();
   return c.json(results);
@@ -657,7 +664,8 @@ app.post('/api/admin/reports/:id/reply', requireAdmin, async (c) => {
   const { reply } = await c.req.json();
   const adminPayload = c.get('admin');
   
-  await db.prepare('UPDATE reports SET admin_reply = ?, resolved = 1, resolved_by = ?, resolved_at = CURRENT_TIMESTAMP WHERE id = ?').bind(reply, adminPayload.adminId, reportId).run();
+  await db.prepare('INSERT INTO ticket_conversation_threads (report_id, sender_id, sender_role, message_body) VALUES (?, ?, ?, ?)').bind(reportId, adminPayload.adminId, 'admin', reply).run();
+  await db.prepare('UPDATE reports SET ticket_status = "resolved", resolved_by = ?, resolved_at = CURRENT_TIMESTAMP WHERE id = ?').bind(adminPayload.adminId, reportId).run();
   return c.json({ message: 'Reply sent and report resolved.' });
 });
 
@@ -670,24 +678,4 @@ app.post('/api/admin/messages/send', requireAdmin, async (c) => {
   return c.json({ message: 'Message sent successfully.' });
 });
 
-app.get('/api/users/me/support-inbox', requireUser, async (c) => {
-  const db = c.env.DB;
-  const user = c.get('user');
-  
-  const { results: messages } = await db.prepare('SELECT * FROM admin_messages WHERE user_id = ? ORDER BY created_at DESC').bind(user.id).all();
-  const { results: reports } = await db.prepare('SELECT * FROM reports WHERE reporter_id = ? AND resolved = 1 AND admin_reply IS NOT NULL ORDER BY resolved_at DESC').bind(user.id).all();
-  
-  return c.json({ messages, reports });
-});
-
-app.post('/api/users/me/messages/:id/read', requireUser, async (c) => {
-  const db = c.env.DB;
-  const user = c.get('user');
-  const msgId = parseInt(c.req.param('id'));
-  await db.prepare('UPDATE admin_messages SET is_read = 1 WHERE id = ? AND user_id = ?').bind(msgId, user.id).run();
-  return c.json({ success: true });
-});
 export default app;
-
-
-

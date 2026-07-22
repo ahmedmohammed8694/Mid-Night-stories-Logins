@@ -581,9 +581,15 @@ app.get('/admin/stats', requireAdmin, async (c) => {
   const rejectedStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'rejected'").first()).c;
   const totalComments = (await db.prepare('SELECT COUNT(*) as c FROM comments').first()).c;
   const pendingComments = (await db.prepare("SELECT COUNT(*) as c FROM comments WHERE status = 'pending'").first()).c;
-  const openReports = (await db.prepare('SELECT COUNT(*) as c FROM reports WHERE resolved = 0').first()).c;
+  const totalUsers = (await db.prepare('SELECT COUNT(*) as c FROM users').first()).c;
+  const openReports = (await db.prepare("SELECT COUNT(*) as c FROM reports WHERE ticket_status != 'resolved' AND ticket_status != 'closed'").first()).c;
   const totalLikes = (await db.prepare('SELECT COALESCE(SUM(like_count), 0) as c FROM stories').first()).c;
   const bannedIPs = (await db.prepare('SELECT COUNT(*) as c FROM banned_identifiers').first()).c;
+
+  // Book stats
+  const totalBooks = (await db.prepare('SELECT COUNT(*) as c FROM books').first()).c;
+  const pendingBooks = (await db.prepare("SELECT COUNT(*) as c FROM books WHERE is_user_submission = 1 AND submission_status = 'pending'").first()).c;
+  const totalCategories = (await db.prepare('SELECT COUNT(*) as c FROM categories').first()).c;
 
   // Stories per day (last 7 days)
   const { results: dailyStories } = await db.prepare(`
@@ -596,7 +602,8 @@ app.get('/admin/stats', requireAdmin, async (c) => {
 
   return c.json({
     totalStories, pendingStories, approvedStories, rejectedStories,
-    totalComments, pendingComments, openReports, totalLikes, bannedIPs,
+    totalComments, pendingComments, totalUsers, openReports, totalLikes, bannedIPs,
+    totalBooks, pendingBooks, totalCategories,
     dailyStories
   });
 });

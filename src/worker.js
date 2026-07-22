@@ -404,6 +404,8 @@ app.get('/api/categories', async (c) => {
   return c.json(results);
 });
 
+
+
 app.get('/api/stories', optionalUser, async (c) => {
   const db = c.env.DB;
   const user = c.get('user');
@@ -446,7 +448,7 @@ app.get('/api/stories', optionalUser, async (c) => {
 
   let orderBy;
   switch (sort) {
-    case 'liked': orderBy = 's.likes_count DESC'; break;
+    case 'liked': orderBy = 's.like_count DESC'; break;
     default: orderBy = 's.created_at DESC';
   }
 
@@ -597,18 +599,18 @@ app.post('/api/stories/:id/like', requireUser, checkBan, async (c) => {
 
   if (existingLike) {
     await db.prepare('DELETE FROM likes WHERE id = ?').bind(existingLike.id).run();
-    await db.prepare('UPDATE stories SET likes_count = MAX(0, likes_count - 1) WHERE id = ?').bind(storyId).run();
-    const updated = await db.prepare('SELECT likes_count FROM stories WHERE id = ?').bind(storyId).first();
-    return c.json({ liked: false, likes_count: updated.likes_count });
+    await db.prepare('UPDATE stories SET like_count = MAX(0, like_count - 1) WHERE id = ?').bind(storyId).run();
+    const updated = await db.prepare('SELECT like_count FROM stories WHERE id = ?').bind(storyId).first();
+    return c.json({ liked: false, like_count: updated.like_count });
   }
 
   await db.prepare('INSERT INTO likes (user_id, story_id) VALUES (?, ?)').bind(user.id, storyId).run();
-  await db.prepare('UPDATE stories SET likes_count = likes_count + 1 WHERE id = ?').bind(storyId).run();
+  await db.prepare('UPDATE stories SET like_count = like_count + 1 WHERE id = ?').bind(storyId).run();
   if (story.user_id) {
     await createNotification(db, story.user_id, user.id, 'like', storyId, 'liked your story');
   }
-  const updated = await db.prepare('SELECT likes_count FROM stories WHERE id = ?').bind(storyId).first();
-  return c.json({ liked: true, likes_count: updated.likes_count });
+  const updated = await db.prepare('SELECT like_count FROM stories WHERE id = ?').bind(storyId).first();
+  return c.json({ liked: true, like_count: updated.like_count });
 });
 
 // ═════════════════════════════════════════════════════════
@@ -1271,7 +1273,7 @@ app.get('/api/stats/public', async (c) => {
   const [storyStats, visitorRow, commentRow] = await Promise.all([
     db.prepare(`
       SELECT
-        COALESCE(SUM(likes_count), 0)    AS total_likes,
+        COALESCE(SUM(like_count), 0)    AS total_likes,
         COUNT(*)                         AS total_stories
       FROM stories WHERE status = 'approved'
     `).first(),
@@ -1392,14 +1394,20 @@ app.get('/api/admin/stats', requireAdmin, async (c) => {
   const totalComments = (await db.prepare('SELECT COUNT(*) as c FROM comments').first()).c;
   const pendingComments = (await db.prepare("SELECT COUNT(*) as c FROM comments WHERE status = 'pending'").first()).c;
   const totalUsers = (await db.prepare('SELECT COUNT(*) as c FROM users').first()).c;
-  const totalLikes = (await db.prepare('SELECT COALESCE(SUM(likes_count), 0) as c FROM stories').first()).c;
+  const totalLikes = (await db.prepare('SELECT COALESCE(SUM(like_count), 0) as c FROM stories').first()).c;
   const openReports = (await db.prepare("SELECT COUNT(*) as c FROM reports WHERE ticket_status != 'resolved' AND ticket_status != 'closed'").first()).c;
   const bannedIPs = (await db.prepare('SELECT COUNT(*) as c FROM banned_identifiers').first()).c;
+  
+  // Book stats
+  const totalBooks = (await db.prepare('SELECT COUNT(*) as c FROM books').first()).c;
+  const pendingBooks = (await db.prepare("SELECT COUNT(*) as c FROM books WHERE is_user_submission = 1 AND submission_status = 'pending'").first()).c;
+  const totalCategories = (await db.prepare('SELECT COUNT(*) as c FROM categories').first()).c;
 
   return c.json({
     totalStories, pendingStories, approvedStories, rejectedStories,
     totalComments, pendingComments, totalUsers, totalLikes,
-    openReports, bannedIPs
+    openReports, bannedIPs,
+    totalBooks, pendingBooks, totalCategories
   });
 });
 
@@ -1921,10 +1929,10 @@ app.post('/api/admin/users/:id/enforce', requireAdmin, async (c) => {
 
 app.get('/api/admin/reports/aggregated', requireAdmin, async (c) => {
   const db = c.env.DB;
-  const { results } = await db.prepare(`SELECT target_type, target_id, COUNT(*) as incident_count, MAX(created_at) as last_reported_at
+  const { results } = await db.prepare(`SELECT reported_item_type as target_type, reported_item_id as target_id, COUNT(*) as incident_count, MAX(created_at) as last_reported_at
     FROM reports
-    WHERE resolved = 0
-    GROUP BY target_type, target_id
+    WHERE ticket_status != 'resolved' AND ticket_status != 'closed'
+    GROUP BY reported_item_type, reported_item_id
     ORDER BY incident_count DESC`).all();
   return c.json(results);
 });
@@ -1932,7 +1940,7 @@ app.get('/api/admin/reports/aggregated', requireAdmin, async (c) => {
 app.get('/api/admin/reports/target', requireAdmin, async (c) => {
   const db = c.env.DB;
   const { target_type, target_id } = c.req.query();
-  const { results } = await db.prepare('SELECT r.*, u.full_name as reporter_name FROM reports r LEFT JOIN users u ON r.reporter_id = u.id WHERE target_type = ? AND target_id = ? ORDER BY created_at DESC').bind(target_type, parseInt(target_id)).all();
+  const { results } = await db.prepare('SELECT r.*, u.full_name as reporter_name FROM reports r LEFT JOIN users u ON r.reporter_id = u.id WHERE r.reported_item_type = ? AND r.reported_item_id = ? ORDER BY r.created_at DESC').bind(target_type, parseInt(target_id)).all();
   return c.json(results);
 });
 
@@ -1960,7 +1968,21 @@ app.get('/api/users/me/support-inbox', requireUser, async (c) => {
   const user = c.get('user');
   
   const { results: messages } = await db.prepare('SELECT * FROM admin_messages WHERE user_id = ? ORDER BY created_at DESC').bind(user.id).all();
-  const { results: reports } = await db.prepare('SELECT * FROM reports WHERE reporter_id = ? AND resolved = 1 AND admin_reply IS NOT NULL ORDER BY resolved_at DESC').bind(user.id).all();
+  
+  const { results: reportsRaw } = await db.prepare(
+    "SELECT id, reported_item_type AS target_type, reason, resolved_at FROM reports WHERE reporter_id = ? AND ticket_status = 'resolved' ORDER BY resolved_at DESC"
+  ).bind(user.id).all();
+
+  const reports = [];
+  for (const report of reportsRaw) {
+    const threadMsg = await db.prepare(
+      "SELECT message_body FROM ticket_conversation_threads WHERE report_id = ? AND sender_role = 'admin' ORDER BY created_at DESC LIMIT 1"
+    ).bind(report.id).first();
+    reports.push({
+      ...report,
+      admin_reply: threadMsg ? threadMsg.message_body : 'Your report has been resolved.'
+    });
+  }
   
   return c.json({ messages, reports });
 });

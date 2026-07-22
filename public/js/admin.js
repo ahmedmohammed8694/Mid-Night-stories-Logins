@@ -21,8 +21,9 @@
   }
 
   // ── Login ──
+  window.adminHandleLogin = handleLogin;
   async function handleLogin(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
 
@@ -145,6 +146,14 @@
       document.getElementById('statLikes').textContent = stats.totalLikes;
       document.getElementById('statBans').textContent = stats.bannedIPs;
       document.getElementById('statUsers').textContent = stats.totalUsers;
+      
+      // Populate new book stats
+      const statBooks = document.getElementById('statBooks');
+      if (statBooks) statBooks.textContent = stats.totalBooks !== undefined ? stats.totalBooks : '—';
+      const statPendingBooks = document.getElementById('statPendingBooks');
+      if (statPendingBooks) statPendingBooks.textContent = stats.pendingBooks !== undefined ? stats.pendingBooks : '—';
+      const statCategories = document.getElementById('statCategories');
+      if (statCategories) statCategories.textContent = stats.totalCategories !== undefined ? stats.totalCategories : '—';
 
       // Update sidebar badges
       updateBadge('pendingStoriesBadge', stats.pendingStories);
