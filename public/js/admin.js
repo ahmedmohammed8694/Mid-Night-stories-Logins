@@ -1049,7 +1049,12 @@
 
   async function loadBooks() {
     try {
-      const data = await api('/api/books?limit=250&sort=newest');
+      let data;
+      try {
+        data = await api('/api/admin/books');
+      } catch (e) {
+        data = await api('/api/books?limit=250&sort=newest');
+      }
       allBooksList = data.books || [];
       renderFilteredBooks();
 

@@ -94,6 +94,13 @@ app.get('/stories', async (c) => {
   return new Response(res.body, res);
 });
 
+app.get('/reader', async (c) => {
+  const url = new URL(c.req.url);
+  url.pathname = '/reader.html';
+  const res = await fetch(url.toString(), c.req.raw);
+  return new Response(res.body, res);
+});
+
 app.get('/stories/:slug', async (c, next) => {
   const slug = c.req.param('slug');
   if (slug.includes('.') || slug === 'all') {
@@ -2327,6 +2334,21 @@ app.delete('/api/admin/books/:id', requireAdminOrUser, async (c) => {
 
   await db.prepare('DELETE FROM books WHERE id = ?').bind(bookId).run();
   return c.json({ success: true, message: 'Book deleted successfully.' });
+});
+
+// ── GET /api/admin/books ──
+app.get('/api/admin/books', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { results: books } = await db.prepare(`
+    SELECT b.*,
+      (SELECT GROUP_CONCAT(c.name) FROM book_categories bc JOIN categories c ON bc.category_id = c.id WHERE bc.book_id = b.id) as category_names,
+      (SELECT GROUP_CONCAT(t.name) FROM book_tags bt JOIN tags t ON bt.tag_id = t.id WHERE bt.book_id = b.id) as tag_names,
+      u.full_name as uploader_name
+    FROM books b
+    LEFT JOIN users u ON b.uploaded_by = u.id
+    ORDER BY b.created_at DESC
+  `).all();
+  return c.json({ books });
 });
 
 // ── GET /api/admin/books/pending ──

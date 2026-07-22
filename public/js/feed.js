@@ -14,12 +14,18 @@
       const container = document.getElementById('categoryFilters');
       if (!container) return;
 
+      // Filter out book-specific naval categories for People Stories
+      const storyCategories = categories.filter(cat => {
+        const channel = (cat.channel_type || '').toLowerCase();
+        return channel !== 'naval' && channel !== 'naval-books';
+      });
+
       // Keep the "All" chip
       const allChip = container.querySelector('[data-category="all"]');
       container.innerHTML = '';
       if (allChip) container.appendChild(allChip);
 
-      categories.forEach(cat => {
+      storyCategories.forEach(cat => {
         const chip = document.createElement('button');
         chip.className = 'filter-chip';
         chip.dataset.category = cat.slug;
@@ -193,9 +199,38 @@
       }, 5000);
     }
 
+    async function loadHomeBooks() {
+      const booksGrid = document.getElementById('homeBooksGrid');
+      if (!booksGrid) return;
+      try {
+        const data = await api('/api/books?limit=4&sort=newest');
+        booksGrid.innerHTML = '';
+        if (!data.books || data.books.length === 0) {
+          booksGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 24px;">No books available yet.</div>';
+          return;
+        }
+        data.books.forEach(book => {
+          const card = document.createElement('div');
+          card.className = 'card card--hover';
+          card.style.cursor = 'pointer';
+          card.onclick = () => window.location.href = `/books?id=${book.id}`;
+          card.innerHTML = `
+            <img src="${book.cover_image_url || '/images/default-cover.png'}" style="width: 100%; height: 220px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;">
+            <div style="font-weight: 700; font-size: 1rem; color: var(--text-primary); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(book.title)}</div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">By ${escapeHtml(book.author || 'Unknown')}</div>
+            <span class="filter-chip" style="font-size: 0.75rem; text-transform: uppercase;">${escapeHtml(book.channel_type || 'education')}</span>
+          `;
+          booksGrid.appendChild(card);
+        });
+      } catch (err) {
+        console.error('Failed to load home books:', err);
+      }
+    }
+
     // Load initial data
     loadCategories();
     loadStories();
+    loadHomeBooks();
     initHeroSlideshow();
   });
 })();

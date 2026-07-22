@@ -28,6 +28,7 @@
           <span class="header__logo-text">Midnight Stories</span>
         </a>
         <nav class="header__nav" id="mainNav">
+          <a href="/" class="nav-link active">Home</a>
           <a href="/stories" class="nav-link">People stories</a>
           <a href="/books" class="nav-link" id="navBooks">Books</a>
           <a href="/submit" class="nav-link">Share Story</a>
@@ -56,6 +57,7 @@
     <!-- Mobile Nav -->
     <div class="mobile-nav" id="mobileNav">
       <button class="mobile-nav__close" id="mobileNavClose">✕</button>
+      <a href="/" class="nav-link active">Home</a>
       <a href="/stories" class="nav-link">People stories</a>
       <a href="/books" class="nav-link">Books</a>
       <a href="/submit" class="nav-link">Share Your Story</a>
@@ -118,44 +120,55 @@
           </p>
         </section>
 
-        <!-- Controls Bar -->
-        <section class="controls-bar" id="stories">
-          <div class="controls-bar__left" id="categoryFilters">
-            <button class="filter-chip auth-only" id="feedToggle" style="display:none; border:1px solid var(--primary); background:rgba(92,106,196,0.2);">Following Feed</button>
-            <button class="filter-chip active" data-category="all">All Stories</button>
-            <!-- Categories will be loaded dynamically -->
-          </div>
-          <div class="controls-bar__right">
-            <div class="search-box">
-              <span class="search-box__icon">🔍</span>
-              <input type="text" class="search-box__input" id="searchInput" placeholder="Search stories...">
+        <!-- Recent People Stories Section -->
+        <section style="margin-top: 3rem; margin-bottom: 3rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <h2 style="font-size: 1.75rem; font-family: 'Fraunces', serif; color: var(--text-primary); margin-bottom: 4px;">📖 Recent People Stories</h2>
+              <p style="font-size: 0.95rem; color: var(--text-secondary);">Real anonymous voices, personal journeys, and quiet reflections.</p>
             </div>
-            <select class="sort-select" id="sortSelect">
-              <option value="newest">Newest First</option>
-              <option value="liked">Most Liked</option>
-              <option value="discussed">Most Discussed</option>
-            </select>
+            <a href="/stories" class="btn btn--secondary btn--sm" style="backdrop-filter: blur(8px);">View All People Stories →</a>
+          </div>
+
+          <div class="story-grid" id="storyGrid">
+            <div class="card skeleton skeleton--card"></div>
+            <div class="card skeleton skeleton--card"></div>
+            <div class="card skeleton skeleton--card"></div>
+          </div>
+
+          <div class="empty-state hidden" id="emptyState">
+            <div class="empty-state__icon">📝</div>
+            <h3 class="empty-state__title">No stories yet</h3>
+            <p class="empty-state__description">Be the first to share your story. Your experience could help someone else feel less alone.</p>
+            <a href="/submit" class="btn btn--primary mt-24">Share Your Story</a>
+          </div>
+
+          <div style="text-align: center; margin-top: 2rem;">
+            <a href="/stories" class="btn btn--primary">Explore All People Stories →</a>
           </div>
         </section>
 
-        <!-- Story Grid -->
-        <div class="story-grid" id="storyGrid">
-          <!-- Stories loaded dynamically -->
-          <div class="card skeleton skeleton--card"></div>
-          <div class="card skeleton skeleton--card"></div>
-          <div class="card skeleton skeleton--card"></div>
-        </div>
+        <!-- Featured Books Section -->
+        <section style="margin-bottom: 4rem; padding-top: 2rem; border-top: 1px solid var(--border-card);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <h2 style="font-size: 1.75rem; font-family: 'Fraunces', serif; color: var(--text-primary); margin-bottom: 4px;">📚 Books & Literature</h2>
+              <p style="font-size: 0.95rem; color: var(--text-secondary);">Educational, historical, naval, and curated literature.</p>
+            </div>
+            <a href="/books" class="btn btn--secondary btn--sm" style="backdrop-filter: blur(8px);">Browse Books Library →</a>
+          </div>
 
-        <!-- Empty State -->
-        <div class="empty-state hidden" id="emptyState">
-          <div class="empty-state__icon">📝</div>
-          <h3 class="empty-state__title">No stories yet</h3>
-          <p class="empty-state__description">Be the first to share your story. Your experience could help someone else feel less alone.</p>
-          <a href="/submit" class="btn btn--primary mt-24">Share Your Story</a>
-        </div>
+          <div class="story-grid" id="homeBooksGrid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
+            <div class="card skeleton skeleton--card"></div>
+            <div class="card skeleton skeleton--card"></div>
+            <div class="card skeleton skeleton--card"></div>
+            <div class="card skeleton skeleton--card"></div>
+          </div>
 
-        <!-- Pagination -->
-        <div class="pagination hidden" id="pagination"></div>
+          <div style="text-align: center; margin-top: 2rem;">
+            <a href="/books" class="btn btn--secondary">View Complete Books Directory →</a>
+          </div>
+        </section>
       </div>
     </main>
 

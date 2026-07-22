@@ -28,6 +28,7 @@
           <span class="header__logo-text">Midnight Stories</span>
         </a>
         <nav class="header__nav" id="mainNav">
+          <a href="/" class="nav-link">Home</a>
           <a href="/stories" class="nav-link active">People stories</a>
           <a href="/books" class="nav-link" id="navBooks">Books</a>
           <a href="/submit" class="nav-link">Share Story</a>
@@ -56,6 +57,7 @@
     <!-- Mobile Nav -->
     <div class="mobile-nav" id="mobileNav">
       <button class="mobile-nav__close" id="mobileNavClose">✕</button>
+      <a href="/" class="nav-link">Home</a>
       <a href="/stories" class="nav-link active">People stories</a>
       <a href="/books" class="nav-link">Books</a>
       <a href="/submit" class="nav-link">Share Your Story</a>
@@ -64,13 +66,17 @@
     </div>
 
     <!-- Main Content -->
-    <main class="page-content">
+    <main class="page-content" style="padding-top: 0;">
       <div class="container">
-        <!-- Stories Feed Header -->
-        <div style="margin-bottom: 24px; text-align: left; padding: 24px 0 12px 0;">
-          <h1 style="font-family: 'Fraunces', serif; font-size: 2.2rem; color: var(--text-primary); margin-bottom: 8px;">People Stories</h1>
-          <p style="font-size: 1.05rem; color: var(--text-secondary);">Browse powerful personal narratives shared anonymously by our community.</p>
-        </div>
+        <!-- Hero Section -->
+        <section class="hero" id="hero" style="min-height: 240px; margin-bottom: 2rem;">
+          <div class="slideshow-slide active" style="background-image: url('https://images.unsplash.com/photo-1518655048521-f130df041f66?auto=format&fit=crop&w=1600&q=80')"></div>
+          <div class="hero__overlay"></div>
+          <div class="hero__content">
+            <h1 class="hero__title">People Stories</h1>
+            <p class="hero__subtitle">Browse powerful personal narratives, real life experiences, and quiet reflections shared anonymously by our community.</p>
+          </div>
+        </section>
 
         <!-- Controls Bar -->
         <section class="controls-bar" id="stories">
