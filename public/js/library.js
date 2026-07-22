@@ -213,18 +213,18 @@
     const typeBadgeColor = book.file_type === 'epub' ? 'var(--page-accent)' : 'var(--accent-amber)';
 
     card.innerHTML = `
-      <div class="book-card__cover-wrapper" onclick="location.href='/reader.html?bookId=${book.id}'">
+      <div class="book-card__cover-wrapper" onclick="location.href='/reader?bookId=${book.id}'">
         <img class="book-card__cover" src="${book.cover_image_url || '/images/default-cover.png'}" alt="${escapeHtml(book.title)} cover" loading="lazy">
         <span class="book-card__badge" style="background: ${typeBadgeColor};">${book.file_type.toUpperCase()}</span>
       </div>
       <div class="book-card__details" style="display: flex; flex-direction: column; flex-grow: 1;">
-        <h3 class="book-card__title" onclick="location.href='/reader.html?bookId=${book.id}'">${escapeHtml(book.title)}</h3>
+        <h3 class="book-card__title" onclick="location.href='/reader?bookId=${book.id}'">${escapeHtml(book.title)}</h3>
         <p class="book-card__author">By ${escapeHtml(book.author)}</p>
         
         ${book.description ? `<p style="font-size: 0.85rem; color: var(--text-tertiary); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.5; margin-bottom: 12px;">${escapeHtml(book.description)}</p>` : ''}
         
         <div style="margin-top: auto;">
-          <button class="btn btn--primary btn--sm" style="width: 100%; display: flex; align-items: center; justify-content: center;" onclick="location.href='/reader.html?bookId=${book.id}'">${readButtonText}</button>
+          <button class="btn btn--primary btn--sm" style="width: 100%; display: flex; align-items: center; justify-content: center;" onclick="location.href='/reader?bookId=${book.id}'">${readButtonText}</button>
           ${progressHtml}
           ${shelfSelectorHtml}
         </div>

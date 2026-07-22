@@ -21,6 +21,9 @@
       categories.forEach(cat => {
         const chip = document.createElement('button');
         chip.className = 'filter-chip';
+        chip.style.width = '100%';
+        chip.style.textAlign = 'left';
+        chip.style.justifyContent = 'flex-start';
         chip.dataset.category = cat.slug;
         chip.textContent = cat.name;
         container.appendChild(chip);

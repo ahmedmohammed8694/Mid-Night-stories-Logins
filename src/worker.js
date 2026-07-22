@@ -94,13 +94,6 @@ app.get('/stories', async (c) => {
   return new Response(res.body, res);
 });
 
-app.get('/reader', async (c) => {
-  const url = new URL(c.req.url);
-  url.pathname = '/reader.html';
-  const res = await fetch(url.toString(), c.req.raw);
-  return new Response(res.body, res);
-});
-
 app.get('/stories/:slug', async (c, next) => {
   const slug = c.req.param('slug');
   if (slug.includes('.') || slug === 'all') {

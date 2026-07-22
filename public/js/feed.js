@@ -14,18 +14,12 @@
       const container = document.getElementById('categoryFilters');
       if (!container) return;
 
-      // Filter out book-specific naval categories for People Stories
-      const storyCategories = categories.filter(cat => {
-        const channel = (cat.channel_type || '').toLowerCase();
-        return channel !== 'naval' && channel !== 'naval-books';
-      });
-
       // Keep the "All" chip
       const allChip = container.querySelector('[data-category="all"]');
       container.innerHTML = '';
       if (allChip) container.appendChild(allChip);
 
-      storyCategories.forEach(cat => {
+      categories.forEach(cat => {
         const chip = document.createElement('button');
         chip.className = 'filter-chip';
         chip.dataset.category = cat.slug;

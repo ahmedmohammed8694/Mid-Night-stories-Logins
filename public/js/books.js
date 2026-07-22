@@ -281,7 +281,7 @@
     // Connect CTAs
     const readBtn = document.getElementById('modalBtnRead');
     readBtn.onclick = () => {
-      window.location.href = `/reader.html?bookId=${book.id}`;
+      window.location.href = `/reader?bookId=${book.id}`;
     };
 
     const downloadBtn = document.getElementById('modalBtnDownload');
