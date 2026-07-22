@@ -273,47 +273,6 @@
     updateProgressUI(0, 'Progress: 0%');
   }
 
-      // Track location and update progress slider
-      epubRendition.on("relocated", (location) => {
-        currentPositionCfi = location.start.cfi;
-        
-        // Progress percentage calculation
-        if (epubBook.locations && epubBook.locations.length > 0) {
-          currentProgressPercent = epubBook.locations.percentageFromCfi(currentPositionCfi) * 100;
-        } else {
-          // Fallback approximate progress
-          currentProgressPercent = location.start.percentage * 100;
-        }
-        
-        updateProgressUI(currentProgressPercent, `Location: ${location.start.displayed.page || '—'}`);
-      });
-
-      // Selection annotation highlight triggering
-      epubRendition.on("selected", (cfiRange, contents) => {
-        textSelectionRange = cfiRange;
-        showHighlightPicker(cfiRange, contents);
-      });
-
-      // Initialize locations for exact percentage tracking (lazy background generation)
-      epubBook.ready.then(() => {
-        return epubBook.locations.generate(1024);
-      }).then(() => {
-        if (currentPositionCfi) {
-          currentProgressPercent = epubBook.locations.percentageFromCfi(currentPositionCfi) * 100;
-          updateProgressUI(currentProgressPercent);
-        }
-      });
-
-      // Apply initial theme/fonts to rendition
-      applyRenditionComfortStyles();
-    };
-    
-    reader.readAsArrayBuffer(blob);
-    
-    nextBtn.onclick = () => epubRendition.next();
-    prevBtn.onclick = () => epubRendition.prev();
-  }
-
   function populateEpubTOC(toc) {
     const container = document.getElementById('tocContainer');
     container.innerHTML = '';
