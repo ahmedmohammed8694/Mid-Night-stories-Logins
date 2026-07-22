@@ -298,7 +298,7 @@ app.get('/api/admin/queue', requireAdmin, async (c) => {
 
   if (type === 'stories') {
     const { results } = await db.prepare(`
-      SELECT s.*, c.name as category_name, u.full_name as author_name
+      SELECT s.id, s.user_id, s.title, s.content AS body, s.category_id, s.image_url, s.status, s.submitter_token, s.ip_hash, s.like_count, s.comment_count, s.created_at, s.updated_at, c.name as category_name, u.full_name as author_name
       FROM stories s
       LEFT JOIN categories c ON s.category_id = c.id
       LEFT JOIN users u ON s.user_id = u.id
@@ -308,7 +308,7 @@ app.get('/api/admin/queue', requireAdmin, async (c) => {
     return c.json({ items: results, type: 'stories' });
   } else {
     const { results } = await db.prepare(`
-      SELECT cm.*, s.title as story_title, u.full_name as author_name
+      SELECT cm.id, cm.story_id, cm.user_id, cm.content AS body, cm.status, cm.ip_hash, cm.created_at, s.title as story_title, u.full_name as author_name
       FROM comments cm
       LEFT JOIN stories s ON cm.story_id = s.id
       LEFT JOIN users u ON cm.user_id = u.id
@@ -355,20 +355,28 @@ app.post('/api/admin/moderate', requireAdmin, async (c) => {
 // ═════════════════════════════════════════════════════════
 app.get('/api/admin/reports', requireAdmin, async (c) => {
   const db = c.env.DB;
-  const resolved = c.req.query('resolved') || '0';
+  const status = c.req.query('status') || 'open';
 
-  const { results } = await db.prepare(`
-    SELECT r.*, 
-      CASE r.target_type 
-        WHEN 'story' THEN (SELECT title FROM stories WHERE id = r.target_id)
-        WHEN 'comment' THEN (SELECT substr(body, 1, 100) FROM comments WHERE id = r.target_id)
-      END as target_preview
-    FROM reports r
-    WHERE r.resolved = ?
-    ORDER BY r.created_at DESC
-  `).bind(parseInt(resolved)).all();
-
-  return c.json(results);
+  try {
+    const { results } = await db.prepare(`
+      SELECT r.*,
+             CASE WHEN r.reported_item_type = 'story' THEN (SELECT title FROM stories WHERE id = r.reported_item_id)
+                  WHEN r.reported_item_type = 'comment' THEN (SELECT content FROM comments WHERE id = r.reported_item_id)
+                  ELSE NULL END as target_preview,
+             CASE WHEN r.reported_item_type = 'story' THEN (SELECT user_id FROM stories WHERE id = r.reported_item_id)
+                  WHEN r.reported_item_type = 'comment' THEN (SELECT user_id FROM comments WHERE id = r.reported_item_id)
+                  ELSE r.reported_item_id END as target_user_id,
+             u.full_name as reporter_name, u.created_at as reporter_join_date
+      FROM reports r
+      LEFT JOIN users u ON r.reporter_id = u.id
+      WHERE r.ticket_status = ? OR (r.ticket_status != 'closed' AND r.ticket_status != 'resolved' AND ? = 'open')
+      ORDER BY r.created_at DESC
+    `).bind(status, status).all();
+    return c.json(results);
+  } catch (err) {
+    console.error('GET /api/admin/reports ERROR:', err);
+    return c.json({ error: 'Internal Server Error' }, 500);
+  }
 });
 
 app.post('/api/admin/reports/:id/resolve', requireAdmin, async (c) => {
@@ -643,10 +651,10 @@ app.post('/api/admin/users/:id/enforce', requireAdmin, async (c) => {
 
 app.get('/api/admin/reports/aggregated', requireAdmin, async (c) => {
   const db = c.env.DB;
-  const { results } = await db.prepare(`SELECT target_type, target_id, COUNT(*) as incident_count, MAX(created_at) as last_reported_at
+  const { results } = await db.prepare(`SELECT reported_item_type as target_type, reported_item_id as target_id, COUNT(*) as incident_count, MAX(created_at) as last_reported_at
     FROM reports
     WHERE ticket_status != 'resolved' AND ticket_status != 'closed'
-    GROUP BY target_type, target_id
+    GROUP BY reported_item_type, reported_item_id
     ORDER BY incident_count DESC`).all();
   return c.json(results);
 });
@@ -654,7 +662,7 @@ app.get('/api/admin/reports/aggregated', requireAdmin, async (c) => {
 app.get('/api/admin/reports/target', requireAdmin, async (c) => {
   const db = c.env.DB;
   const { target_type, target_id } = c.req.query();
-  const { results } = await db.prepare('SELECT r.*, u.full_name as reporter_name FROM reports r LEFT JOIN users u ON r.reporter_id = u.id WHERE target_type = ? AND target_id = ? ORDER BY created_at DESC').bind(target_type, parseInt(target_id)).all();
+  const { results } = await db.prepare('SELECT r.*, u.full_name as reporter_name FROM reports r LEFT JOIN users u ON r.reporter_id = u.id WHERE r.reported_item_type = ? AND r.reported_item_id = ? ORDER BY r.created_at DESC').bind(target_type, parseInt(target_id)).all();
   return c.json(results);
 });
 

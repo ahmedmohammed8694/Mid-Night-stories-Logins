@@ -977,13 +977,17 @@
 
         data.books.forEach(book => {
           const tr = document.createElement('tr');
+          const fileType = (book.file_type || '').toUpperCase();
+          const visibility = book.visibility || 'public';
+          const status = book.status || 'draft';
+          
           tr.innerHTML = `
             <td><img src="${book.cover_image_url || '/images/default-cover.png'}" style="width: 40px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-card);"></td>
-            <td style="font-weight: 500;">${escapeHtml(book.title)}</td>
-            <td>${escapeHtml(book.author)}</td>
-            <td><span class="filter-chip" style="font-size: 0.75rem;">${book.file_type.toUpperCase()}</span></td>
-            <td><span class="status-badge status-badge--${book.visibility === 'public' ? 'approved' : 'pending'}">${book.visibility}</span></td>
-            <td><span class="status-badge status-badge--${book.status === 'published' ? 'approved' : 'pending'}">${book.status}</span></td>
+            <td style="font-weight: 500;">${escapeHtml(book.title || '')}</td>
+            <td>${escapeHtml(book.author || '')}</td>
+            <td><span class="filter-chip" style="font-size: 0.75rem;">${fileType}</span></td>
+            <td><span class="status-badge status-badge--${visibility === 'public' ? 'approved' : 'pending'}">${visibility}</span></td>
+            <td><span class="status-badge status-badge--${status === 'published' ? 'approved' : 'pending'}">${status}</span></td>
             <td>${book.uploaded_by ? `User ID: ${book.uploaded_by}` : 'Admin'}</td>
             <td>
               <div class="flex gap-8">

@@ -403,9 +403,59 @@ app.get('/api/categories', async (c) => {
   const { results } = await db.prepare('SELECT * FROM categories ORDER BY name').all();
   return c.json(results);
 });
+app.get('/api/diagnose-db', async (c) => {
+  const db = c.env.DB;
+  const diagnostics = {};
+  
+  // 1. Row counts
+  const tables = ['users', 'categories', 'stories', 'comments', 'likes', 'reports', 'books', 'book_categories', 'settings', 'banned_identifiers', 'moderation_log'];
+  diagnostics.counts = {};
+  for (const table of tables) {
+    try {
+      const row = await db.prepare(`SELECT COUNT(*) as c FROM ${table}`).first();
+      diagnostics.counts[table] = row ? row.c : 0;
+    } catch (e) {
+      diagnostics.counts[table] = `Error: ${e.message}`;
+    }
+  }
 
+  // 2. Query books
+  try {
+    const { results } = await db.prepare("SELECT id, title, status, visibility FROM books LIMIT 5").all();
+    diagnostics.books_sample = results;
+  } catch (e) {
+    diagnostics.books_error = e.message;
+  }
 
+  // 3. Query reports
+  try {
+    const { results } = await db.prepare(`
+      SELECT r.*,
+             CASE WHEN r.reported_item_type = 'story' THEN (SELECT title FROM stories WHERE id = r.reported_item_id)
+                  WHEN r.reported_item_type = 'comment' THEN (SELECT body FROM comments WHERE id = r.reported_item_id)
+                  ELSE NULL END as target_preview
+      FROM reports r LIMIT 5
+    `).all();
+    diagnostics.reports_sample = results;
+  } catch (e) {
+    diagnostics.reports_error = e.message;
+  }
 
+  // 4. Query comments queue
+  try {
+    const { results } = await db.prepare(`
+      SELECT cm.*, s.title as story_title
+      FROM comments cm
+      LEFT JOIN stories s ON cm.story_id = s.id
+      LIMIT 5
+    `).all();
+    diagnostics.comments_queue_sample = results;
+  } catch (e) {
+    diagnostics.comments_queue_error = e.message;
+  }
+
+  return c.json(diagnostics);
+});
 app.get('/api/stories', optionalUser, async (c) => {
   const db = c.env.DB;
   const user = c.get('user');
@@ -1417,7 +1467,7 @@ app.get('/api/admin/queue', requireAdmin, async (c) => {
 
   if (type === 'stories') {
     const { results } = await db.prepare(`
-      SELECT s.*, c.name as category_name, u.full_name as author_name
+      SELECT s.id, s.user_id, s.title, s.content AS body, s.category_id, s.image_url, s.status, s.submitter_token, s.ip_hash, s.like_count, s.comment_count, s.created_at, s.updated_at, c.name as category_name, u.full_name as author_name
       FROM stories s
       LEFT JOIN categories c ON s.category_id = c.id
       LEFT JOIN users u ON s.user_id = u.id
@@ -1427,7 +1477,7 @@ app.get('/api/admin/queue', requireAdmin, async (c) => {
     return c.json({ items: results, type: 'stories' });
   } else {
     const { results } = await db.prepare(`
-      SELECT cm.*, s.title as story_title, u.full_name as author_name
+      SELECT cm.id, cm.story_id, cm.user_id, cm.content AS body, cm.status, cm.ip_hash, cm.created_at, s.title as story_title, u.full_name as author_name
       FROM comments cm
       LEFT JOIN stories s ON cm.story_id = s.id
       LEFT JOIN users u ON cm.user_id = u.id
@@ -1585,7 +1635,7 @@ app.get('/api/admin/reports', requireAdmin, async (c) => {
     const { results } = await db.prepare(`
       SELECT r.*,
              CASE WHEN r.reported_item_type = 'story' THEN (SELECT title FROM stories WHERE id = r.reported_item_id)
-                  WHEN r.reported_item_type = 'comment' THEN (SELECT body FROM comments WHERE id = r.reported_item_id)
+                  WHEN r.reported_item_type = 'comment' THEN (SELECT content FROM comments WHERE id = r.reported_item_id)
                   ELSE NULL END as target_preview,
              CASE WHEN r.reported_item_type = 'story' THEN (SELECT user_id FROM stories WHERE id = r.reported_item_id)
                   WHEN r.reported_item_type = 'comment' THEN (SELECT user_id FROM comments WHERE id = r.reported_item_id)
