@@ -425,6 +425,7 @@ function initAuthLayout() {
         <span class="header__logo-text" style="font-weight: bold; font-size: 1.15rem; letter-spacing: 0.5px;">Midnight Stories</span>
       </a>
       <nav class="header__nav" style="display: flex; gap: 24px; align-items: center; margin-left: auto; margin-right: 24px;">
+        <a href="/" class="nav-link ${path === '/' || path === '/index.html' ? 'active' : ''}">Home</a>
         <a href="/stories" class="nav-link ${path === '/stories' || path === '/stories.html' ? 'active' : ''}">People stories</a>
         <a href="/books" class="nav-link ${path === '/books' || path === '/books.html' || path === '/library' ? 'active' : ''}">Books</a>
         <a href="/submit" class="nav-link ${path === '/submit.html' ? 'active' : ''}">Share Story</a>

@@ -103,12 +103,12 @@
               </select>
             </div>
 
-            <!-- Category Filters -->
+            <!-- Category Filters Dropdown -->
             <div class="filter-section">
-              <h3 class="filter-section__title">Categories</h3>
-              <div id="categoryFilters" style="max-height: 380px; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 6px;">
-                <button class="filter-chip active" data-category="all" style="width: 100%; text-align: left; justify-content: flex-start;">All Stories</button>
-              </div>
+              <h3 class="filter-section__title">Category</h3>
+              <select class="sort-select" id="categorySelect" style="width: 100%; height: 42px; padding: 0 12px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; cursor: pointer;">
+                <option value="all">All Categories</option>
+              </select>
             </div>
           </aside>
 

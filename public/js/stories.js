@@ -10,35 +10,49 @@
   async function loadCategories() {
     try {
       const categories = await api('/api/categories');
+      const categorySelect = document.getElementById('categorySelect');
       const container = document.getElementById('categoryFilters');
-      if (!container) return;
 
-      // Keep the "All" chip
-      const allChip = container.querySelector('[data-category="all"]');
-      container.innerHTML = '';
-      if (allChip) container.appendChild(allChip);
+      if (categorySelect) {
+        categorySelect.innerHTML = '<option value="all">All Categories</option>';
+        categories.forEach(cat => {
+          const opt = document.createElement('option');
+          opt.value = cat.slug;
+          opt.textContent = cat.name;
+          categorySelect.appendChild(opt);
+        });
 
-      categories.forEach(cat => {
-        const chip = document.createElement('button');
-        chip.className = 'filter-chip';
-        chip.style.width = '100%';
-        chip.style.textAlign = 'left';
-        chip.style.justifyContent = 'flex-start';
-        chip.dataset.category = cat.slug;
-        chip.textContent = cat.name;
-        container.appendChild(chip);
-      });
-
-      // Bind click handlers
-      container.querySelectorAll('.filter-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-          container.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-          chip.classList.add('active');
-          currentCategory = chip.dataset.category;
+        categorySelect.addEventListener('change', () => {
+          currentCategory = categorySelect.value;
           currentPage = 1;
           loadStories();
         });
-      });
+      } else if (container) {
+        const allChip = container.querySelector('[data-category="all"]');
+        container.innerHTML = '';
+        if (allChip) container.appendChild(allChip);
+
+        categories.forEach(cat => {
+          const chip = document.createElement('button');
+          chip.className = 'filter-chip';
+          chip.style.width = '100%';
+          chip.style.textAlign = 'left';
+          chip.style.justifyContent = 'flex-start';
+          chip.dataset.category = cat.slug;
+          chip.textContent = cat.name;
+          container.appendChild(chip);
+        });
+
+        container.querySelectorAll('.filter-chip').forEach(chip => {
+          chip.addEventListener('click', () => {
+            container.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            currentCategory = chip.dataset.category;
+            currentPage = 1;
+            loadStories();
+          });
+        });
+      }
     } catch (err) {
       console.error('Failed to load categories:', err);
     }

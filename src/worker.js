@@ -81,17 +81,30 @@ app.get('/naval-books', (c) => c.redirect('/books?category=naval', 301));
 app.get('/library', (c) => c.redirect('/books', 301));
 
 app.get('/books', async (c) => {
-  const url = new URL(c.req.url);
-  url.pathname = '/books.html';
-  const res = await fetch(url.toString(), c.req.raw);
-  return new Response(res.body, res);
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/books.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.redirect('/books.html');
+});
+
+app.get('/reader', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/reader.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.redirect('/reader.html');
 });
 
 app.get('/stories', async (c) => {
-  const url = new URL(c.req.url);
-  url.pathname = '/stories.html';
-  const res = await fetch(url.toString(), c.req.raw);
-  return new Response(res.body, res);
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/stories.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.redirect('/stories.html');
 });
 
 app.get('/stories/:slug', async (c, next) => {
@@ -99,11 +112,12 @@ app.get('/stories/:slug', async (c, next) => {
   if (slug.includes('.') || slug === 'all') {
     return next();
   }
-  // Serve public/story.html directly from local Origin/Assets
-  const url = new URL(c.req.url);
-  url.pathname = '/story.html';
-  const res = await fetch(url.toString(), c.req.raw);
-  return new Response(res.body, res);
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/story.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.redirect('/story.html');
 });
 
 // ── Global Security Headers ──

@@ -149,6 +149,19 @@
           booksGrid.appendChild(createBookCard(book));
         });
         renderPagination(data.totalPages);
+
+        // Auto open modal if ?id= or ?bookId= is in URL
+        const autoBookId = urlParams.get('id') || urlParams.get('bookId');
+        if (autoBookId) {
+          const matched = filteredBooks.find(b => b.id == autoBookId);
+          if (matched) {
+            openBookModal(matched);
+          } else {
+            api(`/api/books/${autoBookId}`).then(b => {
+              if (b && b.id) openBookModal(b);
+            }).catch(() => {});
+          }
+        }
       } else {
         libEmptyState.classList.remove('hidden');
       }
@@ -281,7 +294,7 @@
     // Connect CTAs
     const readBtn = document.getElementById('modalBtnRead');
     readBtn.onclick = () => {
-      window.location.href = `/reader?bookId=${book.id}`;
+      window.location.href = `/reader.html?bookId=${book.id}`;
     };
 
     const downloadBtn = document.getElementById('modalBtnDownload');

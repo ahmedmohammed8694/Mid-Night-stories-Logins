@@ -44,7 +44,7 @@
   async function init() {
     if (!bookId) {
       showToast('No book selected.', 'error');
-      setTimeout(() => location.href = '/library', 2000);
+      setTimeout(() => location.href = '/books', 2000);
       return;
     }
 
