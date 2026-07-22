@@ -129,10 +129,13 @@
       try {
         epubBook = ePub(arrayBuffer);
         
+        // Wait for EPUB to be parsed
+        await epubBook.opened;
+
         // Load table of contents
         epubBook.loaded.navigation.then(nav => {
           populateEpubTOC(nav.toc);
-        });
+        }).catch(() => {});
 
         // Prepare layout settings
         const flowType = layoutStyle === 'scroll' ? 'scrolled-doc' : 'paginated';
@@ -147,16 +150,39 @@
         try {
           const savedProgress = await api(`/api/books/${bookId}/progress`);
           if (savedProgress && savedProgress.location_cfi) {
-            epubRendition.display(savedProgress.location_cfi).catch(() => {
-              epubRendition.display();
+            await epubRendition.display(savedProgress.location_cfi).catch(async () => {
+              await epubRendition.display();
             });
             showToast('Resuming last read position...', 'info');
           } else {
-            epubRendition.display();
+            await epubRendition.display();
           }
         } catch (e) {
-          epubRendition.display();
+          await epubRendition.display();
         }
+
+        nextBtn.onclick = () => epubRendition.next();
+        prevBtn.onclick = () => epubRendition.prev();
+
+        // Track location and update progress slider
+        epubRendition.on("relocated", (location) => {
+          currentPositionCfi = location.start.cfi;
+          if (epubBook.locations && epubBook.locations.length > 0) {
+            currentProgressPercent = epubBook.locations.percentageFromCfi(currentPositionCfi) * 100;
+          } else {
+            currentProgressPercent = location.start.percentage * 100;
+          }
+          updateProgressUI(currentProgressPercent, `Location: ${location.start.displayed.page || '—'}`);
+        });
+
+        // Selection annotation highlight triggering
+        epubRendition.on("selected", (cfiRange, contents) => {
+          textSelectionRange = cfiRange;
+          showHighlightPicker(cfiRange, contents);
+        });
+
+        // Apply initial theme/fonts to rendition
+        applyRenditionComfortStyles();
       } catch (err) {
         console.warn('EPUB parsing failed, rendering text view:', err);
         renderTextDocument(arrayBuffer);
@@ -191,6 +217,24 @@
         <button class="toc-item active" style="text-align: left; padding: 8px 12px; background: none; border: none; color: var(--text-primary); font-size: 0.9rem; cursor: pointer;">📖 Full Document</button>
       `;
     }
+
+    // Scroll & next/prev button navigation controls
+    nextBtn.onclick = () => {
+      container.scrollBy({ top: container.clientHeight * 0.8, behavior: 'smooth' });
+    };
+    prevBtn.onclick = () => {
+      container.scrollBy({ top: -container.clientHeight * 0.8, behavior: 'smooth' });
+    };
+
+    container.onscroll = () => {
+      const maxScroll = container.scrollHeight - container.clientHeight;
+      if (maxScroll > 0) {
+        const pct = (container.scrollTop / maxScroll) * 100;
+        updateProgressUI(pct, `Progress: ${Math.round(pct)}%`);
+      }
+    };
+
+    updateProgressUI(100, 'Progress: 100%');
   }
 
       // Track location and update progress slider

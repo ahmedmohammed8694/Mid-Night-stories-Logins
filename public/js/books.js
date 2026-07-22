@@ -219,11 +219,12 @@
         
         ${book.description ? `<p style="font-size: 0.85rem; color: var(--text-tertiary); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.5; margin-bottom: 12px;">${escapeHtml(book.description)}</p>` : ''}
         
-        <div style="margin-top: auto;">
-          <button class="btn btn--primary btn--sm class-details-btn" style="width: 100%; display: flex; align-items: center; justify-content: center;">${readButtonText}</button>
-          ${progressHtml}
-          ${shelfSelectorHtml}
+        <div style="margin-top: auto; display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn btn--secondary btn--sm class-details-btn" style="flex: 1; min-width: 100px; display: flex; align-items: center; justify-content: center;">ℹ️ Details</button>
+          <button class="btn btn--primary btn--sm class-direct-read-btn" style="flex: 1; min-width: 100px; display: flex; align-items: center; justify-content: center;">${readButtonText}</button>
         </div>
+        ${progressHtml}
+        ${shelfSelectorHtml}
       </div>
     `;
 
@@ -234,6 +235,15 @@
         openBookModal(book);
       });
     });
+
+    // Bind event to direct read button
+    const directReadBtn = card.querySelector('.class-direct-read-btn');
+    if (directReadBtn) {
+      directReadBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = `/reader.html?bookId=${book.id}`;
+      });
+    }
 
     // Bind event to shelf select
     const select = card.querySelector('.shelf-status-select');
