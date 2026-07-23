@@ -19,7 +19,7 @@
   let currentFont = localStorage.getItem('reader_font') || 'serif';
   let fontSizePercent = parseInt(localStorage.getItem('reader_font_size')) || 100;
   let pageMargin = localStorage.getItem('reader_margin') || 'medium';
-  let layoutStyle = localStorage.getItem('reader_layout') || 'scroll'; // 'paginated' or 'scroll'
+  let layoutStyle = localStorage.getItem('reader_layout') || 'paginated'; // 'paginated' or 'scroll'
 
   // DOM elements
   const readerFrame = document.getElementById('readerFrame');
@@ -90,6 +90,20 @@
     token = localStorage.getItem('token');
   }
 
+  function handleKeyNavigation(e) {
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+      e.preventDefault();
+      if (epubRendition) epubRendition.next();
+      else if (pdfDoc && pdfCurrentPage < totalPdfPages) { pdfCurrentPage++; renderPdfPage(pdfCurrentPage); }
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault();
+      if (epubRendition) epubRendition.prev();
+      else if (pdfDoc && pdfCurrentPage > 1) { pdfCurrentPage--; renderPdfPage(pdfCurrentPage); }
+    }
+  }
+
   // IndexedDB Caching Layer using localForage
   async function getOrFetchBookFile() {
     const cacheKey = `book_file_${bookId}`;
@@ -138,13 +152,34 @@
           populateEpubTOC(nav.toc);
         }).catch(() => {});
 
-        // Prepare layout settings
-        const flowType = layoutStyle === 'scroll' ? 'scrolled-doc' : 'paginated';
+        // Prepare layout settings (paginated = single-page columns; scrolled-continuous = continuous scroll)
+        const flowType = layoutStyle === 'scroll' ? 'scrolled-continuous' : 'paginated';
         epubRendition = epubBook.renderTo("readerFrame", {
           width: "100%",
           height: "100%",
           flow: flowType,
+          manager: layoutStyle === 'scroll' ? 'continuous' : 'default',
           spread: "none"
+        });
+
+        // Attach wheel & key listeners inside iframe contents
+        epubRendition.hooks.content.register((contents) => {
+          const doc = contents.document;
+          
+          let wheelTimer = 0;
+          doc.addEventListener('wheel', (e) => {
+            const now = Date.now();
+            if (now - wheelTimer < 250) return;
+            if (e.deltaY > 15 || e.deltaX > 15) {
+              wheelTimer = now;
+              epubRendition.next();
+            } else if (e.deltaY < -15 || e.deltaX < -15) {
+              wheelTimer = now;
+              epubRendition.prev();
+            }
+          }, { passive: true });
+
+          doc.addEventListener('keydown', handleKeyNavigation);
         });
 
         // Load last reading position
@@ -670,19 +705,49 @@
   }
 
   // ── BOOKMARKS ──
+  async function handleAddBookmark() {
+    if (!token) {
+      showToast('Please log in to save bookmarks.', 'warning');
+      return;
+    }
+    const locText = locationsDisplay.textContent || 'Current Page';
+    let label = prompt('Enter a name for this bookmark:', `Location: ${locText}`);
+    if (label === null) return;
+    if (!label.trim()) label = `Bookmark (${locText})`;
+
+    try {
+      await api(`/api/books/${bookId}/bookmarks`, {
+        method: 'POST',
+        body: JSON.stringify({
+          location_cfi: currentPositionCfi || '1',
+          label: label.trim()
+        })
+      });
+      showToast('Bookmark saved successfully!', 'success');
+      loadUserBookmarks();
+    } catch (e) {
+      showToast('Failed to save bookmark.', 'error');
+    }
+  }
+
   async function loadUserBookmarks() {
     const listContainer = document.getElementById('bookmarksList');
     if (!token) {
-      listContainer.innerHTML = '<p style="color:var(--text-muted); text-align:center;">Log in to use bookmarks.</p>';
+      listContainer.innerHTML = '<div style="padding:20px 10px; text-align:center; color:var(--text-muted); font-size:0.9rem;">🔒 Please <strong>log in</strong> to save and view your personal bookmarks.</div>';
       return;
     }
 
     try {
       const bookmarks = await api(`/api/books/${bookId}/bookmarks`);
-      listContainer.innerHTML = '';
-      
+      listContainer.innerHTML = `
+        <button class="btn btn--primary btn--sm" id="sidebarAddBookmarkBtn" style="width: 100%; margin-bottom: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600;">🔖 + Add Bookmark for Current Page</button>
+      `;
+
+      const sidebarAddBtn = document.getElementById('sidebarAddBookmarkBtn');
+      if (sidebarAddBtn) sidebarAddBtn.onclick = handleAddBookmark;
+
       if (bookmarks.length === 0) {
-        listContainer.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No bookmarks saved.</p>';
+        listContainer.insertAdjacentHTML('beforeend', '<div style="padding: 16px 8px; text-align:center; color:var(--text-muted); font-size:0.85rem; line-height:1.5;">No bookmarks saved yet.<br>Click the button above or use 🔖 Bookmark in the top toolbar to mark your position.</div>');
         return;
       }
 
@@ -691,16 +756,16 @@
         div.className = 'highlight-item';
         div.style.borderLeftColor = 'var(--accent-emerald)';
         div.innerHTML = `
-          <div style="font-weight:600; cursor:pointer;" class="bookmark-jump" data-cfi="${bm.location_cfi}">${escapeHtml(bm.label)}</div>
+          <div style="font-weight:600; cursor:pointer;" class="bookmark-jump" data-cfi="${bm.location_cfi}">🔖 ${escapeHtml(bm.label)}</div>
           <div style="font-size:0.75rem; color:var(--text-tertiary); margin-top:4px;">${new Date(bm.created_at).toLocaleDateString()}</div>
-          <span class="highlight-item__delete" data-bookmark-id="${bm.id}">✕</span>
+          <span class="highlight-item__delete" data-bookmark-id="${bm.id}" title="Remove bookmark">✕</span>
         `;
 
         div.querySelector('.bookmark-jump').onclick = () => {
           if (pdfDoc) {
             pdfCurrentPage = parseInt(bm.location_cfi);
             renderPdfPage(pdfCurrentPage);
-          } else {
+          } else if (epubRendition) {
             epubRendition.display(bm.location_cfi);
           }
         };
@@ -720,47 +785,26 @@
   }
 
   // Add bookmark listener
-  addBookmarkBtn.onclick = async () => {
-    if (!token) {
-      showToast('Please log in to add bookmarks.', 'warning');
-      return;
-    }
-    if (!currentPositionCfi) return;
-
-    let label = prompt('Enter a label for this bookmark:', `Page location ${locationsDisplay.textContent}`);
-    if (label === null) return;
-    if (!label.trim()) label = `Location bookmark`;
-
-    try {
-      await api(`/api/books/${bookId}/bookmarks`, {
-        method: 'POST',
-        body: JSON.stringify({
-          location_cfi: currentPositionCfi,
-          label: label.trim()
-        })
-      });
-      showToast('Bookmark saved!', 'success');
-      loadUserBookmarks();
-    } catch (e) {
-      showToast('Failed to save bookmark.', 'error');
-    }
-  };
+  addBookmarkBtn.onclick = handleAddBookmark;
 
   // ── HIGHLIGHTS & NOTES ──
   async function loadUserHighlights() {
-    const listContainer = document.getElementById('tab-highlights');
+    const listContent = document.getElementById('highlightsList');
     if (!token) {
-      listContainer.innerHTML = '<p style="color:var(--text-muted); text-align:center;">Log in to use highlights.</p>';
+      listContent.innerHTML = '<div style="padding:20px 10px; text-align:center; color:var(--text-muted); font-size:0.9rem;">🔒 Please <strong>log in</strong> to create and save text highlights and notes.</div>';
       return;
     }
 
     try {
       const highlights = await api(`/api/books/${bookId}/highlights`);
-      const listContent = document.getElementById('highlightsList');
-      listContent.innerHTML = '';
+      listContent.innerHTML = `
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-card); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 16px; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; text-align: left;">
+          💡 <strong>How to Highlight & Take Notes:</strong><br>Select any text or sentence inside the book using your mouse or finger. A color picker menu will pop up automatically to save color highlights or personal notes!
+        </div>
+      `;
 
       if (highlights.length === 0) {
-        listContent.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No highlights created yet.</p>';
+        listContent.insertAdjacentHTML('beforeend', '<div style="padding: 16px 8px; text-align:center; color:var(--text-muted); font-size:0.85rem; line-height:1.5;">No highlights created yet.<br>Select any text in the book to create your first highlight!</div>');
         return;
       }
 

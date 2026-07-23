@@ -79,62 +79,58 @@
           </div>
         </section>
 
-        <!-- Library Layout (2-Column Grid) -->
-        <div class="library-layout">
-          
-        <!-- Horizontal Top Filter Bar for Stories (Side-by-Side Layout) -->
-        <div class="filter-bar" style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 28px; box-shadow: var(--shadow-sm); backdrop-filter: blur(12px);">
-          <div class="filter-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: end;">
+        <!-- Top Filter Bar (Side-by-Side Filters) -->
+        <div class="top-filter-bar" style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 20px 24px; margin-top: 32px; margin-bottom: 32px; backdrop-filter: blur(12px); box-shadow: var(--shadow-md);">
+          <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; width: 100%;">
             
-            <!-- Search Stories -->
-            <div class="filter-field" style="grid-column: span 2;">
-              <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 6px;">🔍 Search Stories</label>
-              <div class="search-box" style="width: 100%;">
-                <span class="search-box__icon">🔍</span>
-                <input type="text" class="search-box__input" id="searchInput" placeholder="Search by title, body, or keywords...">
+            <!-- Search bar -->
+            <div style="flex: 2; min-width: 260px;">
+              <label for="searchInput" style="display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">🔍 Search Stories</label>
+              <div class="search-box" style="width: 100%; height: 44px; display: flex; align-items: center; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-md); padding: 0 14px;">
+                <span style="margin-right: 10px; opacity: 0.7; font-size: 1rem;">🔍</span>
+                <input type="text" class="search-box__input" id="searchInput" placeholder="Title, body, keywords..." style="width: 100%; background: transparent; border: none; outline: none; color: var(--text-primary); font-size: 0.95rem;">
               </div>
             </div>
 
-            <!-- Category Filter -->
-            <div class="filter-field">
-              <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 6px;">🏷️ Category</label>
-              <select class="sort-select" id="categorySelect" style="width: 100%; height: 42px; padding: 0 12px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; cursor: pointer;">
-                <option value="all">All Categories</option>
-              </select>
-            </div>
-
-            <!-- Sort Order Filter -->
-            <div class="filter-field">
-              <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 6px;">⚡ Sort Order</label>
-              <select class="sort-select" id="sortSelect" style="width: 100%; height: 42px; padding: 0 12px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; cursor: pointer;">
+            <!-- Sort dropdown -->
+            <div style="flex: 1; min-width: 180px;">
+              <label for="sortSelect" style="display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">🔃 Sort Order</label>
+              <select class="sort-select" id="sortSelect" style="width: 100%; height: 44px; padding: 0 14px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem; cursor: pointer;">
                 <option value="newest">Newest First</option>
                 <option value="liked">Most Liked</option>
                 <option value="discussed">Most Discussed</option>
               </select>
             </div>
 
+            <!-- Category Filters Dropdown -->
+            <div style="flex: 1; min-width: 200px;">
+              <label for="categorySelect" style="display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px;">📁 Category</label>
+              <select class="sort-select" id="categorySelect" style="width: 100%; height: 44px; padding: 0 14px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.95rem; cursor: pointer;">
+                <option value="all">All Categories</option>
+              </select>
+            </div>
+
           </div>
         </div>
 
-          <!-- Main Grid -->
-          <div class="library-main">
-            <div class="story-grid" id="storyGrid">
-              <div class="card skeleton skeleton--card"></div>
-              <div class="card skeleton skeleton--card"></div>
-              <div class="card skeleton skeleton--card"></div>
-            </div>
-
-            <!-- Empty State -->
-            <div class="empty-state hidden" id="emptyState">
-              <div class="empty-state__icon">📝</div>
-              <h3 class="empty-state__title">No stories found</h3>
-              <p class="empty-state__description">Try adjusting your search query or selecting a different category.</p>
-              <a href="/submit" class="btn btn--primary mt-24">Share Your Story</a>
-            </div>
-
-            <!-- Pagination -->
-            <div class="pagination hidden" id="pagination"></div>
+        <!-- Main Stories Content -->
+        <div class="library-main">
+          <div class="story-grid" id="storyGrid">
+            <div class="card skeleton skeleton--card"></div>
+            <div class="card skeleton skeleton--card"></div>
+            <div class="card skeleton skeleton--card"></div>
           </div>
+
+          <!-- Empty State -->
+          <div class="empty-state hidden" id="emptyState">
+            <div class="empty-state__icon">📝</div>
+            <h3 class="empty-state__title">No stories found</h3>
+            <p class="empty-state__description">Try adjusting your search query or selecting a different category.</p>
+            <a href="/submit" class="btn btn--primary mt-24">Share Your Story</a>
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination hidden" id="pagination"></div>
         </div>
       </div>
     </main>

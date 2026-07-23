@@ -52,50 +52,41 @@
   // Load and render category filters
   async function loadCategoryFilters() {
     try {
-      const selectedChannelEl = document.getElementById('channelSelect');
-      if (selectedChannelEl) channel = selectedChannelEl.value;
-
-      const url = channel && channel !== 'all' ? `/api/categories?channel=${channel}` : '/api/categories';
+      const url = channel ? `/api/categories?channel=${channel}` : '/api/categories';
       const categories = await api(url);
-
-      const libCatSelect = document.getElementById('libCategorySelect');
-      if (libCatSelect) {
-        libCatSelect.innerHTML = `<option value="all">All Categories</option>` +
-          categories.map(cat => `<option value="${cat.slug}" ${presetCategory === cat.slug ? 'selected' : ''}>${escapeHtml(cat.name)}</option>`).join('');
-      }
-
-      if (libCategoryFilters) {
-        libCategoryFilters.innerHTML = `
-          <label class="checkbox-label" style="margin-bottom: 8px;">
-            <input type="radio" name="lib_category" class="category-radio" value="all" checked style="cursor:pointer;">
-            <span>All Categories</span>
-          </label>
+      libCategoryFilters.innerHTML = `
+        <label class="checkbox-label" style="margin-bottom: 8px;">
+          <input type="radio" name="lib_category" class="category-radio" value="all" checked style="cursor:pointer;">
+          <span>All Categories</span>
+        </label>
+      `;
+      
+      categories.forEach(cat => {
+        const label = document.createElement('label');
+        label.className = 'checkbox-label';
+        label.style.marginBottom = '6px';
+        label.innerHTML = `
+          <input type="radio" name="lib_category" class="category-radio" value="${cat.slug}" ${presetCategory === cat.slug ? 'checked' : ''} style="cursor:pointer;">
+          <span>${escapeHtml(cat.name)}</span>
         `;
-        categories.forEach(cat => {
-          const label = document.createElement('label');
-          label.className = 'checkbox-label';
-          label.style.marginBottom = '6px';
-          label.innerHTML = `
-            <input type="radio" name="lib_category" class="category-radio" value="${cat.slug}" ${presetCategory === cat.slug ? 'checked' : ''} style="cursor:pointer;">
-            <span>${escapeHtml(cat.name)}</span>
-          `;
-          libCategoryFilters.appendChild(label);
-        });
+        libCategoryFilters.appendChild(label);
+      });
 
-        document.querySelectorAll('.category-radio').forEach(radio => {
-          radio.addEventListener('change', () => {
-            currentPage = 1;
-            loadBooks();
-          });
+      // Bind events to radio buttons
+      document.querySelectorAll('.category-radio').forEach(radio => {
+        radio.addEventListener('change', () => {
+          currentPage = 1;
+          loadBooks();
         });
-      }
+      });
     } catch (err) {
-      console.warn('Category filter error:', err);
+      libCategoryFilters.innerHTML = `<p style="color:var(--accent-rose);">Failed to load genres.</p>`;
     }
   }
 
   // Fetch books from server
   async function loadBooks() {
+    // Show skeletons
     booksGrid.innerHTML = `
       <div class="card skeleton skeleton--card"></div>
       <div class="card skeleton skeleton--card"></div>
@@ -104,31 +95,18 @@
     libPagination.innerHTML = '';
     libEmptyState.classList.add('hidden');
 
-    const search = libSearchInput ? libSearchInput.value.trim() : '';
-    const sort = libSortSelect ? libSortSelect.value : 'newest';
+    const search = libSearchInput.value.trim();
+    const sort = libSortSelect.value;
     const shelf = token && shelfSelect ? shelfSelect.value : '';
     
-    // Channel select
-    const selectedChannelEl = document.getElementById('channelSelect');
-    if (selectedChannelEl && selectedChannelEl.value !== 'all') channel = selectedChannelEl.value;
+    // Selected category
+    const selectedCatEl = document.querySelector('.category-radio:checked');
+    const category = selectedCatEl ? selectedCatEl.value : 'all';
 
-    // Category select or radio
-    const selectedCatSelect = document.getElementById('libCategorySelect');
-    const selectedCatRadio = document.querySelector('.category-radio:checked');
-    const category = selectedCatSelect ? selectedCatSelect.value : (selectedCatRadio ? selectedCatRadio.value : 'all');
+    // Parse languages
+    const activeLanguages = Array.from(document.querySelectorAll('.lang-filter:checked')).map(cb => cb.value);
 
-    // Language select or checkboxes
-    const selectedLangSelect = document.getElementById('langSelect');
-    const activeLanguages = selectedLangSelect && selectedLangSelect.value !== 'all'
-      ? [selectedLangSelect.value]
-      : Array.from(document.querySelectorAll('.lang-filter:checked')).map(cb => cb.value);
-
-    // Type select or checkboxes
-    const selectedTypeSelect = document.getElementById('typeSelect');
-    const activeTypes = selectedTypeSelect && selectedTypeSelect.value !== 'all'
-      ? [selectedTypeSelect.value]
-      : Array.from(document.querySelectorAll('.type-filter:checked')).map(cb => cb.value);
-
+    // Build URL query params
     const params = new URLSearchParams({
       page: currentPage,
       limit,
@@ -143,6 +121,7 @@
     try {
       const data = await api(`/api/books?${params.toString()}`);
       
+      // Client-side language filtering (as SQLite SQL contains generic languages)
       let filteredBooks = data.books || [];
       if (activeLanguages.length > 0) {
         filteredBooks = filteredBooks.filter(book => {
@@ -154,6 +133,8 @@
         });
       }
 
+      // Filter by type too
+      const activeTypes = Array.from(document.querySelectorAll('.type-filter:checked')).map(cb => cb.value);
       if (activeTypes.length > 0) {
         filteredBooks = filteredBooks.filter(book => activeTypes.includes(book.file_type));
       }
@@ -457,40 +438,6 @@
           currentPreviewPage++;
           updatePreviewPage();
         }
-      });
-    }
-
-    // Filter controls event listeners
-    const channelSel = document.getElementById('channelSelect');
-    if (channelSel) {
-      channelSel.addEventListener('change', () => {
-        channel = channelSel.value;
-        currentPage = 1;
-        loadCategoryFilters().then(() => loadBooks());
-      });
-    }
-
-    const catSel = document.getElementById('libCategorySelect');
-    if (catSel) {
-      catSel.addEventListener('change', () => {
-        currentPage = 1;
-        loadBooks();
-      });
-    }
-
-    const langSel = document.getElementById('langSelect');
-    if (langSel) {
-      langSel.addEventListener('change', () => {
-        currentPage = 1;
-        loadBooks();
-      });
-    }
-
-    const typeSel = document.getElementById('typeSelect');
-    if (typeSel) {
-      typeSel.addEventListener('change', () => {
-        currentPage = 1;
-        loadBooks();
       });
     }
 
