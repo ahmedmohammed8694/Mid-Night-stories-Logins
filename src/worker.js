@@ -692,16 +692,16 @@ app.get('/api/stories/:id', optionalUser, async (c) => {
       FROM stories s
       LEFT JOIN users u ON s.user_id = u.id
       LEFT JOIN categories c ON s.category_id = c.id
-      WHERE s.id = ? AND (s.status = 'approved' OR (s.user_id IS NOT NULL AND s.user_id = ?))
-    `).bind(numId, user ? user.id : -1).first();
+      WHERE s.id = ? AND s.status != 'rejected'
+    `).bind(numId).first();
   } else {
     story = await db.prepare(`
       SELECT s.*, u.full_name as author_name, u.profile_pic as author_pic, u.user_id as author_user_id, c.name as category_name
       FROM stories s
       LEFT JOIN users u ON s.user_id = u.id
       LEFT JOIN categories c ON s.category_id = c.id
-      WHERE (s.submitter_token = ? OR s.id = ?) AND (s.status = 'approved' OR (s.user_id IS NOT NULL AND s.user_id = ?))
-    `).bind(idParam, idParam, user ? user.id : -1).first();
+      WHERE (s.submitter_token = ? OR s.id = ?) AND s.status != 'rejected'
+    `).bind(idParam, idParam).first();
   }
 
   if (!story) return c.json({ error: 'Story not found' }, 404);

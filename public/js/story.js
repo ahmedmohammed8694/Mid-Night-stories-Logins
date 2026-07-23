@@ -41,6 +41,20 @@
     const content = document.getElementById('storyContent');
     content.classList.remove('hidden');
 
+    // Show pending moderation banner if story is pending approval
+    let pendingNotice = document.getElementById('pendingStoryNotice');
+    if (story.status === 'pending') {
+      if (!pendingNotice) {
+        pendingNotice = document.createElement('div');
+        pendingNotice.id = 'pendingStoryNotice';
+        pendingNotice.style.cssText = 'background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #f59e0b; padding: 12px 16px; border-radius: var(--radius-md); margin-bottom: 20px; font-weight: 500; font-size: 0.95rem; text-align: center;';
+        pendingNotice.innerHTML = '⏳ <strong>Moderation Notice:</strong> This story submission is currently awaiting admin review.';
+        content.parentNode.insertBefore(pendingNotice, content);
+      }
+    } else if (pendingNotice) {
+      pendingNotice.remove();
+    }
+
     // Update page title
     document.title = `${story.title || 'Untitled Story'} — Midnight Stories`;
 
