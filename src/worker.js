@@ -120,17 +120,41 @@ app.get('/stories/:slug', async (c, next) => {
   return c.redirect('/story.html');
 });
 
-// ── Global Security Headers ──
+// ── Global Security & Privacy Headers ──
 app.use('*', async (c, next) => {
   await next();
   c.res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
   c.res.headers.set('X-Content-Type-Options', 'nosniff');
-  c.res.headers.set('X-Frame-Options', 'DENY');
+  c.res.headers.set('X-Frame-Options', 'SAMEORIGIN');
   c.res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   c.res.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss: https:; frame-src 'self' https://challenges.cloudflare.com;"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss: https:; frame-src 'self' https://challenges.cloudflare.com;"
   );
+});
+
+// Serve default book cover image asset if missing from storage
+app.get('/images/default-cover.png', (c) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450" viewBox="0 0 300 450">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#c084fc"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="450" fill="url(#bg)"/>
+  <rect x="20" y="20" width="260" height="410" rx="8" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+  <path d="M150 140c-25 0-45-20-45-45 0-2.5.2-5 .7-7.5C118 97 133 107 150 107s32-10 44.3-19.5c.5 2.5.7 5 .7 7.5 0 25-20 45-45 45z" fill="url(#accent)"/>
+  <text x="150" y="240" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="700" fill="#f8fafc" text-anchor="middle">Midnight Stories</text>
+  <text x="150" y="270" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">Book Collection</text>
+  <rect x="100" y="320" width="100" height="2" fill="url(#accent)"/>
+</svg>`;
+  return c.text(svg, 200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=31536000' });
 });
 
 // ── In-Memory Rate Limiting ──
