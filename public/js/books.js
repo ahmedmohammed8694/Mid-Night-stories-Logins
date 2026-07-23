@@ -469,6 +469,50 @@
     if (viewToggleBtn) {
       viewToggleBtn.addEventListener('click', toggleView);
     }
+
+    // Bind instant change listeners on languages, file types, and channel radios
+    document.querySelectorAll('.lang-filter, .type-filter, .channel-radio').forEach(el => {
+      el.addEventListener('change', () => {
+        if (el.classList.contains('channel-radio')) {
+          channel = el.value === 'all' ? '' : el.value;
+          loadCategoryFilters();
+        }
+        currentPage = 1;
+        loadBooks();
+      });
+    });
+
+    // Apply Filters button
+    const btnApply = document.getElementById('btnApplyBookFilters');
+    if (btnApply) {
+      btnApply.addEventListener('click', () => {
+        currentPage = 1;
+        loadBooks();
+      });
+    }
+
+    // Reset Filters button
+    const btnReset = document.getElementById('btnResetBookFilters');
+    if (btnReset) {
+      btnReset.addEventListener('click', () => {
+        document.querySelectorAll('.lang-filter').forEach(cb => cb.checked = (cb.value === 'en'));
+        document.querySelectorAll('.type-filter').forEach(cb => cb.checked = true);
+        
+        const allCatRadio = document.querySelector('.category-radio[value="all"]');
+        if (allCatRadio) allCatRadio.checked = true;
+
+        const allChanRadio = document.querySelector('.channel-radio[value="all"]');
+        if (allChanRadio) allChanRadio.checked = true;
+        channel = '';
+
+        if (libSearchInput) libSearchInput.value = '';
+        if (libSortSelect) libSortSelect.value = 'newest';
+        if (shelfSelect) shelfSelect.value = '';
+
+        currentPage = 1;
+        loadBooks();
+      });
+    }
   });
 
   // Render pagination controls

@@ -6,12 +6,12 @@
   // ── Get Story ID from URL ──
   function getStoryId() {
     const path = window.location.pathname;
-    const match = path.match(/\/stories\/.*-(\d+)$/);
+    const match = path.match(/\/stories\/(?:.*-)?(\d+)$/);
     if (match) return match[1];
     
-    // Fallback to legacy ?id=
+    // Fallback to legacy query parameters
     const params = new URLSearchParams(window.location.search);
-    return params.get('id');
+    return params.get('id') || params.get('storyId') || params.get('token') || params.get('slug');
   }
 
   // ── Load Story ──

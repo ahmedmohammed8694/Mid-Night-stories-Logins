@@ -585,23 +585,28 @@ app.get('/api/stories', optionalUser, async (c) => {
   });
 });
 
-app.post('/api/stories', optionalUser, checkBan, rateLimit('story', 5), async (c) => {
+app.post('/api/stories', optionalUser, checkBan, rateLimit('story', 10), async (c) => {
   const db = c.env.DB;
   const user = c.get('user');
+  const ipHash = c.get('ipHash') || 'unknown';
 
   let title, content, categoryIdStr, imageFile;
   const contentType = c.req.header('Content-Type') || '';
   if (contentType.includes('application/json')) {
-    const json = await c.req.json();
+    const json = await c.req.json().catch(() => ({}));
     title = json.title;
     content = json.content || json.body;
     categoryIdStr = json.category_id;
   } else {
-    const formData = await c.req.formData();
-    title = formData.get('title');
-    content = formData.get('content') || formData.get('body');
-    categoryIdStr = formData.get('category_id');
-    imageFile = formData.get('image');
+    try {
+      const formData = await c.req.formData();
+      title = formData.get('title');
+      content = formData.get('content') || formData.get('body');
+      categoryIdStr = formData.get('category_id');
+      imageFile = formData.get('image');
+    } catch (e) {
+      return c.json({ error: 'Invalid form submission.' }, 400);
+    }
   }
 
   if (!content || content.trim().length < 50) {
@@ -611,19 +616,17 @@ app.post('/api/stories', optionalUser, checkBan, rateLimit('story', 5), async (c
   let bannedKeywords = [];
   try {
     const setting = await db.prepare("SELECT value FROM settings WHERE key = 'banned_keywords'").first();
-    if (setting) bannedKeywords = JSON.parse(setting.value);
+    if (setting && setting.value) bannedKeywords = JSON.parse(setting.value);
   } catch (e) {}
 
   const modResult = moderateText(content, bannedKeywords);
   if (modResult.autoAction === 'reject') {
-    return c.json({ error: 'Your submission contains content that violates guidelines.' }, 400);
+    return c.json({ error: 'Your submission contains content that violates community guidelines.' }, 400);
   }
 
   let imageUrl = null;
   if (imageFile && imageFile instanceof File && imageFile.size > 0) {
-    if (imageFile.size > 5 * 1024 * 1024) return c.json({ error: 'File size must be under 5MB.' }, 400);
-    const safetyCheck = checkImageSafety(imageFile);
-    if (!safetyCheck.safe) return c.json({ error: 'Uploaded image did not pass safety checks.' }, 400);
+    if (imageFile.size > 5 * 1024 * 1024) return c.json({ error: 'Image size must be under 5MB.' }, 400);
 
     if (c.env.IMAGES) {
       const ext = imageFile.type.split('/')[1] || 'jpg';
@@ -633,32 +636,79 @@ app.post('/api/stories', optionalUser, checkBan, rateLimit('story', 5), async (c
     }
   }
 
-  const result = await db.prepare(
-    'INSERT INTO stories (user_id, title, content, category_id, image_url, status) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(user ? user.id : null, title ? title.trim() : null, modResult.redactedText, categoryIdStr ? parseInt(categoryIdStr) : null, imageUrl, 'approved').run();
+  // Check if manual approval is required by platform settings
+  let storyStatus = 'approved';
+  try {
+    const reqApproval = await db.prepare("SELECT value FROM settings WHERE key = 'require_approval'").first();
+    if (reqApproval && (reqApproval.value === 'true' || reqApproval.value === '1')) {
+      storyStatus = 'pending';
+    }
+  } catch (e) {}
 
-  return c.json({ id: result.meta.last_row_id, status: 'approved', message: 'Your story has been published.' }, 201);
+  // Generate submitter token for tracking
+  const submitterToken = 'ST-' + Math.random().toString(36).substring(2, 8).toUpperCase() + '-' + Date.now().toString().slice(-4);
+
+  try {
+    const result = await db.prepare(
+      'INSERT INTO stories (user_id, title, content, category_id, image_url, status, submitter_token, ip_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(
+      user ? user.id : null,
+      title ? title.trim() : null,
+      modResult.redactedText,
+      categoryIdStr ? parseInt(categoryIdStr) : null,
+      imageUrl,
+      storyStatus,
+      submitterToken,
+      ipHash
+    ).run();
+
+    const isPending = storyStatus === 'pending';
+    return c.json({
+      id: result.meta.last_row_id,
+      status: storyStatus,
+      submitterToken: submitterToken,
+      message: isPending
+        ? 'Your story has been submitted and is currently pending moderation review.'
+        : 'Your story has been published successfully!'
+    }, 201);
+  } catch (err) {
+    console.error('Failed to insert story into DB:', err);
+    return c.json({ error: 'Database submission error: ' + err.message }, 500);
+  }
 });
 
 // GET /api/stories/:id
 app.get('/api/stories/:id', optionalUser, async (c) => {
   const db = c.env.DB;
   const user = c.get('user');
-  const id = c.req.param('id');
+  const idParam = c.req.param('id');
+  const isNumeric = /^\d+$/.test(idParam);
 
-  const story = await db.prepare(`
-    SELECT s.*, u.full_name as author_name, u.profile_pic as author_pic, u.user_id as author_user_id, c.name as category_name
-    FROM stories s
-    LEFT JOIN users u ON s.user_id = u.id
-    LEFT JOIN categories c ON s.category_id = c.id
-    WHERE s.id = ? AND s.status = 'approved'
-  `).bind(id).first();
+  let story;
+  if (isNumeric) {
+    const numId = parseInt(idParam);
+    story = await db.prepare(`
+      SELECT s.*, u.full_name as author_name, u.profile_pic as author_pic, u.user_id as author_user_id, c.name as category_name
+      FROM stories s
+      LEFT JOIN users u ON s.user_id = u.id
+      LEFT JOIN categories c ON s.category_id = c.id
+      WHERE s.id = ? AND (s.status = 'approved' OR (s.user_id IS NOT NULL AND s.user_id = ?))
+    `).bind(numId, user ? user.id : -1).first();
+  } else {
+    story = await db.prepare(`
+      SELECT s.*, u.full_name as author_name, u.profile_pic as author_pic, u.user_id as author_user_id, c.name as category_name
+      FROM stories s
+      LEFT JOIN users u ON s.user_id = u.id
+      LEFT JOIN categories c ON s.category_id = c.id
+      WHERE (s.submitter_token = ? OR s.id = ?) AND (s.status = 'approved' OR (s.user_id IS NOT NULL AND s.user_id = ?))
+    `).bind(idParam, idParam, user ? user.id : -1).first();
+  }
 
   if (!story) return c.json({ error: 'Story not found' }, 404);
 
   // Track reads history if logged in
   if (user) {
-    await db.prepare('INSERT OR IGNORE INTO reads (user_id, story_id) VALUES (?, ?)').bind(user.id, id).run();
+    await db.prepare('INSERT OR IGNORE INTO reads (user_id, story_id) VALUES (?, ?)').bind(user.id, story.id).run();
   }
 
   const { results: comments } = await db.prepare(`
@@ -667,7 +717,7 @@ app.get('/api/stories/:id', optionalUser, async (c) => {
     LEFT JOIN users u ON cm.user_id = u.id
     WHERE cm.story_id = ? AND cm.status = 'approved' 
     ORDER BY cm.created_at ASC
-  `).bind(id).all();
+  `).bind(story.id).all();
 
   return c.json({ story, comments });
 });

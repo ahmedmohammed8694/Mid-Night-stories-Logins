@@ -2853,24 +2853,37 @@ img {
   color: var(--ms-accent) !important;
 }
 
-/* Crisis Check Modal Redesign */
+/* Modal Base & Overlays */
 .modal-overlay {
-  background-color: rgba(11, 14, 26, 0.8) !important;
-  backdrop-filter: blur(4px) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+  background-color: rgba(11, 14, 26, 0.85);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal {
-  background: var(--ms-surface) !important;
-  border: 1px solid var(--ms-border) !important;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  padding: 32px;
+  max-width: 540px;
+  width: 90%;
+  animation: modalEnter 0.3s var(--transition-bounce);
+}
+
+/* Large Full-Screen Admin Modals */
+.modal--lg,
+#reportDetailsModal .modal,
+#adminBookReviewModal .modal,
+#adminStoryReviewModal .modal {
+  max-width: 96vw !important;
+  width: 96vw !important;
+  max-height: 94vh !important;
+  height: 94vh !important;
+  padding: 24px !important;
   border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-xl) !important;
-  padding: 32px !important;
-  max-width: 500px !important;
-  width: 90% !important;
-  animation: modalEnter 0.3s var(--transition-bounce) !important;
 }
 
 @keyframes modalEnter {
