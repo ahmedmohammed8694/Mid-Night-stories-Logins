@@ -159,7 +159,14 @@ app.get('/robots.txt', (c) => {
 });
 
 app.get('/naval-books', (c) => c.redirect('/books?category=naval', 301));
-app.get('/library', (c) => c.redirect('/books', 301));
+app.get('/library', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/library.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.redirect('/library.html');
+});
 
 app.get('/books', async (c) => {
   if (c.env.ASSETS) {
@@ -201,6 +208,15 @@ app.get('/stories/:slug', async (c, next) => {
   return c.redirect('/story.html');
 });
 
+app.get('/story', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/story.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.redirect('/story.html');
+});
+
 // ── Global Security & Privacy Headers ──
 app.use('*', async (c, next) => {
   await next();
@@ -208,19 +224,15 @@ app.use('*', async (c, next) => {
     const contentType = c.res.headers.get('Content-Type') || '';
     const newHeaders = new Headers(c.res.headers);
     
-    // Always apply these security headers to all responses
+    // Apply all security headers to every response
     newHeaders.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     newHeaders.set('X-Content-Type-Options', 'nosniff');
     newHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    
-    // Apply document-specific security headers to HTML pages
-    if (contentType.includes('text/html')) {
-      newHeaders.set('X-Frame-Options', 'SAMEORIGIN');
-      newHeaders.set(
-        'Content-Security-Policy',
-        "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss: https:; frame-src 'self' https://challenges.cloudflare.com;"
-      );
-    }
+    newHeaders.set('X-Frame-Options', 'SAMEORIGIN');
+    newHeaders.set(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss: https:; frame-src 'self' https://challenges.cloudflare.com;"
+    );
     
     // Reconstruct response with modified headers (bypassing immutability)
     c.res = new Response(c.res.body, {
