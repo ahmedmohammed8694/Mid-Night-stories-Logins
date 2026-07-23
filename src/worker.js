@@ -77,17 +77,85 @@ const app = new Hono();
 
 // ── Navigation Redirects & Clean Slug Routing ──
 app.get('/education', (c) => c.redirect('/books?category=education', 301));
-app.get('/sitemap.xml', async (c) => {
-  if (c.env.ASSETS) {
-    const url = new URL(c.req.url);
-    url.pathname = '/sitemap.xml';
-    const res = await c.env.ASSETS.fetch(url);
-    return new Response(res.body, {
-      status: res.status,
-      headers: { ...Object.fromEntries(res.headers.entries()), 'Content-Type': 'application/xml; charset=utf-8' }
-    });
-  }
-  return c.redirect('/sitemap.xml');
+app.get('/sitemap.xml', (c) => {
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://midnightstories.dpdns.org/</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://midnightstories.dpdns.org/stories</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://midnightstories.dpdns.org/books</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://midnightstories.dpdns.org/resources</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://midnightstories.dpdns.org/submit</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://midnightstories.dpdns.org/upload-book</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://midnightstories.dpdns.org/about</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://midnightstories.dpdns.org/guidelines</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://midnightstories.dpdns.org/terms</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://midnightstories.dpdns.org/privacy</loc>
+    <lastmod>2026-07-24</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+</urlset>`;
+  return new Response(sitemap, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=86400',
+    },
+  });
+});
+
+app.get('/robots.txt', (c) => {
+  const robots = `User-agent: *\nDisallow: /admin\nDisallow: /admin.html\n\nSitemap: https://midnightstories.dpdns.org/sitemap.xml\n`;
+  return new Response(robots, {
+    status: 200,
+    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400' },
+  });
 });
 
 app.get('/naval-books', (c) => c.redirect('/books?category=naval', 301));
@@ -136,14 +204,31 @@ app.get('/stories/:slug', async (c, next) => {
 // ── Global Security & Privacy Headers ──
 app.use('*', async (c, next) => {
   await next();
-  c.res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  c.res.headers.set('X-Content-Type-Options', 'nosniff');
-  c.res.headers.set('X-Frame-Options', 'SAMEORIGIN');
-  c.res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  c.res.headers.set(
-    'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss: https:; frame-src 'self' https://challenges.cloudflare.com;"
-  );
+  if (c.res) {
+    const contentType = c.res.headers.get('Content-Type') || '';
+    const newHeaders = new Headers(c.res.headers);
+    
+    // Always apply these security headers to all responses
+    newHeaders.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    newHeaders.set('X-Content-Type-Options', 'nosniff');
+    newHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    
+    // Apply document-specific security headers to HTML pages
+    if (contentType.includes('text/html')) {
+      newHeaders.set('X-Frame-Options', 'SAMEORIGIN');
+      newHeaders.set(
+        'Content-Security-Policy',
+        "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss: https:; frame-src 'self' https://challenges.cloudflare.com;"
+      );
+    }
+    
+    // Reconstruct response with modified headers (bypassing immutability)
+    c.res = new Response(c.res.body, {
+      status: c.res.status,
+      statusText: c.res.statusText,
+      headers: newHeaders
+    });
+  }
 });
 
 // Serve default book cover image asset if missing from storage
@@ -3103,6 +3188,13 @@ app.post('/api/admin/submissions/:id/reject', requireAdmin, async (c) => {
   `).bind(sub.user_id, submissionId).run();
 
   return c.json({ success: true, message: 'Submission rejected.' });
+});
+
+app.notFound(async (c) => {
+  if (c.env.ASSETS) {
+    return c.env.ASSETS.fetch(c.req.raw);
+  }
+  return c.text('Not Found', 404);
 });
 
 export default app;

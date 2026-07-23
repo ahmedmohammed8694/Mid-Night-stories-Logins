@@ -943,7 +943,7 @@
         }
 
         container.innerHTML = data.stories.map(s => `
-          <div class="story-item" style="cursor: pointer;" onclick="window.location.href='/story.html?id=${s.id}'">
+          <div class="story-item" style="cursor: pointer;" onclick="window.location.href='/stories/story-${s.id}'">
             <h3 style="font-family: 'Fraunces', serif;">${s.title || 'Untitled Story'}</h3>
             <p style="color: var(--text-secondary); margin: 8px 0;">${s.content.substring(0, 150)}...</p>
             <div style="font-size: 0.85rem; color: var(--text-tertiary);">
@@ -973,7 +973,7 @@
 
         container.innerHTML = comments.map(c => `
           <div class="comment-card" id="comment-card-${c.id}">
-            <h4>On story: <a href="/story.html?id=${c.story_id}">${c.story_title || 'Midnight Story'}</a></h4>
+            <h4>On story: <a href="/stories/story-${c.story_id}">${c.story_title || 'Midnight Story'}</a></h4>
             <p style="color: var(--text-secondary); line-height: 1.5;">"${c.body}"</p>
             <div class="comment-meta">
               <span>Posted: ${new Date(c.created_at).toLocaleString()}</span>
@@ -1002,7 +1002,7 @@
         }
 
         container.innerHTML = data.stories.map(s => `
-          <div class="story-item" style="cursor: pointer;" onclick="window.location.href='/story.html?id=${s.id}'">
+          <div class="story-item" style="cursor: pointer;" onclick="window.location.href='/stories/story-${s.id}'">
             <h3 style="font-family: 'Fraunces', serif;">${s.title || 'Untitled Story'}</h3>
             <p style="color: var(--text-secondary); margin: 8px 0;">${s.content.substring(0, 150)}...</p>
             <div style="font-size: 0.85rem; color: var(--text-tertiary);">

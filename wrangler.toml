@@ -8,6 +8,8 @@ compatibility_flags = ["nodejs_compat"]
 # ── Serve static files from public/ directory automatically ──
 [assets]
 directory = "public"
+binding = "ASSETS"
+run_worker_first = true
 
 # ── Cloudflare D1 SQLite Database ──
 [[d1_databases]]

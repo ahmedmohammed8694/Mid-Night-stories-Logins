@@ -651,7 +651,7 @@ async function handleNotifClick(n) {
   } catch (err) { console.error(err); }
 
   if (n.type === 'like' || n.type === 'comment') {
-    window.location.href = `/story.html?id=${n.target_id}`;
+    window.location.href = `/stories/story-${n.target_id}`;
   } else if (n.type === 'follow') {
     window.location.href = `/profile.html?id=${n.actor_user_id || n.actor_id}`;
   } else if (n.type === 'chat_request' || n.type === 'chat_accepted' || n.type === 'chat_declined' || n.type === 'chat_message') {
