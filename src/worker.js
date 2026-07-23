@@ -1378,17 +1378,27 @@ app.get('/api/notifications', requireUser, async (c) => {
   const user = c.get('user');
   const userId = Number(user.id);
 
-  const { results: notifications } = await db.prepare(`
-    SELECT n.*, 
-           u.full_name as actor_name, u.profile_pic as actor_pic, u.user_id as actor_user_id
-    FROM notifications n
-    LEFT JOIN users u ON u.id = n.actor_id
-    WHERE n.user_id = ?
-    ORDER BY n.created_at DESC
-    LIMIT 50
-  `).bind(userId).all();
-
-  return c.json(notifications);
+  try {
+    const { results: notifications } = await db.prepare(`
+      SELECT n.*, 
+             u.full_name as actor_name, u.profile_pic as actor_pic, u.user_id as actor_user_id
+      FROM notifications n
+      LEFT JOIN users u ON u.id = n.actor_id
+      WHERE n.user_id = ?
+      ORDER BY n.created_at DESC
+      LIMIT 50
+    `).bind(userId).all();
+    return c.json(notifications || []);
+  } catch (err) {
+    try {
+      const { results: fallbackNotifs } = await db.prepare(
+        'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50'
+      ).bind(userId).all();
+      return c.json(fallbackNotifs || []);
+    } catch (e) {
+      return c.json([]);
+    }
+  }
 });
 
 // POST /api/notifications/read - Mark all as read

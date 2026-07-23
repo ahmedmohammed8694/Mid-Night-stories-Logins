@@ -18,6 +18,15 @@
   async function loadStory() {
     storyId = getStoryId();
     if (!storyId) {
+      try {
+        const latestData = await api('/api/stories?limit=1');
+        if (latestData && latestData.stories && latestData.stories.length > 0) {
+          storyId = latestData.stories[0].id;
+          const data = await api(`/api/stories/${storyId}`);
+          renderStory(data.story, data.comments);
+          return;
+        }
+      } catch (e) {}
       showNotFound();
       return;
     }
@@ -26,6 +35,15 @@
       const data = await api(`/api/stories/${storyId}`);
       renderStory(data.story, data.comments);
     } catch (err) {
+      try {
+        const latestData = await api('/api/stories?limit=1');
+        if (latestData && latestData.stories && latestData.stories.length > 0) {
+          storyId = latestData.stories[0].id;
+          const data = await api(`/api/stories/${storyId}`);
+          renderStory(data.story, data.comments);
+          return;
+        }
+      } catch (e) {}
       showNotFound();
     }
   }
