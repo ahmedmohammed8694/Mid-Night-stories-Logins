@@ -274,6 +274,22 @@ body {
   overflow-x: hidden;
 }
 
+/* ── Core Web Vitals (CLS & Aspect-Ratio Reserves) ── */
+.story-card-image-wrapper,
+.book-card-cover-wrapper,
+img[data-aspect-ratio] {
+  aspect-ratio: 2 / 3;
+  width: 100%;
+  object-fit: cover;
+  background-color: var(--bg-tertiary);
+}
+
+.skeleton--card {
+  min-height: 280px;
+  contain-intrinsic-size: 280px;
+  content-visibility: auto;
+}
+
 /* Display / literary elements use Fraunces */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);

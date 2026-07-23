@@ -1,0 +1,222 @@
+[
+  {
+    "url": "https://midnightstories.dpdns.org/stories",
+    "strategy": "desktop",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/books",
+    "strategy": "mobile",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/books",
+    "strategy": "desktop",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/submit",
+    "strategy": "mobile",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/submit",
+    "strategy": "desktop",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/",
+    "strategy": "mobile",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/",
+    "strategy": "desktop",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/stories",
+    "strategy": "mobile",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/resources",
+    "strategy": "mobile",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/resources",
+    "strategy": "desktop",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/about",
+    "strategy": "mobile",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/about",
+    "strategy": "desktop",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/login",
+    "strategy": "mobile",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/login",
+    "strategy": "desktop",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/signup",
+    "strategy": "mobile",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/signup",
+    "strategy": "desktop",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/profile",
+    "strategy": "mobile",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/profile",
+    "strategy": "desktop",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/upload-book",
+    "strategy": "mobile",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  },
+  {
+    "url": "https://midnightstories.dpdns.org/upload-book",
+    "strategy": "desktop",
+    "performance": null,
+    "accessibility": null,
+    "seo": null,
+    "lcpMs": null,
+    "cls": null,
+    "inpMs": null,
+    "ttfbMs": null
+  }
+]

@@ -1,0 +1,162 @@
+[
+  {
+    "severity": "info",
+    "issueType": "canonicalized-page",
+    "issue": "Canonicalized to another URL",
+    "url": "https://midnightstories.dpdns.org/login?redirect=%2Fupload-book",
+    "details": {
+      "canonicalUrl": "https://midnightstories.dpdns.org/login"
+    },
+    "howToFix": "If this page should rank on its own, set its canonical to itself. Otherwise no action is needed."
+  },
+  {
+    "severity": "info",
+    "issueType": "heading-order-skip",
+    "issue": "Heading levels skip",
+    "url": "https://midnightstories.dpdns.org/submit",
+    "details": null,
+    "howToFix": "Adjust heading levels so they descend one step at a time (H1 → H2 → H3) without skipping."
+  },
+  {
+    "severity": "info",
+    "issueType": "heading-order-skip",
+    "issue": "Heading levels skip",
+    "url": "https://midnightstories.dpdns.org/about",
+    "details": null,
+    "howToFix": "Adjust heading levels so they descend one step at a time (H1 → H2 → H3) without skipping."
+  },
+  {
+    "severity": "info",
+    "issueType": "heading-order-skip",
+    "issue": "Heading levels skip",
+    "url": "https://midnightstories.dpdns.org/signup",
+    "details": null,
+    "howToFix": "Adjust heading levels so they descend one step at a time (H1 → H2 → H3) without skipping."
+  },
+  {
+    "severity": "info",
+    "issueType": "heading-order-skip",
+    "issue": "Heading levels skip",
+    "url": "https://midnightstories.dpdns.org/guidelines",
+    "details": null,
+    "howToFix": "Adjust heading levels so they descend one step at a time (H1 → H2 → H3) without skipping."
+  },
+  {
+    "severity": "info",
+    "issueType": "heading-order-skip",
+    "issue": "Heading levels skip",
+    "url": "https://midnightstories.dpdns.org/terms",
+    "details": null,
+    "howToFix": "Adjust heading levels so they descend one step at a time (H1 → H2 → H3) without skipping."
+  },
+  {
+    "severity": "info",
+    "issueType": "heading-order-skip",
+    "issue": "Heading levels skip",
+    "url": "https://midnightstories.dpdns.org/privacy",
+    "details": null,
+    "howToFix": "Adjust heading levels so they descend one step at a time (H1 → H2 → H3) without skipping."
+  },
+  {
+    "severity": "info",
+    "issueType": "heading-order-skip",
+    "issue": "Heading levels skip",
+    "url": "https://midnightstories.dpdns.org/",
+    "details": null,
+    "howToFix": "Adjust heading levels so they descend one step at a time (H1 → H2 → H3) without skipping."
+  },
+  {
+    "severity": "warning",
+    "issueType": "images-missing-alt",
+    "issue": "Images missing alt text",
+    "url": "https://midnightstories.dpdns.org/submit",
+    "details": {
+      "imagesMissingAlt": 1,
+      "imagesTotal": 2
+    },
+    "howToFix": "Add descriptive alt text to meaningful images; use an empty alt (alt=\"\") only for purely decorative ones."
+  },
+  {
+    "severity": "warning",
+    "issueType": "images-missing-alt",
+    "issue": "Images missing alt text",
+    "url": "https://midnightstories.dpdns.org/signup",
+    "details": {
+      "imagesMissingAlt": 1,
+      "imagesTotal": 2
+    },
+    "howToFix": "Add descriptive alt text to meaningful images; use an empty alt (alt=\"\") only for purely decorative ones."
+  },
+  {
+    "severity": "warning",
+    "issueType": "images-missing-alt",
+    "issue": "Images missing alt text",
+    "url": "https://midnightstories.dpdns.org/profile",
+    "details": {
+      "imagesMissingAlt": 1,
+      "imagesTotal": 1
+    },
+    "howToFix": "Add descriptive alt text to meaningful images; use an empty alt (alt=\"\") only for purely decorative ones."
+  },
+  {
+    "severity": "warning",
+    "issueType": "images-missing-alt",
+    "issue": "Images missing alt text",
+    "url": "https://midnightstories.dpdns.org/upload-book",
+    "details": {
+      "imagesMissingAlt": 1,
+      "imagesTotal": 1
+    },
+    "howToFix": "Add descriptive alt text to meaningful images; use an empty alt (alt=\"\") only for purely decorative ones."
+  },
+  {
+    "severity": "info",
+    "issueType": "meta-description-too-long",
+    "issue": "Meta description too long",
+    "url": "https://midnightstories.dpdns.org/",
+    "details": {
+      "length": 172
+    },
+    "howToFix": "Trim the description to roughly 70–160 characters while keeping the core message and call to action."
+  },
+  {
+    "severity": "warning",
+    "issueType": "thin-content",
+    "issue": "Thin content",
+    "url": "https://midnightstories.dpdns.org/login",
+    "details": {
+      "wordCount": 15
+    },
+    "howToFix": "Either expand the page with genuinely useful content, noindex it, or consolidate it into a stronger page. If the content exists but is rendered by JavaScript, ensure it is server-rendered or pre-rendered."
+  },
+  {
+    "severity": "warning",
+    "issueType": "thin-content",
+    "issue": "Thin content",
+    "url": "https://midnightstories.dpdns.org/signup",
+    "details": {
+      "wordCount": 44
+    },
+    "howToFix": "Either expand the page with genuinely useful content, noindex it, or consolidate it into a stronger page. If the content exists but is rendered by JavaScript, ensure it is server-rendered or pre-rendered."
+  },
+  {
+    "severity": "warning",
+    "issueType": "thin-content",
+    "issue": "Thin content",
+    "url": "https://midnightstories.dpdns.org/login?redirect=%2Fupload-book",
+    "details": {
+      "wordCount": 15
+    },
+    "howToFix": "Either expand the page with genuinely useful content, noindex it, or consolidate it into a stronger page. If the content exists but is rendered by JavaScript, ensure it is server-rendered or pre-rendered."
+  },
+  {
+    "severity": "warning",
+    "issueType": "thin-content",
+    "issue": "Thin content",
+    "url": "https://midnightstories.dpdns.org/profile",
+    "details": {
+      "wordCount": 106
+    },
+    "howToFix": "Either expand the page with genuinely useful content, noindex it, or consolidate it into a stronger page. If the content exists but is rendered by JavaScript, ensure it is server-rendered or pre-rendered."
+  }
+]

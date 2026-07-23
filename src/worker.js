@@ -77,6 +77,19 @@ const app = new Hono();
 
 // ── Navigation Redirects & Clean Slug Routing ──
 app.get('/education', (c) => c.redirect('/books?category=education', 301));
+app.get('/sitemap.xml', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/sitemap.xml';
+    const res = await c.env.ASSETS.fetch(url);
+    return new Response(res.body, {
+      status: res.status,
+      headers: { ...Object.fromEntries(res.headers.entries()), 'Content-Type': 'application/xml; charset=utf-8' }
+    });
+  }
+  return c.redirect('/sitemap.xml');
+});
+
 app.get('/naval-books', (c) => c.redirect('/books?category=naval', 301));
 app.get('/library', (c) => c.redirect('/books', 301));
 

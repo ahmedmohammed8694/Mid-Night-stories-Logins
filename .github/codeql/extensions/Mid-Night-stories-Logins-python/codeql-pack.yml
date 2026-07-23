@@ -1,0 +1,7 @@
+name: ahmedmohammed8694/mid-night-stories-logins-python
+version: 0.0.0
+library: true
+extensionTargets:
+  codeql/python-all: '*'
+dataExtensions:
+  - models/**/*.yml
