@@ -182,6 +182,7 @@
 
   // ── Stories Queue ──
   let currentStoryQueueStatus = 'pending';
+  let currentStoriesList = [];
 
   async function loadStoriesQueue(status) {
     if (status) currentStoryQueueStatus = status;
@@ -190,8 +191,9 @@
       const tbody = document.getElementById('storiesQueueBody');
       const empty = document.getElementById('noStoriesQueue');
       tbody.innerHTML = '';
+      currentStoriesList = data.items || [];
 
-      if (data.items.length === 0) {
+      if (currentStoriesList.length === 0) {
         empty.classList.remove('hidden');
         document.getElementById('storiesQueueTable').closest('.admin-table-wrapper').classList.add('hidden');
         return;
@@ -200,27 +202,89 @@
       empty.classList.add('hidden');
       document.getElementById('storiesQueueTable').closest('.admin-table-wrapper').classList.remove('hidden');
 
-      data.items.forEach(item => {
+      currentStoriesList.forEach(item => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${item.id}</td>
-          <td>${escapeHtml(item.title || 'Untitled')}</td>
-          <td><div class="admin-table__preview">${escapeHtml(item.body.substring(0, 150))}</div></td>
-          <td>${escapeHtml(item.category_name || '—')}</td>
-          <td><span class="status-badge status-badge--${item.status}">${item.status}</span></td>
+          <td style="font-weight: 500;">
+            <a href="#" class="admin-story-detail-trigger" data-story-id="${item.id}" style="color: var(--text-primary); text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+              ${escapeHtml(item.title || 'Untitled')}
+            </a>
+          </td>
+          <td><div class="admin-table__preview" style="max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.body ? item.body.substring(0, 100) : '')}</div></td>
+          <td>${escapeHtml(item.category_name || 'General')}</td>
+          <td><span class="status-badge status-badge--${item.status === 'approved' ? 'approved' : item.status === 'rejected' ? 'rejected' : 'pending'}">${escapeHtml(item.status)}</span></td>
           <td>${formatDate(item.created_at)}</td>
           <td>
-            <div class="admin-table__actions">
-              ${item.status !== 'approved' ? `<button class="btn btn--success btn--sm" onclick="moderateItem('story', ${item.id}, 'approve')">✓</button>` : ''}
-              ${item.status !== 'rejected' ? `<button class="btn btn--danger btn--sm" onclick="moderateItem('story', ${item.id}, 'reject')">✗</button>` : ''}
+            <div class="admin-table__actions" style="display: flex; gap: 6px;">
+              <button class="btn btn--secondary btn--sm admin-story-detail-trigger" data-story-id="${item.id}" style="padding: 4px 8px; font-size: 0.8rem;">🔍 Details</button>
+              ${item.status !== 'approved' ? `<button class="btn btn--success btn--sm" onclick="moderateItem('story', ${item.id}, 'approve')" style="padding: 4px 8px;" title="Approve">✓</button>` : ''}
+              ${item.status !== 'rejected' ? `<button class="btn btn--danger btn--sm" onclick="moderateItem('story', ${item.id}, 'reject')" style="padding: 4px 8px;" title="Reject">✕</button>` : ''}
             </div>
           </td>
         `;
         tbody.appendChild(tr);
       });
+
+      // Bind story detail triggers
+      tbody.querySelectorAll('.admin-story-detail-trigger').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const storyId = btn.dataset.storyId;
+          const targetStory = currentStoriesList.find(s => s.id == storyId);
+          if (targetStory) {
+            openAdminStoryModal(targetStory);
+          }
+        });
+      });
     } catch (err) {
-      showToast('Failed to load queue.', 'error');
+      showToast('Failed to load stories.', 'error');
     }
+  }
+
+  function openAdminStoryModal(story) {
+    const modal = document.getElementById('adminStoryReviewModal');
+    if (!modal) return;
+
+    document.getElementById('adminStoryId').textContent = `ID: #${story.id}`;
+    document.getElementById('adminStoryTitle').textContent = story.title || 'Untitled Story';
+    document.getElementById('adminStoryMeta').textContent = `By ${story.author_name || (story.user_id ? 'User #' + story.user_id : 'Anonymous')} • Submitted ${formatDate(story.created_at)}`;
+    document.getElementById('adminStoryCategory').textContent = story.category_name || 'General';
+    document.getElementById('adminStoryContent').textContent = story.body || 'No text content available.';
+    document.getElementById('adminStoryLikes').textContent = story.like_count || 0;
+    document.getElementById('adminStoryComments').textContent = story.comment_count || 0;
+
+    const badge = document.getElementById('adminStoryStatusBadge');
+    badge.className = `status-badge status-badge--${story.status === 'approved' ? 'approved' : story.status === 'rejected' ? 'rejected' : 'pending'}`;
+    badge.textContent = (story.status || 'pending').toUpperCase();
+
+    const imgContainer = document.getElementById('adminStoryImageContainer');
+    const imgEl = document.getElementById('adminStoryImage');
+    if (story.image_url) {
+      imgEl.src = story.image_url;
+      imgContainer.style.display = 'block';
+    } else {
+      imgContainer.style.display = 'none';
+    }
+
+    // Bind modal actions
+    const approveBtn = document.getElementById('adminStoryApproveBtn');
+    const rejectBtn = document.getElementById('adminStoryRejectBtn');
+
+    approveBtn.onclick = async () => {
+      await moderateItem('story', story.id, 'approve');
+      modal.style.display = 'none';
+      modal.classList.remove('active');
+    };
+
+    rejectBtn.onclick = async () => {
+      await moderateItem('story', story.id, 'reject');
+      modal.style.display = 'none';
+      modal.classList.remove('active');
+    };
+
+    modal.style.display = 'flex';
+    modal.classList.add('active');
   }
 
   // ── Comments Queue ──
@@ -1065,6 +1129,26 @@
     }
   }
 
+  let activeReviewBookId = null;
+
+  function getStatusBadgeClass(status) {
+    if (status === 'published') return 'status-badge--approved';
+    if (status === 'pending') return 'status-badge--pending';
+    if (status === 'under_review') return 'status-badge--cyan';
+    if (status === 'temp_stopped') return 'status-badge--amber';
+    if (status === 'suspended') return 'status-badge--rejected';
+    return 'status-badge--muted';
+  }
+
+  function formatStatusLabel(status) {
+    if (status === 'published') return 'Published';
+    if (status === 'pending') return 'Pending Review';
+    if (status === 'under_review') return 'Under Review';
+    if (status === 'temp_stopped') return 'Temporarily Stopped';
+    if (status === 'suspended') return 'Suspended';
+    return status || 'Draft';
+  }
+
   function renderFilteredBooks() {
     const tbody = document.getElementById('booksListBody');
     const noBooksState = document.getElementById('noBooksState');
@@ -1099,23 +1183,46 @@
         const fileType = (book.file_type || '').toUpperCase();
         const visibility = book.visibility || 'public';
         const status = book.status || 'draft';
+        const badgeClass = getStatusBadgeClass(status);
+        const statusLabel = formatStatusLabel(status);
         
         tr.innerHTML = `
           <td><input type="checkbox" class="book-select-checkbox" data-book-id="${book.id}" style="cursor:pointer; transform:scale(1.25);"></td>
-          <td><img src="${book.cover_image_url || '/images/default-cover.png'}" style="width: 40px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-card);"></td>
-          <td style="font-weight: 500;">${escapeHtml(book.title || '')}</td>
+          <td>
+            <a href="#" class="admin-book-review-trigger" data-book-id="${book.id}">
+              <img src="${book.cover_image_url || '/images/default-cover.png'}" style="width: 40px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-card); cursor: pointer;" title="Click to review book">
+            </a>
+          </td>
+          <td style="font-weight: 500;">
+            <a href="#" class="admin-book-review-trigger" data-book-id="${book.id}" style="color: var(--text-primary); text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+              ${escapeHtml(book.title || '')}
+            </a>
+          </td>
           <td>${escapeHtml(book.author || '')}</td>
           <td><span class="filter-chip" style="font-size: 0.75rem;">${fileType}</span></td>
           <td><span class="status-badge status-badge--${visibility === 'public' ? 'approved' : 'pending'}">${visibility}</span></td>
-          <td><span class="status-badge status-badge--${status === 'published' ? 'approved' : 'pending'}">${status}</span></td>
+          <td><span class="status-badge ${badgeClass}">${escapeHtml(statusLabel)}</span></td>
           <td>${book.uploaded_by ? `User ID: ${book.uploaded_by}` : 'Admin'}</td>
           <td>
-            <div class="flex gap-8">
-              <button class="btn btn--danger btn--sm" onclick="window.deleteBook(${book.id})">Delete</button>
+            <div class="flex gap-8" style="gap: 6px;">
+              <button class="btn btn--secondary btn--sm admin-book-review-trigger" data-book-id="${book.id}" style="padding: 4px 8px; font-size: 0.8rem;">🔍 Review</button>
+              <button class="btn btn--danger btn--sm" onclick="window.deleteBook(${book.id})" style="padding: 4px 8px; font-size: 0.8rem;">Delete</button>
             </div>
           </td>
         `;
         tbody.appendChild(tr);
+      });
+
+      // Bind review modal triggers
+      tbody.querySelectorAll('.admin-book-review-trigger').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.preventDefault();
+          const bookId = el.dataset.bookId;
+          const targetBook = allBooksList.find(b => b.id == bookId);
+          if (targetBook) {
+            openAdminBookReviewModal(targetBook);
+          }
+        });
       });
 
       // Bind checkbox event listeners
@@ -1127,6 +1234,79 @@
       document.getElementById('booksListTable').parentNode.classList.add('hidden');
     }
   }
+
+  function openAdminBookReviewModal(book) {
+    activeReviewBookId = book.id;
+    const modal = document.getElementById('adminBookReviewModal');
+
+    document.getElementById('adminModalBookCover').src = book.cover_image_url || '/images/default-cover.png';
+    document.getElementById('adminModalBookTitle').textContent = book.title || 'Untitled Book';
+    document.getElementById('adminModalBookAuthor').textContent = `By ${book.author || 'Unknown'}`;
+    document.getElementById('adminModalBookChannel').textContent = (book.channel_type || 'education').toUpperCase();
+    document.getElementById('adminModalBookCategory').textContent = book.category_names || 'General';
+    document.getElementById('adminModalBookDescription').textContent = book.description || 'No description provided.';
+    document.getElementById('adminModalBookType').textContent = (book.file_type || 'epub').toUpperCase();
+    document.getElementById('adminModalBookVisibility').textContent = book.visibility || 'public';
+    document.getElementById('adminModalBookUploader').textContent = book.uploader_name || (book.uploaded_by ? `User ID: ${book.uploaded_by}` : 'Admin');
+    document.getElementById('adminModalBookDate').textContent = book.created_at ? new Date(book.created_at).toLocaleDateString() : '—';
+
+    // Status Badge
+    const badgeEl = document.getElementById('adminModalBookStatusBadge');
+    badgeEl.className = `status-badge ${getStatusBadgeClass(book.status)}`;
+    badgeEl.textContent = formatStatusLabel(book.status).toUpperCase();
+
+    // Status Selector
+    const statusSelect = document.getElementById('adminModalStatusSelect');
+    statusSelect.value = book.status || 'pending';
+
+    // Links
+    const readerLink = document.getElementById('adminModalReaderLink');
+    readerLink.href = `/reader.html?bookId=${book.id}`;
+
+    const downloadLink = document.getElementById('adminModalDownloadLink');
+    if (book.file_url) {
+      downloadLink.href = `/api/books/${book.id}/file`;
+      downloadLink.style.display = '';
+    } else {
+      downloadLink.style.display = 'none';
+    }
+
+    // Save button event
+    document.getElementById('adminModalSaveStatusBtn').onclick = () => {
+      const newStatus = statusSelect.value;
+      updateAdminBookStatus(book.id, newStatus);
+    };
+
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+  }
+
+  async function updateAdminBookStatus(bookId, newStatus) {
+    try {
+      showToast('Updating book status...', 'info');
+      await api(`/api/admin/books/${bookId}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: newStatus })
+      });
+      showToast(`Book status updated to ${formatStatusLabel(newStatus)}`, 'success');
+      
+      const modal = document.getElementById('adminBookReviewModal');
+      if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+      }
+
+      loadBooks();
+    } catch (err) {
+      showToast('Failed to update status: ' + err.message, 'error');
+    }
+  }
+
+  window.adminQuickSetStatus = function (newStatus) {
+    if (activeReviewBookId) {
+      updateAdminBookStatus(activeReviewBookId, newStatus);
+    }
+  };
 
   function updateBatchActionBar() {
     const checkboxes = document.querySelectorAll('.book-select-checkbox:checked');

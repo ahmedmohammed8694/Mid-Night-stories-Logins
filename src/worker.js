@@ -1511,24 +1511,34 @@ app.get('/api/admin/queue', requireAdmin, async (c) => {
   const { type = 'stories', status = 'pending' } = c.req.query();
 
   if (type === 'stories') {
-    const { results } = await db.prepare(`
+    let sql = `
       SELECT s.id, s.user_id, s.title, s.content AS body, s.category_id, s.image_url, s.status, s.submitter_token, s.ip_hash, s.like_count, s.comment_count, s.created_at, s.updated_at, c.name as category_name, u.full_name as author_name
       FROM stories s
       LEFT JOIN categories c ON s.category_id = c.id
       LEFT JOIN users u ON s.user_id = u.id
-      WHERE s.status = ?
-      ORDER BY s.created_at ASC
-    `).bind(status).all();
+    `;
+    let bindings = [];
+    if (status && status !== 'all') {
+      sql += ` WHERE s.status = ? `;
+      bindings.push(status);
+    }
+    sql += ` ORDER BY s.created_at DESC `;
+    const { results } = await db.prepare(sql).bind(...bindings).all();
     return c.json({ items: results, type: 'stories' });
   } else {
-    const { results } = await db.prepare(`
+    let sql = `
       SELECT cm.id, cm.story_id, cm.user_id, cm.content AS body, cm.status, cm.ip_hash, cm.created_at, s.title as story_title, u.full_name as author_name
       FROM comments cm
       LEFT JOIN stories s ON cm.story_id = s.id
       LEFT JOIN users u ON cm.user_id = u.id
-      WHERE cm.status = ?
-      ORDER BY cm.created_at ASC
-    `).bind(status).all();
+    `;
+    let bindings = [];
+    if (status && status !== 'all') {
+      sql += ` WHERE cm.status = ? `;
+      bindings.push(status);
+    }
+    sql += ` ORDER BY cm.created_at DESC `;
+    const { results } = await db.prepare(sql).bind(...bindings).all();
     return c.json({ items: results, type: 'comments' });
   }
 });
@@ -2341,6 +2351,24 @@ app.delete('/api/admin/books/:id', requireAdminOrUser, async (c) => {
 
   await db.prepare('DELETE FROM books WHERE id = ?').bind(bookId).run();
   return c.json({ success: true, message: 'Book deleted successfully.' });
+});
+
+// ── PUT /api/admin/books/:id/status ──
+app.put('/api/admin/books/:id/status', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const bookId = parseInt(c.req.param('id'));
+  const { status } = await c.req.json();
+
+  const allowedStatuses = ['published', 'pending', 'under_review', 'temp_stopped', 'suspended', 'draft'];
+  if (!status || !allowedStatuses.includes(status)) {
+    return c.json({ error: 'Invalid status. Allowed: published, pending, under_review, temp_stopped, suspended, draft' }, 400);
+  }
+
+  const book = await db.prepare('SELECT id FROM books WHERE id = ?').bind(bookId).first();
+  if (!book) return c.json({ error: 'Book not found.' }, 404);
+
+  await db.prepare('UPDATE books SET status = ?, updated_at = datetime("now") WHERE id = ?').bind(status, bookId).run();
+  return c.json({ success: true, message: `Book status updated to ${status}.` });
 });
 
 // ── GET /api/admin/books ──
