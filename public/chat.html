@@ -506,7 +506,7 @@
       headerDiv.innerHTML = `
         <div class="chat-header-user">
           <div class="conv-avatar" style="width: 40px; height: 40px; cursor: pointer;" onclick="window.location.href='/profile.html?id=${encodeURIComponent(conversation.other_user_id || conversation.other_id)}'">
-            ${conversation.other_pic ? `<img src="${conversation.other_pic}">` : (conversation.other_name ? conversation.other_name.charAt(0).toUpperCase() : '👤')}
+            ${conversation.other_pic ? `<img src="${conversation.other_pic}" alt="${conversation.other_name || 'User avatar'}">` : (conversation.other_name ? conversation.other_name.charAt(0).toUpperCase() : '👤')}
           </div>
           <div>
             <div class="chat-header-name" style="cursor: pointer; display: flex; align-items: center; gap: 8px;" onclick="window.location.href='/profile.html?id=${encodeURIComponent(conversation.other_user_id || conversation.other_id)}'">
