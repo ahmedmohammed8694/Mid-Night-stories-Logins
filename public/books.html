@@ -77,42 +77,47 @@
         </section>
 
         <!-- Library Grid Layout -->
-        <div class="library-layout">
+        <!-- Side-by-Side Horizontal Filter Bar -->
+        <div class="filter-bar" style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 28px; box-shadow: var(--shadow-sm); backdrop-filter: blur(12px);">
           
-          <!-- Sidebar Filters -->
-          <aside class="filter-sidebar">
-            <!-- Search bar inside sidebar -->
-            <div class="filter-section">
-              <h3 class="filter-section__title">Search Catalog</h3>
-              <div class="search-box" style="width: 100%;">
-                <span class="search-box__icon">🔍</span>
-                <input type="text" class="search-box__input" id="libSearchInput" placeholder="Title, author, tags...">
-              </div>
+          <!-- Top Row: Search + Quick Stats -->
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
+            <div class="search-box" style="flex: 1; min-width: 280px; max-width: 520px;">
+              <span class="search-box__icon">🔍</span>
+              <input type="text" class="search-box__input" id="libSearchInput" placeholder="Search by title, author, tags...">
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 16px; font-size: 0.9rem; color: var(--text-secondary);">
+              <span>Showing <strong id="displayedBooksCount" style="color: var(--page-accent);">0</strong> of <strong id="totalBooksCount">0</strong> books</span>
+              <button class="btn btn--secondary btn--sm" id="viewToggleBtn" style="padding: 6px 12px; font-size: 13px;">🎛️ List View</button>
+            </div>
+          </div>
+
+          <!-- Side-by-Side Filter Fields Grid -->
+          <div class="filter-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; align-items: end;">
+            
+            <!-- Channels Filter -->
+            <div class="filter-field">
+              <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 6px;">📚 Channel</label>
+              <select class="sort-select" id="channelSelect" style="width: 100%; height: 38px; padding: 0 10px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer; font-size: 0.85rem;">
+                <option value="all">All Channels</option>
+                <option value="education">Educational Books</option>
+                <option value="naval">Naval Books</option>
+              </select>
             </div>
 
-            <!-- Channels Filter -->
-            <div class="filter-section">
-              <h3 class="filter-section__title">Library Channels</h3>
-              <div class="checkbox-group">
-                <label class="checkbox-label">
-                  <input type="radio" name="channel_filter" class="channel-radio" value="all" checked style="cursor:pointer;">
-                  <span>All Channels</span>
-                </label>
-                <label class="checkbox-label">
-                  <input type="radio" name="channel_filter" class="channel-radio" value="education" style="cursor:pointer;">
-                  <span>Educational Books</span>
-                </label>
-                <label class="checkbox-label">
-                  <input type="radio" name="channel_filter" class="channel-radio" value="naval" style="cursor:pointer;">
-                  <span>Naval Books</span>
-                </label>
-              </div>
+            <!-- Categories Filter -->
+            <div class="filter-field">
+              <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 6px;">🏷️ Category</label>
+              <select class="sort-select" id="libCategorySelect" style="width: 100%; height: 38px; padding: 0 10px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer; font-size: 0.85rem;">
+                <option value="all">All Categories</option>
+              </select>
             </div>
 
             <!-- Shelf Status (Auth Only) -->
-            <div class="filter-section auth-only" style="display: none;" id="shelfFilterSection">
-              <h3 class="filter-section__title">My Shelf</h3>
-              <select class="sort-select" id="shelfSelect" style="width: 100%; height: 42px; padding: 0 12px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary);">
+            <div class="filter-field auth-only" style="display: none;" id="shelfFilterSection">
+              <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 6px;">📁 My Shelf</label>
+              <select class="sort-select" id="shelfSelect" style="width: 100%; height: 38px; padding: 0 10px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer; font-size: 0.85rem;">
                 <option value="">All Books</option>
                 <option value="currently_reading">Currently Reading</option>
                 <option value="want_to_read">Want to Read</option>
@@ -120,100 +125,60 @@
               </select>
             </div>
 
-            <!-- Categories -->
-            <div class="filter-section">
-              <h3 class="filter-section__title">Categories</h3>
-              <div class="checkbox-group" id="libCategoryFilters">
-                <!-- Dynamically loaded categories -->
-                <p style="color: var(--text-muted); font-size: 0.85rem;">Loading categories...</p>
-              </div>
+            <!-- Languages Filter -->
+            <div class="filter-field">
+              <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 6px;">🌐 Language</label>
+              <select class="sort-select" id="langSelect" style="width: 100%; height: 38px; padding: 0 10px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer; font-size: 0.85rem;">
+                <option value="all">All Languages</option>
+                <option value="en">English</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="de">German</option>
+                <option value="ar">Arabic</option>
+              </select>
             </div>
 
-            <!-- Languages -->
-            <div class="filter-section">
-              <h3 class="filter-section__title">Languages</h3>
-              <div class="checkbox-group">
-                <label class="checkbox-label">
-                  <input type="checkbox" class="checkbox-input lang-filter" value="en" checked>
-                  <span>English</span>
-                </label>
-                <label class="checkbox-label">
-                  <input type="checkbox" class="checkbox-input lang-filter" value="es">
-                  <span>Spanish</span>
-                </label>
-                <label class="checkbox-label">
-                  <input type="checkbox" class="checkbox-input lang-filter" value="fr">
-                  <span>French</span>
-                </label>
-                <label class="checkbox-label">
-                  <input type="checkbox" class="checkbox-input lang-filter" value="de">
-                  <span>German</span>
-                </label>
-                <label class="checkbox-label">
-                  <input type="checkbox" class="checkbox-input lang-filter" value="ar">
-                  <span>Arabic</span>
-                </label>
-                <label class="checkbox-label">
-                  <input type="checkbox" class="checkbox-input lang-filter" value="other">
-                  <span>Other</span>
-                </label>
-              </div>
+            <!-- File Format Filter -->
+            <div class="filter-field">
+              <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 6px;">📄 Format</label>
+              <select class="sort-select" id="typeSelect" style="width: 100%; height: 38px; padding: 0 10px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer; font-size: 0.85rem;">
+                <option value="all">All Formats (EPUB & PDF)</option>
+                <option value="epub">EPUB Books</option>
+                <option value="pdf">PDF Documents</option>
+              </select>
             </div>
 
-            <!-- File Types -->
-            <div class="filter-section">
-              <h3 class="filter-section__title">File Types</h3>
-              <div class="checkbox-group">
-                <label class="checkbox-label">
-                  <input type="checkbox" class="checkbox-input type-filter" value="epub" checked>
-                  <span>EPUB</span>
-                </label>
-                <label class="checkbox-label">
-                  <input type="checkbox" class="checkbox-input type-filter" value="pdf" checked>
-                  <span>PDF</span>
-                </label>
-              </div>
+            <!-- Sort Order Filter -->
+            <div class="filter-field">
+              <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 6px;">⚡ Sort By</label>
+              <select class="sort-select" id="libSortSelect" style="width: 100%; height: 38px; padding: 0 10px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer; font-size: 0.85rem;">
+                <option value="newest">Newest Added</option>
+                <option value="title">Title (A-Z)</option>
+              </select>
             </div>
-
-          </aside>
-
-          <!-- Main Books Display -->
-          <div class="books-container" id="booksContainer">
-            
-            <!-- Controls top bar -->
-            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 12px 20px; border-radius: var(--radius-md); border: 1px solid var(--border-card);">
-              <div style="color: var(--text-secondary); font-size: 0.95rem;">
-                Showing <span id="displayedBooksCount">0</span> of <span id="totalBooksCount">0</span> books
-              </div>
-              <div style="display: flex; gap: 16px; align-items: center;">
-                <select class="sort-select" id="libSortSelect" style="height: 36px; padding: 0 10px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer;">
-                  <option value="newest">Newest Added</option>
-                  <option value="title">Title A-Z</option>
-                </select>
-                <button class="btn btn--secondary btn--sm" id="viewToggleBtn" style="padding: 6px 12px; font-size: 14px;">🎛️ List View</button>
-              </div>
-            </div>
-
-            <!-- Book Cards Grid -->
-            <div class="books-grid" id="booksGrid">
-              <!-- Dynamically populated -->
-              <div class="card skeleton skeleton--card"></div>
-              <div class="card skeleton skeleton--card"></div>
-              <div class="card skeleton skeleton--card"></div>
-            </div>
-
-            <!-- Empty State -->
-            <div class="empty-state hidden" id="libEmptyState" style="padding: 60px;">
-              <div class="empty-state__icon">📚</div>
-              <h3 class="empty-state__title">No books match your filters</h3>
-              <p class="empty-state__description">Try broadening your search or choosing other genres.</p>
-            </div>
-
-            <!-- Pagination -->
-            <div class="pagination" id="libPagination"></div>
 
           </div>
+        </div>
 
+        <!-- Main Books Grid Display -->
+        <div class="books-container" id="booksContainer">
+          <!-- Book Cards Grid -->
+          <div class="books-grid" id="booksGrid">
+            <!-- Dynamically populated -->
+            <div class="card skeleton skeleton--card"></div>
+            <div class="card skeleton skeleton--card"></div>
+            <div class="card skeleton skeleton--card"></div>
+          </div>
+
+          <!-- Empty State -->
+          <div class="empty-state hidden" id="libEmptyState" style="padding: 60px;">
+            <div class="empty-state__icon">📚</div>
+            <h3 class="empty-state__title">No books match your filters</h3>
+            <p class="empty-state__description">Try broadening your search or choosing other filters.</p>
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination" id="libPagination"></div>
         </div>
 
       </div>

@@ -82,20 +82,30 @@
         <!-- Library Layout (2-Column Grid) -->
         <div class="library-layout">
           
-          <!-- Sidebar Filters -->
-          <aside class="filter-sidebar">
-            <!-- Search bar -->
-            <div class="filter-section">
-              <h3 class="filter-section__title">Search Stories</h3>
+        <!-- Horizontal Top Filter Bar for Stories (Side-by-Side Layout) -->
+        <div class="filter-bar" style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 28px; box-shadow: var(--shadow-sm); backdrop-filter: blur(12px);">
+          <div class="filter-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: end;">
+            
+            <!-- Search Stories -->
+            <div class="filter-field" style="grid-column: span 2;">
+              <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 6px;">🔍 Search Stories</label>
               <div class="search-box" style="width: 100%;">
                 <span class="search-box__icon">🔍</span>
-                <input type="text" class="search-box__input" id="searchInput" placeholder="Title, body, keywords...">
+                <input type="text" class="search-box__input" id="searchInput" placeholder="Search by title, body, or keywords...">
               </div>
             </div>
 
-            <!-- Sort dropdown -->
-            <div class="filter-section">
-              <h3 class="filter-section__title">Sort Order</h3>
+            <!-- Category Filter -->
+            <div class="filter-field">
+              <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 6px;">🏷️ Category</label>
+              <select class="sort-select" id="categorySelect" style="width: 100%; height: 42px; padding: 0 12px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; cursor: pointer;">
+                <option value="all">All Categories</option>
+              </select>
+            </div>
+
+            <!-- Sort Order Filter -->
+            <div class="filter-field">
+              <label style="display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-tertiary); margin-bottom: 6px;">⚡ Sort Order</label>
               <select class="sort-select" id="sortSelect" style="width: 100%; height: 42px; padding: 0 12px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; cursor: pointer;">
                 <option value="newest">Newest First</option>
                 <option value="liked">Most Liked</option>
@@ -103,14 +113,8 @@
               </select>
             </div>
 
-            <!-- Category Filters Dropdown -->
-            <div class="filter-section">
-              <h3 class="filter-section__title">Category</h3>
-              <select class="sort-select" id="categorySelect" style="width: 100%; height: 42px; padding: 0 12px; background: var(--bg-input); border: 1px solid var(--border-card); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 0.9rem; cursor: pointer;">
-                <option value="all">All Categories</option>
-              </select>
-            </div>
-          </aside>
+          </div>
+        </div>
 
           <!-- Main Grid -->
           <div class="library-main">
