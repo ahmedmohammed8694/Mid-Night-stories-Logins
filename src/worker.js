@@ -2268,11 +2268,49 @@ app.post('/api/admin/reports/:id/reply', requireAdmin, async (c) => {
 
 app.post('/api/admin/messages/send', requireAdmin, async (c) => {
   const db = c.env.DB;
-  const { user_id, title, body } = await c.req.json();
+  const { recipient_type = 'single', user_id, user_ids, title, body } = await c.req.json();
   const adminPayload = c.get('admin');
-  
-  await db.prepare('INSERT INTO admin_messages (user_id, admin_id, title, body) VALUES (?, ?, ?, ?)').bind(parseInt(user_id), adminPayload.adminId, title, body).run();
-  return c.json({ message: 'Message sent successfully.' });
+
+  if (!title || !body) {
+    return c.json({ error: 'Title and Message Body are required.' }, 400);
+  }
+
+  let targetUserIds = [];
+
+  if (recipient_type === 'single') {
+    if (!user_id) return c.json({ error: 'user_id is required for single message mode.' }, 400);
+    targetUserIds = [parseInt(user_id)];
+  } else if (recipient_type === 'bulk_selected') {
+    if (!user_ids || !Array.isArray(user_ids) || user_ids.length === 0) {
+      return c.json({ error: 'user_ids must be a non-empty array for bulk selected mode.' }, 400);
+    }
+    targetUserIds = user_ids.map(id => parseInt(id)).filter(id => !isNaN(id));
+  } else if (recipient_type === 'all_users') {
+    const { results } = await db.prepare("SELECT id FROM users WHERE account_status != 'banned'").all();
+    targetUserIds = results.map(u => u.id);
+  }
+
+  if (targetUserIds.length === 0) {
+    return c.json({ error: 'No valid recipient users found.' }, 400);
+  }
+
+  try {
+    const stmts = [];
+    for (const uid of targetUserIds) {
+      stmts.push(db.prepare('INSERT INTO admin_messages (user_id, admin_id, title, body) VALUES (?, ?, ?, ?)').bind(uid, adminPayload.adminId, title, body));
+      stmts.push(db.prepare("INSERT INTO notifications (user_id, type, source_id, read) VALUES (?, 'admin_message', ?, 0)").bind(uid, adminPayload.adminId));
+    }
+    await db.batch(stmts);
+
+    return c.json({
+      success: true,
+      recipientCount: targetUserIds.length,
+      message: `Official Admin Message sent to ${targetUserIds.length} user(s) successfully.`
+    });
+  } catch (err) {
+    console.error('Send admin message error:', err);
+    return c.json({ error: 'Failed to send message: ' + err.message }, 500);
+  }
 });
 
 app.get('/api/users/me/support-inbox', requireUser, async (c) => {

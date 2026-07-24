@@ -2,6 +2,10 @@
 PRAGMA foreign_keys = OFF;
 
 -- Drop existing tables if they exist
+DROP TABLE IF EXISTS ticket_attachments;
+DROP TABLE IF EXISTS ticket_audit_logs;
+DROP TABLE IF EXISTS canned_responses;
+DROP TABLE IF EXISTS ticket_categories;
 DROP TABLE IF EXISTS admin_messages;
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS chat_messages;
@@ -60,6 +64,15 @@ CREATE TABLE categories (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE ticket_categories (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  description TEXT,
+  channel_type TEXT DEFAULT 'education',
+  is_active INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE stories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -101,19 +114,24 @@ CREATE TABLE likes (
 CREATE TABLE reports (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   ticket_id TEXT UNIQUE,
-  reported_item_type TEXT NOT NULL CHECK(reported_item_type IN ('story','comment','user')),
-  reported_item_id INTEGER NOT NULL,
+  subject TEXT,
+  category_id INTEGER REFERENCES ticket_categories(id) ON DELETE SET NULL,
+  reported_item_type TEXT DEFAULT 'support' CHECK(reported_item_type IN ('story','comment','user','support','billing','technical','account','feature_request')),
+  reported_item_id INTEGER DEFAULT 0,
   reason TEXT NOT NULL,
   report_description TEXT,
   attachment_url TEXT,
-  priority TEXT DEFAULT 'medium' CHECK(priority IN ('low', 'medium', 'high', 'critical')),
+  priority TEXT DEFAULT 'medium' CHECK(priority IN ('low', 'medium', 'high', 'urgent')),
   ticket_status TEXT DEFAULT 'open' CHECK(ticket_status IN ('open', 'investigating', 'waiting_on_user', 'resolved', 'closed')),
   reporter_ip_hash TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   reporter_id INTEGER REFERENCES users(id),
+  assigned_agent_id INTEGER REFERENCES admin_users(id) ON DELETE SET NULL,
   resolved_by INTEGER REFERENCES admin_users(id),
   resolved_at DATETIME,
-  enforcement_action TEXT
+  reopened_at DATETIME,
+  enforcement_action TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE ticket_conversation_threads (
@@ -121,8 +139,40 @@ CREATE TABLE ticket_conversation_threads (
   report_id INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
   sender_id INTEGER NOT NULL,
   sender_role TEXT NOT NULL CHECK(sender_role IN ('admin', 'user')),
+  is_internal_note INTEGER DEFAULT 0 CHECK(is_internal_note IN (0, 1)),
   message_body TEXT NOT NULL,
   attachment_url TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ticket_attachments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  message_id INTEGER REFERENCES ticket_conversation_threads(id) ON DELETE CASCADE,
+  ticket_id INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+  file_name TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  file_size INTEGER NOT NULL,
+  mime_type TEXT NOT NULL,
+  storage_key TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE canned_responses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  category_id INTEGER REFERENCES ticket_categories(id) ON DELETE SET NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ticket_audit_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticket_id INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+  actor_id INTEGER NOT NULL,
+  actor_type TEXT NOT NULL CHECK(actor_type IN ('admin', 'user', 'system')),
+  action_type TEXT NOT NULL,
+  old_value TEXT,
+  new_value TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

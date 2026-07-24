@@ -718,50 +718,174 @@
     }
   }
 
-  // ── Users ──
+  // ── Users Management & Messaging ──
+  let allUsersList = [];
+  let messagingMode = 'single';
+  let targetSingleUser = null;
+
   async function loadUsers() {
     try {
-      const data = await api('/api/admin/users');
-      const tbody = document.getElementById('usersList');
-      if (!tbody) return;
-
-      tbody.innerHTML = '';
-      if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; opacity: 0.5;">No users found.</td></tr>';
-        return;
-      }
-
-      data.forEach(user => {
-        const tr = document.createElement('tr');
-        let statusClass = 'approved';
-        if (user.account_status === 'suspended') statusClass = 'pending';
-        if (user.account_status === 'banned') statusClass = 'rejected';
-        
-        tr.innerHTML = `
-          <td><a href="javascript:void(0)" onclick="window.openAuditModal(${user.id})" style="color:var(--primary);text-decoration:underline;">#${user.id}</a></td>
-          <td>${escapeHtml(user.full_name)}<br><small style="opacity:0.6">${escapeHtml(user.user_id)}</small></td>
-          <td>${escapeHtml(user.email)}</td>
-          <td>
-            <select class="form-input" style="padding: 4px 8px; width: auto; font-size: 0.85rem;" onchange="window.updateUserStatus(${user.id}, this.value)">
-              <option value="active" ${user.account_status === 'active' ? 'selected' : ''}>Active</option>
-              <option value="suspended" ${user.account_status === 'suspended' ? 'selected' : ''}>Suspended</option>
-              <option value="banned" ${user.account_status === 'banned' ? 'selected' : ''}>Banned</option>
-              <option value="shadowbanned" ${user.account_status === 'shadowbanned' ? 'selected' : ''}>Shadowbanned</option>
-            </select>
-          </td>
-          <td>${formatDate(user.created_at)}</td>
-          <td>
-            <button class="btn btn--secondary btn--sm" onclick="window.warnUser(${user.id})">Warn</button>
-            <button class="btn btn--ghost btn--sm" onclick="window.resetUserConnections(${user.id})">Reset Connections</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
+      allUsersList = await api('/api/admin/users');
+      renderFilteredUsersTable();
     } catch (err) {
       showToast('Failed to load users.', 'error');
     }
   }
-  
+
+  function renderFilteredUsersTable() {
+    const tbody = document.getElementById('usersList');
+    if (!tbody) return;
+
+    const query = document.getElementById('adminUserSearch') ? document.getElementById('adminUserSearch').value.toLowerCase().trim() : '';
+    let filtered = allUsersList || [];
+
+    if (query) {
+      filtered = filtered.filter(u => 
+        (u.full_name || '').toLowerCase().includes(query) ||
+        (u.email || '').toLowerCase().includes(query) ||
+        (u.user_id || '').toLowerCase().includes(query) ||
+        String(u.id).includes(query)
+      );
+    }
+
+    tbody.innerHTML = '';
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; opacity: 0.5;">No users found.</td></tr>';
+      return;
+    }
+
+    filtered.forEach(user => {
+      const tr = document.createElement('tr');
+      
+      tr.innerHTML = `
+        <td><input type="checkbox" class="user-select-checkbox" data-user-id="${user.id}" style="cursor:pointer; transform:scale(1.25);"></td>
+        <td><a href="javascript:void(0)" onclick="window.openAuditModal(${user.id})" style="color:var(--primary);text-decoration:underline;">#${user.id}</a></td>
+        <td>${escapeHtml(user.full_name)}<br><small style="opacity:0.6">${escapeHtml(user.user_id)}</small></td>
+        <td>${escapeHtml(user.email)}</td>
+        <td>
+          <select class="form-input" style="padding: 4px 8px; width: auto; font-size: 0.85rem;" onchange="window.updateUserStatus(${user.id}, this.value)">
+            <option value="active" ${user.account_status === 'active' ? 'selected' : ''}>Active</option>
+            <option value="suspended" ${user.account_status === 'suspended' ? 'selected' : ''}>Suspended</option>
+            <option value="banned" ${user.account_status === 'banned' ? 'selected' : ''}>Banned</option>
+            <option value="shadowbanned" ${user.account_status === 'shadowbanned' ? 'selected' : ''}>Shadowbanned</option>
+          </select>
+        </td>
+        <td>${formatDate(user.created_at)}</td>
+        <td>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button class="btn btn--primary btn--sm" onclick="window.openAdminMessageUserModal(${user.id}, '${escapeHtml(user.full_name).replace(/'/g, "\\'")}')" style="padding: 3px 8px; font-size: 0.8rem;">✉️ Message</button>
+            <button class="btn btn--secondary btn--sm" onclick="window.warnUser(${user.id})" style="padding: 3px 8px; font-size: 0.8rem;">Warn</button>
+            <button class="btn btn--ghost btn--sm" onclick="window.resetUserConnections(${user.id})" style="padding: 3px 8px; font-size: 0.8rem;">Reset</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('.user-select-checkbox').forEach(cb => {
+      cb.addEventListener('change', updateUserSelectionCount);
+    });
+  }
+
+  function updateUserSelectionCount() {
+    const checked = document.querySelectorAll('.user-select-checkbox:checked');
+    const countEl = document.getElementById('msgSelectedCount');
+    if (countEl) countEl.textContent = checked.length;
+  }
+
+  window.openAdminMessageUserModal = function(userId, userName) {
+    messagingMode = 'single';
+    targetSingleUser = { id: userId, name: userName };
+    const badge = document.getElementById('modalMsgRecipientBadge');
+    if (badge) badge.innerHTML = `👤 Single User: <strong>${escapeHtml(userName)}</strong> (ID: #${userId})`;
+    document.getElementById('adminMsgTitleInput').value = '';
+    document.getElementById('adminMsgBodyInput').value = '';
+    document.getElementById('adminMessagingModal').classList.remove('hidden');
+  };
+
+  function initAdminMessagingEvents() {
+    const selectAll = document.getElementById('selectAllUsers');
+    if (selectAll) {
+      selectAll.addEventListener('change', () => {
+        document.querySelectorAll('.user-select-checkbox').forEach(cb => cb.checked = selectAll.checked);
+        updateUserSelectionCount();
+      });
+    }
+
+    const userSearch = document.getElementById('adminUserSearch');
+    if (userSearch) {
+      userSearch.addEventListener('input', debounce(() => {
+        renderFilteredUsersTable();
+      }, 300));
+    }
+
+    const btnMsgSelected = document.getElementById('btnMsgSelectedUsers');
+    if (btnMsgSelected) {
+      btnMsgSelected.addEventListener('click', () => {
+        const checked = Array.from(document.querySelectorAll('.user-select-checkbox:checked')).map(cb => cb.dataset.userId);
+        if (checked.length === 0) {
+          showToast('Please select at least one user from the list.', 'warning');
+          return;
+        }
+        messagingMode = 'bulk_selected';
+        const badge = document.getElementById('modalMsgRecipientBadge');
+        if (badge) badge.innerHTML = `👥 <strong>${checked.length} Selected User(s)</strong>`;
+        document.getElementById('adminMsgTitleInput').value = '';
+        document.getElementById('adminMsgBodyInput').value = '';
+        document.getElementById('adminMessagingModal').classList.remove('hidden');
+      });
+    }
+
+    const btnMsgAll = document.getElementById('btnMsgAllUsers');
+    if (btnMsgAll) {
+      btnMsgAll.addEventListener('click', () => {
+        messagingMode = 'all_users';
+        const badge = document.getElementById('modalMsgRecipientBadge');
+        if (badge) badge.innerHTML = `📢 <strong>BROADCAST TO ALL REGISTERED USERS</strong>`;
+        document.getElementById('adminMsgTitleInput').value = '';
+        document.getElementById('adminMsgBodyInput').value = '';
+        document.getElementById('adminMessagingModal').classList.remove('hidden');
+      });
+    }
+  }
+
+  window.submitAdminDirectMessage = async function(e) {
+    if (e) e.preventDefault();
+    const title = document.getElementById('adminMsgTitleInput').value.trim();
+    const body = document.getElementById('adminMsgBodyInput').value.trim();
+    if (!title || !body) return showToast('Subject Title and Message Body are required.', 'warning');
+
+    const submitBtn = document.getElementById('btnSubmitAdminMsg');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending Message...';
+
+    const payload = {
+      recipient_type: messagingMode,
+      title,
+      body
+    };
+
+    if (messagingMode === 'single') {
+      payload.user_id = targetSingleUser.id;
+    } else if (messagingMode === 'bulk_selected') {
+      payload.user_ids = Array.from(document.querySelectorAll('.user-select-checkbox:checked')).map(cb => cb.dataset.userId);
+    }
+
+    try {
+      const res = await api('/api/admin/messages/send', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      showToast(res.message || 'Admin message sent successfully.', 'success');
+      document.getElementById('adminMessagingModal').classList.add('hidden');
+    } catch (err) {
+      showToast('Failed to send message: ' + err.message, 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '🚀 Send Official Admin Message';
+    }
+  };
+
   window.updateUserStatus = async function(id, status) {
     const reason = prompt(`Enter reason for changing status to ${status}:`);
     if (reason === null) return;
@@ -858,6 +982,8 @@
     // Logout
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+
+    initAdminMessagingEvents();
 
     // Panel navigation
     document.querySelectorAll('.admin-nav-item[data-panel]').forEach(item => {

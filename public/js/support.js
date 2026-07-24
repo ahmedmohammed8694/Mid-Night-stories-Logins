@@ -162,5 +162,64 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  async function loadAdminMessagesInbox() {
+    const listEl = document.getElementById('adminMessagesList');
+    const countEl = document.getElementById('adminMsgCount');
+    if (!listEl) return;
+
+    try {
+      const data = await api('/api/users/me/support-inbox');
+      const messages = data.messages || [];
+      
+      if (countEl) countEl.textContent = messages.length;
+
+      if (messages.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">No direct messages or alerts from Admin.</div>';
+        return;
+      }
+
+      listEl.innerHTML = '';
+      messages.forEach(msg => {
+        const card = document.createElement('div');
+        card.style.cssText = 'background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(129, 140, 248, 0.35); border-radius: 12px; padding: 18px; text-align: left;';
+        
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+            <span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #ffffff; padding: 3px 10px; border-radius: 12px; font-weight: bold; font-size: 0.78rem;">🛡️ Official Admin Message</span>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">${new Date(msg.created_at).toLocaleString()}</span>
+          </div>
+          <h4 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">${escapeHtml(msg.title)}</h4>
+          <div style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap;">${escapeHtml(msg.body)}</div>
+        `;
+        listEl.appendChild(card);
+      });
+    } catch (err) {
+      if (listEl) listEl.innerHTML = `<div class="empty-state">Failed to load admin messages: ${err.message}</div>`;
+    }
+  }
+
+  const tabTickets = document.getElementById('tabSupportTickets');
+  const tabAdminMsg = document.getElementById('tabAdminDirectMessages');
+  const layoutSection = document.getElementById('supportLayoutSection');
+  const msgSection = document.getElementById('adminMessagesSection');
+
+  if (tabTickets && tabAdminMsg) {
+    tabTickets.addEventListener('click', () => {
+      tabTickets.classList.add('active');
+      tabAdminMsg.classList.remove('active');
+      if (layoutSection) layoutSection.classList.remove('hidden');
+      if (msgSection) msgSection.classList.add('hidden');
+    });
+
+    tabAdminMsg.addEventListener('click', () => {
+      tabAdminMsg.classList.add('active');
+      tabTickets.classList.remove('active');
+      if (layoutSection) layoutSection.classList.add('hidden');
+      if (msgSection) msgSection.classList.remove('hidden');
+      loadAdminMessagesInbox();
+    });
+  }
+
   loadTickets();
+  loadAdminMessagesInbox();
 });

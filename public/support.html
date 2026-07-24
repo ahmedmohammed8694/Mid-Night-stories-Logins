@@ -75,7 +75,13 @@
       </div>
     </section>
 
-    <div class="support-layout">
+    <div style="max-width: 1200px; margin: 0 auto 1.5rem auto; padding: 0 1rem; display: flex; gap: 12px;">
+      <button class="filter-chip active" id="tabSupportTickets" style="font-size: 0.95rem; padding: 8px 18px;">💬 Support Tickets</button>
+      <button class="filter-chip" id="tabAdminDirectMessages" style="font-size: 0.95rem; padding: 8px 18px;">📥 Admin Direct Messages &amp; Alerts (<span id="adminMsgCount">0</span>)</button>
+    </div>
+
+    <!-- Support Tickets View -->
+    <div class="support-layout" id="supportLayoutSection">
       <!-- Sidebar List -->
       <aside class="ticket-list" id="ticketList">
         <div class="empty-state">Loading tickets...</div>
@@ -103,7 +109,16 @@
             <button class="btn btn--primary" id="replyBtn">Send Update</button>
           </div>
         </div>
-      </section>
+    </div>
+
+    <!-- Admin Messages Inbox View -->
+    <div id="adminMessagesSection" class="hidden" style="max-width: 1200px; margin: 0 auto 2rem auto; padding: 0 1rem;">
+      <div style="background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-card); padding: 24px;">
+        <h3 style="font-size: 1.2rem; color: var(--text-primary); margin-bottom: 16px; font-family: 'Fraunces', serif;">🛡️ Official Admin Direct Messages &amp; Broadcasts</h3>
+        <div id="adminMessagesList" style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="empty-state">Loading official admin messages...</div>
+        </div>
+      </div>
     </div>
   </main>
 

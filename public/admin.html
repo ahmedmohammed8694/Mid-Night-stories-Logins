@@ -189,16 +189,29 @@
 
         <!-- Users Panel -->
         <div class="admin-panel" id="panel-users">
-          <div class="admin-header-flex">
+          <div class="admin-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
             <div>
-              <h1 class="admin-page-title">Users</h1>
-              <p class="admin-page-subtitle">Manage user accounts, permissions, and moderation.</p>
+              <h1 class="admin-page-title">User Management &amp; Direct Messaging</h1>
+              <p class="admin-page-subtitle">Inspect registered users, manage accounts, and broadcast direct messages.</p>
+            </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <button class="btn btn--primary" id="btnMsgSelectedUsers" style="height: 40px; padding: 0 16px;">✉️ Message Selected Users (<span id="msgSelectedCount">0</span>)</button>
+              <button class="btn btn--secondary" id="btnMsgAllUsers" style="height: 40px; padding: 0 16px;">📢 Broadcast to ALL Users</button>
             </div>
           </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; background: var(--bg-secondary); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-card);">
+            <div style="display: flex; gap: 12px; align-items: center; width: 100%; max-width: 400px;">
+              <input type="text" id="adminUserSearch" class="form-input" style="height: 36px; margin-top: 0;" placeholder="Search Name, Email, or User ID...">
+            </div>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Select checkboxes to bulk message specific users</span>
+          </div>
+
           <div class="card" style="padding: 0;">
             <table class="admin-table">
               <thead>
                 <tr>
+                  <th style="width: 40px;"><input type="checkbox" id="selectAllUsers" style="cursor: pointer; transform: scale(1.25);"></th>
                   <th>User ID</th>
                   <th>Name</th>
                   <th>Email</th>
@@ -208,9 +221,41 @@
                 </tr>
               </thead>
               <tbody id="usersList">
-                <tr><td colspan="6" style="text-align: center; opacity: 0.5;">Loading users...</td></tr>
+                <tr><td colspan="7" style="text-align: center; opacity: 0.5;">Loading users...</td></tr>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- Admin Direct & Bulk Messaging Modal -->
+        <div class="modal-overlay hidden" id="adminMessagingModal" style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; backdrop-filter: blur(4px);">
+          <div class="modal" style="max-width: 550px; width: 92%; padding: 28px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-card); text-align: left; box-shadow: var(--shadow-xl);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-card); padding-bottom: 12px;">
+              <h2 style="font-family: 'Fraunces', serif; font-size: 1.3rem; color: var(--text-primary); margin: 0;">💬 Send Official Admin Message</h2>
+              <button onclick="document.getElementById('adminMessagingModal').classList.add('hidden')" style="background: none; border: none; font-size: 1.4rem; color: var(--text-muted); cursor: pointer;">✕</button>
+            </div>
+
+            <form id="adminSendMsgForm" onsubmit="window.submitAdminDirectMessage(event)">
+              <div style="margin-bottom: 16px; padding: 12px; background: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-card);">
+                <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">RECIPIENTS:</span>
+                <div id="modalMsgRecipientBadge" style="font-size: 0.95rem; font-weight: 600; color: var(--primary); margin-top: 4px;">Single User: John Doe</div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label">Subject / Title*</label>
+                <input type="text" class="form-input" id="adminMsgTitleInput" placeholder="e.g. Official Update from Midnight Support Team" required style="height: 40px;">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 20px;">
+                <label class="form-label">Message Body*</label>
+                <textarea class="form-textarea" id="adminMsgBodyInput" placeholder="Write your message here... This will display in the user's Inbox as an official Admin Message." rows="5" required style="resize: vertical;"></textarea>
+              </div>
+
+              <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" class="btn btn--secondary btn--sm" onclick="document.getElementById('adminMessagingModal').classList.add('hidden')">Cancel</button>
+                <button type="submit" id="btnSubmitAdminMsg" class="btn btn--primary btn--sm" style="height: 38px; padding: 0 20px;">🚀 Send Official Admin Message</button>
+              </div>
+            </form>
           </div>
         </div>
 
