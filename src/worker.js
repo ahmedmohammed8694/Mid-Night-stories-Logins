@@ -242,6 +242,32 @@ app.get('/story', async (c) => {
   return c.redirect('/story.html');
 });
 
+app.get('/support', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/support.html';
+    const res = await c.env.ASSETS.fetch(url);
+    const newHeaders = new Headers(res.headers);
+    newHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return new Response(res.body, { status: res.status, statusText: res.statusText, headers: newHeaders });
+  }
+  return c.redirect('/support.html');
+});
+
+app.get('/support.html', async (c) => {
+  if (c.env.ASSETS) {
+    const res = await c.env.ASSETS.fetch(c.req.raw);
+    const newHeaders = new Headers(res.headers);
+    newHeaders.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return new Response(res.body, { status: res.status, statusText: res.statusText, headers: newHeaders });
+  }
+  return c.text('Not found', 404);
+});
+
+app.get('/helpdesk', async (c) => {
+  return c.redirect('/support');
+});
+
 
 // Serve default book cover image asset if missing from storage
 app.get('/images/default-cover.svg', (c) => {
