@@ -4130,6 +4130,534 @@ app.post('/api/admin/submissions/:id/reject', requireAdmin, async (c) => {
   return c.json({ success: true, message: 'Submission rejected.' });
 });
 
+// ═════════════════════════════════════════════════════════
+// ██  CRM HELPDESK TICKETING SYSTEM
+// ═════════════════════════════════════════════════════════
+
+// Auto-ensure CRM schema columns exist on reports table
+async function ensureHelpdeskSchema(db) {
+  const newCols = [
+    'ALTER TABLE reports ADD COLUMN ticket_id TEXT',
+    'ALTER TABLE reports ADD COLUMN subject TEXT',
+    'ALTER TABLE reports ADD COLUMN category_id INTEGER',
+    'ALTER TABLE reports ADD COLUMN subcategory_id INTEGER',
+    'ALTER TABLE reports ADD COLUMN priority TEXT DEFAULT "medium"',
+    'ALTER TABLE reports ADD COLUMN ticket_status TEXT DEFAULT "open"',
+    'ALTER TABLE reports ADD COLUMN assigned_agent_id INTEGER',
+    'ALTER TABLE reports ADD COLUMN resolved_at TEXT',
+    'ALTER TABLE reports ADD COLUMN reopened_at TEXT',
+    'ALTER TABLE reports ADD COLUMN report_description TEXT',
+    'ALTER TABLE reports ADD COLUMN attachment_url TEXT',
+    'ALTER TABLE reports ADD COLUMN custom_fields_json TEXT',
+    'ALTER TABLE reports ADD COLUMN sla_due_at TEXT',
+    'ALTER TABLE reports ADD COLUMN frt_due_at TEXT',
+    'ALTER TABLE reports ADD COLUMN frt_responded_at TEXT',
+    'ALTER TABLE reports ADD COLUMN csat_rating INTEGER',
+    'ALTER TABLE reports ADD COLUMN csat_feedback TEXT',
+    'ALTER TABLE reports ADD COLUMN can_reopen INTEGER DEFAULT 0',
+  ];
+  for (const sql of newCols) {
+    try { await db.prepare(sql).run(); } catch(e) {}
+  }
+
+  // Create ticket_categories if not exists
+  await db.prepare(`CREATE TABLE IF NOT EXISTS ticket_categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    icon TEXT,
+    description TEXT,
+    sort_order INTEGER DEFAULT 0
+  )`).run().catch(()=>{});
+
+  // Create ticket_subcategories if not exists
+  await db.prepare(`CREATE TABLE IF NOT EXISTS ticket_subcategories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    sort_order INTEGER DEFAULT 0
+  )`).run().catch(()=>{});
+
+  // Create ticket_messages if not exists
+  await db.prepare(`CREATE TABLE IF NOT EXISTS ticket_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_id INTEGER NOT NULL,
+    sender_id INTEGER,
+    sender_role TEXT DEFAULT 'user',
+    message_body TEXT NOT NULL,
+    attachment_url TEXT,
+    is_internal INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  )`).run().catch(()=>{});
+
+  // Create admin_broadcasts if not exists
+  await db.prepare(`CREATE TABLE IF NOT EXISTS admin_broadcasts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_admin_id INTEGER,
+    recipient_user_id INTEGER,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    is_read INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now'))
+  )`).run().catch(()=>{});
+
+  // Seed default categories
+  const catCount = await db.prepare('SELECT COUNT(*) as c FROM ticket_categories').first();
+  if (catCount && catCount.c === 0) {
+    const cats = [
+      [1, '📖 Story & Content Moderation', '📖', 'Copyright, plagiarism, story takedowns, comment spam'],
+      [2, '📚 Book Library & Reader Mode', '📚', 'EPUB/PDF bugs, corrupted files, upload issues'],
+      [3, '👤 Account & Access', '👤', 'Password reset, suspension appeals, profile issues'],
+      [4, '💳 Billing & Subscriptions', '💳', 'Payment failures, refund requests, subscription issues'],
+      [5, '🛠️ Platform & Technical Bugs', '🛠️', 'App crashes, UI glitches, performance issues'],
+      [6, '💡 Feature Requests & Author Tools', '💡', 'New features, author dashboard improvements'],
+    ];
+    for (const [id, name, icon, desc] of cats) {
+      try { await db.prepare('INSERT OR IGNORE INTO ticket_categories (id, name, icon, description) VALUES (?,?,?,?)').bind(id, name, icon, desc).run(); } catch(e) {}
+    }
+  }
+
+  // Seed default subcategories
+  const subCount = await db.prepare('SELECT COUNT(*) as c FROM ticket_subcategories').first();
+  if (subCount && subCount.c === 0) {
+    const subs = [
+      [1, 'Copyright / DMCA Takedown'], [1, 'Plagiarism Report'], [1, 'Story Spam / Inappropriate Content'], [1, 'Comment Harassment'],
+      [2, 'EPUB/PDF Not Loading'], [2, 'Corrupted File Download'], [2, 'Book Upload Failed'], [2, 'Reader Mode Bug'],
+      [3, 'Forgot Password / Reset'], [3, 'Account Suspended Appeal'], [3, 'Profile Not Updating'], [3, 'Login Issues'],
+      [4, 'Payment Failed'], [4, 'Refund Request'], [4, 'Subscription Not Activating'], [4, 'Invoice / Receipt Request'],
+      [5, 'App Crash / 500 Error'], [5, 'Slow Performance'], [5, 'UI Layout Bug'], [5, 'Mobile Device Issue'],
+      [6, 'New Feature Idea'], [6, 'Author Dashboard Request'], [6, 'Analytics Request'], [6, 'API Access Request'],
+    ];
+    for (const [catId, name] of subs) {
+      try { await db.prepare('INSERT INTO ticket_subcategories (category_id, name) VALUES (?,?)').bind(catId, name).run(); } catch(e) {}
+    }
+  }
+}
+
+// GET /api/user/ticket-form-config — Dynamic form config for ticket creation
+app.get('/api/user/ticket-form-config', requireUser, async (c) => {
+  const db = c.env.DB;
+  await ensureHelpdeskSchema(db);
+
+  const { results: categories } = await db.prepare('SELECT * FROM ticket_categories ORDER BY sort_order, id').all();
+  const { results: subcategories } = await db.prepare('SELECT * FROM ticket_subcategories ORDER BY category_id, sort_order, id').all();
+
+  const slaRules = [
+    { priority: 'urgent', frt_hours: 1, ttr_hours: 4, label: 'Urgent (App Crash / Copyright - 1h SLA)' },
+    { priority: 'high', frt_hours: 4, ttr_hours: 12, label: 'High (Major Issue / Billing - 4h SLA)' },
+    { priority: 'medium', frt_hours: 12, ttr_hours: 24, label: 'Medium (Standard Request - 12h SLA)' },
+    { priority: 'low', frt_hours: 24, ttr_hours: 72, label: 'Low (General Inquiry - 24h SLA)' },
+  ];
+
+  return c.json({ categories, subcategories, customFields: [], slaRules });
+});
+
+// GET /api/user/tickets — List user's support tickets
+app.get('/api/user/tickets', requireUser, async (c) => {
+  const db = c.env.DB;
+  await ensureHelpdeskSchema(db);
+  const user = c.get('user');
+  const statusFilter = c.req.query('status');
+
+  let sql = `SELECT r.*, 
+    COALESCE(r.ticket_id, 'TKT-' || r.id) as ticket_id,
+    COALESCE(r.subject, r.reason, 'Support Request') as subject,
+    COALESCE(r.ticket_status, 'open') as ticket_status,
+    COALESCE(r.priority, 'medium') as priority,
+    tc.name as category_name
+    FROM reports r
+    LEFT JOIN ticket_categories tc ON tc.id = r.category_id
+    WHERE r.user_id = ?`;
+  const params = [user.id];
+
+  if (statusFilter && statusFilter !== 'all') {
+    sql += ` AND COALESCE(r.ticket_status, 'open') = ?`;
+    params.push(statusFilter);
+  }
+
+  sql += ' ORDER BY r.created_at DESC LIMIT 50';
+
+  const { results } = await db.prepare(sql).bind(...params).all();
+  return c.json(results);
+});
+
+// POST /api/user/tickets/create — Create a new support ticket
+app.post('/api/user/tickets/create', requireUser, async (c) => {
+  const db = c.env.DB;
+  await ensureHelpdeskSchema(db);
+  const user = c.get('user');
+
+  let subject, category_id, subcategory_id, priority, details, custom_fields_json;
+  const contentType = c.req.header('Content-Type') || '';
+
+  if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
+    const formData = await c.req.formData();
+    subject = formData.get('subject');
+    category_id = formData.get('category_id');
+    subcategory_id = formData.get('subcategory_id');
+    priority = formData.get('priority') || 'medium';
+    details = formData.get('details');
+    custom_fields_json = formData.get('custom_fields_json') || '{}';
+  } else {
+    const body = await c.req.json();
+    subject = body.subject;
+    category_id = body.category_id;
+    subcategory_id = body.subcategory_id;
+    priority = body.priority || 'medium';
+    details = body.details;
+    custom_fields_json = JSON.stringify(body.custom_fields || {});
+  }
+
+  if (!subject || !details) {
+    return c.json({ error: 'Subject and detailed message are required.' }, 400);
+  }
+
+  // Generate ticket tracking ID
+  const year = new Date().getFullYear();
+  const rand = Math.floor(10000 + Math.random() * 90000);
+  const ticketId = `TKT-${year}-${rand}`;
+
+  // Calculate SLA due timestamps
+  const slaMap = { urgent: { frt: 1, ttr: 4 }, high: { frt: 4, ttr: 12 }, medium: { frt: 12, ttr: 24 }, low: { frt: 24, ttr: 72 } };
+  const sla = slaMap[priority] || slaMap.medium;
+  const now = new Date();
+  const frtDue = new Date(now.getTime() + sla.frt * 3600000).toISOString();
+  const slaDue = new Date(now.getTime() + sla.ttr * 3600000).toISOString();
+
+  // Get category name for report_type
+  let catRow = null;
+  try { catRow = await db.prepare('SELECT name FROM ticket_categories WHERE id = ?').bind(parseInt(category_id) || 0).first(); } catch(e) {}
+
+  const res = await db.prepare(`
+    INSERT INTO reports (user_id, ticket_id, subject, category_id, subcategory_id, priority, ticket_status,
+      report_description, custom_fields_json, sla_due_at, frt_due_at, created_at, type, reason, can_reopen)
+    VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?, datetime('now'), 'support_ticket', ?, 1)
+  `).bind(
+    user.id, ticketId, subject, parseInt(category_id) || null, parseInt(subcategory_id) || null,
+    priority, details, custom_fields_json, slaDue, frtDue,
+    (catRow ? catRow.name : subject)
+  ).run();
+
+  const newId = res.meta.last_row_id;
+
+  // Insert the initial message
+  await db.prepare(`
+    INSERT INTO ticket_messages (ticket_id, sender_id, sender_role, message_body, created_at)
+    VALUES (?, ?, 'user', ?, datetime('now'))
+  `).bind(newId, user.id, details).run().catch(()=>{});
+
+  return c.json({ success: true, id: newId, ticket_id: ticketId });
+});
+
+// GET /api/tickets/:id/messages — Get ticket details & messages
+app.get('/api/tickets/:id/messages', requireUser, async (c) => {
+  const db = c.env.DB;
+  await ensureHelpdeskSchema(db);
+  const user = c.get('user');
+  const ticketDbId = parseInt(c.req.param('id'));
+
+  const ticket = await db.prepare(`
+    SELECT r.*,
+      COALESCE(r.ticket_id, 'TKT-' || r.id) as ticket_id,
+      COALESCE(r.subject, r.reason, 'Support Request') as subject,
+      COALESCE(r.ticket_status, 'open') as ticket_status,
+      COALESCE(r.priority, 'medium') as priority,
+      COALESCE(r.report_description, r.reason) as report_description,
+      tc.name as category_name
+    FROM reports r
+    LEFT JOIN ticket_categories tc ON tc.id = r.category_id
+    WHERE r.id = ? AND r.user_id = ?
+  `).bind(ticketDbId, user.id).first();
+
+  if (!ticket) return c.json({ error: 'Ticket not found or access denied.' }, 404);
+
+  const { results: messages } = await db.prepare(
+    'SELECT * FROM ticket_messages WHERE ticket_id = ? ORDER BY created_at ASC'
+  ).bind(ticketDbId).all();
+
+  // Check 7-day reopen eligibility
+  let canReopen = false;
+  if ((ticket.ticket_status === 'resolved' || ticket.ticket_status === 'closed') && ticket.resolved_at) {
+    const resolvedAt = new Date(ticket.resolved_at).getTime();
+    canReopen = (Date.now() - resolvedAt) < 7 * 24 * 3600000;
+  } else if (ticket.can_reopen === 1) {
+    canReopen = true;
+  }
+
+  return c.json({ ticket: { ...ticket, can_reopen: canReopen }, messages, attachments: [] });
+});
+
+// POST /api/tickets/:id/reply — User reply to ticket
+app.post('/api/tickets/:id/reply', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const ticketDbId = parseInt(c.req.param('id'));
+  const { message_body } = await c.req.json();
+
+  if (!message_body || !message_body.trim()) {
+    return c.json({ error: 'Message body is required.' }, 400);
+  }
+
+  const ticket = await db.prepare('SELECT id, ticket_status FROM reports WHERE id = ? AND user_id = ?')
+    .bind(ticketDbId, user.id).first();
+  if (!ticket) return c.json({ error: 'Ticket not found.' }, 404);
+  if (ticket.ticket_status === 'closed') return c.json({ error: 'This ticket is closed.' }, 400);
+
+  await db.prepare(`
+    INSERT INTO ticket_messages (ticket_id, sender_id, sender_role, message_body, created_at)
+    VALUES (?, ?, 'user', ?, datetime('now'))
+  `).bind(ticketDbId, user.id, message_body.trim()).run();
+
+  // Update ticket status to open if waiting on user
+  if (ticket.ticket_status === 'waiting_on_user') {
+    await db.prepare('UPDATE reports SET ticket_status = "open" WHERE id = ?').bind(ticketDbId).run();
+  }
+
+  return c.json({ success: true });
+});
+
+// POST /api/user/tickets/:id/reopen — Reopen a resolved ticket
+app.post('/api/user/tickets/:id/reopen', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const ticketDbId = parseInt(c.req.param('id'));
+
+  const ticket = await db.prepare('SELECT * FROM reports WHERE id = ? AND user_id = ?')
+    .bind(ticketDbId, user.id).first();
+  if (!ticket) return c.json({ error: 'Ticket not found.' }, 404);
+
+  const isResolved = ticket.ticket_status === 'resolved' || ticket.ticket_status === 'closed';
+  if (!isResolved) return c.json({ error: 'Only resolved tickets can be reopened.' }, 400);
+
+  // Check 7-day window
+  if (ticket.resolved_at) {
+    const resolvedAt = new Date(ticket.resolved_at).getTime();
+    if (Date.now() - resolvedAt > 7 * 24 * 3600000) {
+      return c.json({ error: 'Reopen window (7 days) has expired.' }, 400);
+    }
+  }
+
+  await db.prepare(`UPDATE reports SET ticket_status = 'open', reopened_at = datetime('now') WHERE id = ?`)
+    .bind(ticketDbId).run();
+
+  await db.prepare(`
+    INSERT INTO ticket_messages (ticket_id, sender_id, sender_role, message_body, created_at)
+    VALUES (?, ?, 'user', 'User has reopened this ticket for further assistance.', datetime('now'))
+  `).bind(ticketDbId, user.id).run().catch(()=>{});
+
+  return c.json({ success: true });
+});
+
+// POST /api/user/tickets/:id/rate — CSAT rating
+app.post('/api/user/tickets/:id/rate', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const ticketDbId = parseInt(c.req.param('id'));
+  const { rating, feedback } = await c.req.json();
+
+  if (!rating || rating < 1 || rating > 5) {
+    return c.json({ error: 'Rating must be between 1 and 5.' }, 400);
+  }
+
+  const ticket = await db.prepare('SELECT id FROM reports WHERE id = ? AND user_id = ?')
+    .bind(ticketDbId, user.id).first();
+  if (!ticket) return c.json({ error: 'Ticket not found.' }, 404);
+
+  await db.prepare('UPDATE reports SET csat_rating = ?, csat_feedback = ? WHERE id = ?')
+    .bind(rating, feedback || null, ticketDbId).run();
+
+  return c.json({ success: true });
+});
+
+// GET /api/users/me/support-inbox — Unread admin broadcasts for user
+app.get('/api/users/me/support-inbox', requireUser, async (c) => {
+  const db = c.env.DB;
+  await ensureHelpdeskSchema(db);
+  const user = c.get('user');
+
+  const { results: messages } = await db.prepare(`
+    SELECT * FROM admin_broadcasts
+    WHERE recipient_user_id = ? OR recipient_user_id IS NULL
+    ORDER BY created_at DESC
+    LIMIT 20
+  `).bind(user.id).all();
+
+  return c.json({ messages: messages || [] });
+});
+
+// ── ADMIN: Ticket Management Routes ──
+
+// GET /api/admin/helpdesk/tickets — All tickets for admin
+app.get('/api/admin/helpdesk/tickets', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  await ensureHelpdeskSchema(db);
+
+  const statusFilter = c.req.query('status') || '';
+  let sql = `SELECT r.*,
+    COALESCE(r.ticket_id, 'TKT-' || r.id) as ticket_id,
+    COALESCE(r.subject, r.reason, 'Support Request') as subject,
+    COALESCE(r.ticket_status, 'open') as ticket_status,
+    COALESCE(r.priority, 'medium') as priority,
+    tc.name as category_name,
+    u.full_name as user_name, u.email as user_email
+    FROM reports r
+    LEFT JOIN ticket_categories tc ON tc.id = r.category_id
+    LEFT JOIN users u ON u.id = r.user_id
+    WHERE 1=1`;
+  const params = [];
+
+  if (statusFilter && statusFilter !== 'all') {
+    sql += ` AND COALESCE(r.ticket_status, 'open') = ?`;
+    params.push(statusFilter);
+  }
+  sql += ' ORDER BY r.created_at DESC LIMIT 100';
+
+  const { results } = await db.prepare(sql).bind(...params).all();
+  return c.json(results);
+});
+
+// GET /api/admin/helpdesk/tickets/:id — Admin view single ticket
+app.get('/api/admin/helpdesk/tickets/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  await ensureHelpdeskSchema(db);
+  const ticketDbId = parseInt(c.req.param('id'));
+
+  const ticket = await db.prepare(`
+    SELECT r.*,
+      COALESCE(r.ticket_id, 'TKT-' || r.id) as ticket_id,
+      COALESCE(r.subject, r.reason, 'Support Request') as subject,
+      COALESCE(r.ticket_status, 'open') as ticket_status,
+      COALESCE(r.priority, 'medium') as priority,
+      COALESCE(r.report_description, r.reason) as report_description,
+      tc.name as category_name,
+      u.full_name as user_name, u.email as user_email
+    FROM reports r
+    LEFT JOIN ticket_categories tc ON tc.id = r.category_id
+    LEFT JOIN users u ON u.id = r.user_id
+    WHERE r.id = ?
+  `).bind(ticketDbId).first();
+
+  if (!ticket) return c.json({ error: 'Ticket not found.' }, 404);
+
+  const { results: messages } = await db.prepare(
+    'SELECT * FROM ticket_messages WHERE ticket_id = ? ORDER BY created_at ASC'
+  ).bind(ticketDbId).all();
+
+  return c.json({ ticket, messages });
+});
+
+// POST /api/admin/helpdesk/tickets/:id/reply — Admin reply to ticket
+app.post('/api/admin/helpdesk/tickets/:id/reply', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const admin = c.get('admin');
+  const ticketDbId = parseInt(c.req.param('id'));
+  const { message_body, update_status } = await c.req.json();
+
+  if (!message_body || !message_body.trim()) {
+    return c.json({ error: 'Message body is required.' }, 400);
+  }
+
+  const ticket = await db.prepare('SELECT id, user_id FROM reports WHERE id = ?').bind(ticketDbId).first();
+  if (!ticket) return c.json({ error: 'Ticket not found.' }, 404);
+
+  await db.prepare(`
+    INSERT INTO ticket_messages (ticket_id, sender_id, sender_role, message_body, created_at)
+    VALUES (?, ?, 'admin', ?, datetime('now'))
+  `).bind(ticketDbId, admin.adminId || 0, message_body.trim()).run();
+
+  if (update_status) {
+    const extraFields = update_status === 'resolved'
+      ? `, resolved_at = datetime('now'), can_reopen = 1` : '';
+    await db.prepare(`UPDATE reports SET ticket_status = ?${extraFields} WHERE id = ?`)
+      .bind(update_status, ticketDbId).run();
+  }
+
+  // Update FRT if first admin response
+  const ticket2 = await db.prepare('SELECT frt_responded_at FROM reports WHERE id = ?').bind(ticketDbId).first();
+  if (!ticket2.frt_responded_at) {
+    await db.prepare('UPDATE reports SET frt_responded_at = datetime("now") WHERE id = ?').bind(ticketDbId).run();
+  }
+
+  return c.json({ success: true });
+});
+
+// PATCH /api/admin/helpdesk/tickets/:id/status — Update ticket status/priority
+app.patch('/api/admin/helpdesk/tickets/:id/status', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const ticketDbId = parseInt(c.req.param('id'));
+  const { status, priority } = await c.req.json();
+
+  const updates = [];
+  const params = [];
+  if (status) { updates.push('ticket_status = ?'); params.push(status); }
+  if (priority) { updates.push('priority = ?'); params.push(priority); }
+  if (status === 'resolved') { updates.push("resolved_at = datetime('now')"); updates.push('can_reopen = 1'); }
+
+  if (updates.length === 0) return c.json({ error: 'No fields to update.' }, 400);
+
+  params.push(ticketDbId);
+  await db.prepare(`UPDATE reports SET ${updates.join(', ')} WHERE id = ?`).bind(...params).run();
+
+  return c.json({ success: true });
+});
+
+// POST /api/admin/messages/send — Admin sends direct message to user(s)
+app.post('/api/admin/messages/send', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  await ensureHelpdeskSchema(db);
+  const admin = c.get('admin');
+  const { title, body, recipient_user_id } = await c.req.json();
+
+  if (!title || !body) return c.json({ error: 'Title and body are required.' }, 400);
+
+  await db.prepare(`
+    INSERT INTO admin_broadcasts (sender_admin_id, recipient_user_id, title, body, created_at)
+    VALUES (?, ?, ?, ?, datetime('now'))
+  `).bind(admin.adminId || 0, recipient_user_id || null, title, body).run();
+
+  return c.json({ success: true });
+});
+
+// GET /api/admin/analytics — CRM Executive analytics
+app.get('/api/admin/analytics', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  await ensureHelpdeskSchema(db);
+
+  const total = await db.prepare("SELECT COUNT(*) as c FROM reports WHERE type = 'support_ticket' OR ticket_id IS NOT NULL").first();
+  const openT = await db.prepare("SELECT COUNT(*) as c FROM reports WHERE COALESCE(ticket_status,'open') = 'open'").first();
+  const resolvedT = await db.prepare("SELECT COUNT(*) as c FROM reports WHERE ticket_status = 'resolved'").first();
+  const slaCompliant = await db.prepare("SELECT COUNT(*) as c FROM reports WHERE ticket_id IS NOT NULL AND (sla_due_at IS NULL OR frt_responded_at <= sla_due_at)").first();
+  const csatData = await db.prepare("SELECT AVG(csat_rating) as avg_csat, COUNT(csat_rating) as cnt FROM reports WHERE csat_rating IS NOT NULL").first();
+
+  const totalCount = (total && total.c) || 0;
+  const slaTotal = (resolvedT && resolvedT.c) || 0;
+  const slaOk = (slaCompliant && slaCompliant.c) || 0;
+  const slaRate = slaTotal > 0 ? Math.round((slaOk / slaTotal) * 100) : 100;
+
+  const { results: topCats } = await db.prepare(`
+    SELECT tc.name as category_name, COUNT(r.id) as ticket_count
+    FROM reports r
+    LEFT JOIN ticket_categories tc ON tc.id = r.category_id
+    WHERE r.ticket_id IS NOT NULL
+    GROUP BY r.category_id
+    ORDER BY ticket_count DESC
+    LIMIT 6
+  `).all();
+
+  return c.json({
+    summary: {
+      total_tickets: totalCount,
+      open_tickets: (openT && openT.c) || 0,
+      resolved_tickets: (resolvedT && resolvedT.c) || 0,
+      sla_compliance_pct: slaRate,
+      csat_score: csatData && csatData.avg_csat ? parseFloat(csatData.avg_csat).toFixed(1) : '5.0',
+      csat_count: (csatData && csatData.cnt) || 0,
+    },
+    topCategories: topCats || []
+  });
+});
+
+
+
 app.notFound(async (c) => {
   if (c.env.ASSETS) {
     return c.env.ASSETS.fetch(c.req.raw);

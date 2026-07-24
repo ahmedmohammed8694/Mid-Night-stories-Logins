@@ -1,49 +1,91 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  // ── Auth Guard ──
   const token = localStorage.getItem('token');
   if (!token) {
     window.location.href = '/login.html';
     return;
   }
 
-  const ticketListEl = document.getElementById('ticketList');
-  const ticketViewEl = document.getElementById('ticketView');
+  // ── DOM References ──
+  const ticketListScroll = document.getElementById('ticketListScroll');
+  const ticketCountBadge = document.getElementById('ticketCountBadge');
+  const ticketDetailEmpty = document.getElementById('ticketDetailEmpty');
+  const ticketDetailContent = document.getElementById('ticketDetailContent');
+  
   const viewTicketId = document.getElementById('viewTicketId');
   const viewTicketSubject = document.getElementById('viewTicketSubject');
   const viewTicketCategory = document.getElementById('viewTicketCategory');
   const viewTicketPriority = document.getElementById('viewTicketPriority');
   const viewTicketStatus = document.getElementById('viewTicketStatus');
-  const ticketMessagesEl = document.getElementById('ticketMessages');
-  const ticketReplyBox = document.getElementById('ticketReplyBox');
+  const ticketMessages = document.getElementById('ticketMessages');
+  const ticketReplyArea = document.getElementById('ticketReplyArea');
   const resolvedNotice = document.getElementById('resolvedNotice');
-  const reopenNoticeSection = document.getElementById('reopenNoticeSection');
+  const reopenBanner = document.getElementById('reopenBanner');
   const reopenTicketBtn = document.getElementById('reopenTicketBtn');
   const replyText = document.getElementById('replyText');
   const replyBtn = document.getElementById('replyBtn');
 
   let activeTicketId = null;
   let currentUserFilter = 'all';
+  let formConfig = { categories: [], subcategories: [], customFields: [], slaRules: [] };
 
-  let formConfig = { categories: [], subcategories: [], customFields: [] };
+  // ── Modal Logic ──
+  const modal = document.getElementById('newTicketModal');
+  const btnOpen = document.getElementById('btnOpenCreateTicketModal');
+  const btnClose = document.getElementById('btnCloseModal');
+  const btnCancel = document.getElementById('btnCancelModal');
 
+  function openModal() { modal.classList.add('open'); }
+  function closeModal() { modal.classList.remove('open'); }
+
+  if (btnOpen) btnOpen.addEventListener('click', openModal);
+  if (btnClose) btnClose.addEventListener('click', closeModal);
+  if (btnCancel) btnCancel.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+  // File input label update
+  const fileInput = document.getElementById('ticketFileInput');
+  const fileNameSpan = document.getElementById('selectedFileName');
+  if (fileInput) {
+    fileInput.addEventListener('change', () => {
+      fileNameSpan.textContent = fileInput.files[0] ? `📎 ${fileInput.files[0].name}` : '';
+    });
+  }
+
+  // ── Load Ticket Form Config ──
   async function loadTicketFormConfig() {
     try {
       const config = await api('/api/user/ticket-form-config');
       formConfig = config;
       const catSelect = document.getElementById('ticketCategorySelect');
-      if (catSelect && config.categories.length > 0) {
-        catSelect.innerHTML = '<option value="">Select Category...</option>';
-        config.categories.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.id;
-          opt.textContent = c.name;
-          catSelect.appendChild(opt);
-        });
+      if (catSelect) {
+        if (config.categories && config.categories.length > 0) {
+          catSelect.innerHTML = '<option value="">— Select Category —</option>';
+          config.categories.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.name;
+            catSelect.appendChild(opt);
+          });
+        } else {
+          // Fallback hardcoded categories if DB seeding hasn't run yet
+          catSelect.innerHTML = `
+            <option value="">— Select Category —</option>
+            <option value="1">📖 Story & Content Moderation</option>
+            <option value="2">📚 Book Library & Reader Mode</option>
+            <option value="3">👤 Account & Access</option>
+            <option value="4">💳 Billing & Subscriptions</option>
+            <option value="5">🛠️ Platform & Technical Bugs</option>
+            <option value="6">💡 Feature Requests & Author Tools</option>
+          `;
+        }
       }
     } catch (e) {
       console.error('Error loading ticket form config:', e);
     }
   }
 
+  // ── Category Change → Dynamic Subcategories & Custom Fields ──
   const categorySelect = document.getElementById('ticketCategorySelect');
   if (categorySelect) {
     categorySelect.addEventListener('change', (e) => {
@@ -57,35 +99,56 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      const subs = formConfig.subcategories.filter(s => s.category_id === catId);
-      subSelect.innerHTML = '<option value="">Select Sub-Category...</option>';
-      subs.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s.id;
-        opt.textContent = s.name;
-        subSelect.appendChild(opt);
-      });
+      // Populate subcategories
+      const subs = (formConfig.subcategories || []).filter(s => s.category_id === catId);
+      if (subs.length > 0) {
+        subSelect.innerHTML = '<option value="">— Select Sub-Category —</option>';
+        subs.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = s.name;
+          subSelect.appendChild(opt);
+        });
+      } else {
+        // Fallback subcategories
+        const fallbackSubs = {
+          1: ['Copyright / DMCA Takedown', 'Plagiarism Report', 'Story Spam / Inappropriate Content', 'Comment Harassment'],
+          2: ['EPUB/PDF Not Loading', 'Corrupted File Download', 'Book Upload Failed', 'Reader Mode Bug'],
+          3: ['Forgot Password / Reset', 'Account Suspended Appeal', 'Profile Not Updating', 'Login Issues'],
+          4: ['Payment Failed', 'Refund Request', 'Subscription Not Activating', 'Invoice / Receipt Request'],
+          5: ['App Crash / 500 Error', 'Slow Performance', 'UI Layout Bug', 'Mobile Device Issue'],
+          6: ['New Feature Idea', 'Author Dashboard Request', 'Analytics Request', 'API Access Request'],
+        };
+        const options = fallbackSubs[catId] || [];
+        subSelect.innerHTML = '<option value="">— Select Sub-Category —</option>';
+        options.forEach((name, i) => {
+          const opt = document.createElement('option');
+          opt.value = `${catId}${i + 1}`;
+          opt.textContent = name;
+          subSelect.appendChild(opt);
+        });
+      }
 
-      // Render custom fields based on category
-      if (catId === 1) { // Story & Content Moderation
+      // Render dynamic custom fields
+      if (catId === 1) {
         customContainer.innerHTML = `
-          <label class="form-label" style="font-weight: 600;">Infringing Story Title / URL</label>
-          <input type="text" class="form-input" id="customStoryUrl" placeholder="e.g. Midnight Chapter 4 or story URL" style="height: 42px;">
+          <label class="form-label">Infringing Story Title / URL</label>
+          <input type="text" class="form-input-field" id="customStoryUrl" placeholder="e.g. Midnight Chapter 4 or story URL">
         `;
-      } else if (catId === 2) { // Reader / Book Library
+      } else if (catId === 2) {
         customContainer.innerHTML = `
-          <label class="form-label" style="font-weight: 600;">Book Title / Format</label>
-          <input type="text" class="form-input" id="customBookTitle" placeholder="e.g. Dark Waters (.epub)" style="height: 42px;">
+          <label class="form-label">Book Title / Format</label>
+          <input type="text" class="form-input-field" id="customBookTitle" placeholder="e.g. Dark Waters (.epub)">
         `;
-      } else if (catId === 4) { // Billing
+      } else if (catId === 4) {
         customContainer.innerHTML = `
-          <label class="form-label" style="font-weight: 600;">Transaction / Order ID</label>
-          <input type="text" class="form-input" id="customOrderId" placeholder="e.g. INV-99428" style="height: 42px;">
+          <label class="form-label">Transaction / Order ID</label>
+          <input type="text" class="form-input-field" id="customOrderId" placeholder="e.g. INV-99428">
         `;
-      } else if (catId === 5) { // Tech Bugs
+      } else if (catId === 5) {
         customContainer.innerHTML = `
-          <label class="form-label" style="font-weight: 600;">Operating System / Device</label>
-          <input type="text" class="form-input" id="customDevice" placeholder="e.g. Windows 11 / Chrome v120" style="height: 42px;">
+          <label class="form-label">Operating System / Device</label>
+          <input type="text" class="form-input-field" id="customDevice" placeholder="e.g. Windows 11 / Chrome v120">
         `;
       } else {
         customContainer.innerHTML = '';
@@ -93,241 +156,296 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // ── Load Tickets List ──
   async function loadTickets() {
+    ticketListScroll.innerHTML = `<div class="empty-tickets"><span class="empty-icon">⏳</span><p>Loading tickets...</p></div>`;
+
     try {
-      const url = currentUserFilter !== 'all' ? `/api/user/tickets?status=${currentUserFilter}` : '/api/user/tickets';
+      const url = currentUserFilter !== 'all'
+        ? `/api/user/tickets?status=${currentUserFilter}`
+        : '/api/user/tickets';
       const tickets = await api(url);
-      
-      if (tickets.length === 0) {
-        ticketListEl.innerHTML = '<div class="empty-state">No support tickets found for this filter.</div>';
+
+      if (ticketCountBadge) {
+        ticketCountBadge.textContent = `${tickets.length} ticket${tickets.length !== 1 ? 's' : ''}`;
+      }
+
+      if (!tickets || tickets.length === 0) {
+        ticketListScroll.innerHTML = `
+          <div class="empty-tickets">
+            <span class="empty-icon">📭</span>
+            <p>No tickets found for this filter.</p>
+            <p style="font-size:0.78rem; opacity:0.6;">Submit a support ticket to get started!</p>
+          </div>
+        `;
         return;
       }
 
-      ticketListEl.innerHTML = '';
+      ticketListScroll.innerHTML = '';
       tickets.forEach(ticket => {
-        const item = document.createElement('div');
-        item.className = 'ticket-item';
-        item.dataset.id = ticket.id;
-        
-        const dateStr = new Date(ticket.created_at).toLocaleDateString();
-        const displayTitle = ticket.subject || ticket.reason;
-        
-        item.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div class="ticket-id" style="font-family:monospace; font-weight:bold;">${ticket.ticket_id}</div>
-            <span class="status-badge" style="font-size:0.7rem; padding:2px 6px;">${ticket.priority || 'medium'}</span>
+        const card = document.createElement('div');
+        card.className = 'ticket-card';
+        card.dataset.id = ticket.id;
+
+        const dateStr = ticket.created_at
+          ? new Date(ticket.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : '';
+        const titleDisplay = ticket.subject || ticket.reason || 'Support Request';
+        const statusClass = `badge-${ticket.ticket_status || 'open'}`;
+        const priorityClass = `badge-priority-${ticket.priority || 'medium'}`;
+
+        card.innerHTML = `
+          <div class="ticket-card-id">${escapeHtml(ticket.ticket_id || ('TKT-' + ticket.id))}</div>
+          <div class="ticket-card-title">${escapeHtml(titleDisplay)}</div>
+          <div class="ticket-card-meta">
+            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+              <span class="badge-status ${statusClass}">${(ticket.ticket_status || 'open').replace(/_/g, ' ')}</span>
+              <span class="badge-status ${priorityClass}">${ticket.priority || 'medium'}</span>
+            </div>
           </div>
-          <div style="font-size: 0.92rem; font-weight: 600; color: var(--text-primary); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(displayTitle)}</div>
-          <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">${escapeHtml(ticket.category_name || 'General')}</div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
-            <div class="ticket-status status-${ticket.ticket_status}">${ticket.ticket_status.replace(/_/g, ' ')}</div>
-            <div style="font-size: 0.78rem; color: var(--text-muted);">${dateStr}</div>
+          <div class="ticket-card-meta" style="margin-top:6px;">
+            <span class="ticket-card-cat">${escapeHtml(ticket.category_name || 'General')}</span>
+            <span class="ticket-card-date">${dateStr}</span>
           </div>
         `;
 
-        item.addEventListener('click', () => {
-          document.querySelectorAll('.ticket-item').forEach(el => el.classList.remove('active'));
-          item.classList.add('active');
-          loadTicketDetails(ticket.id);
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.ticket-card').forEach(el => el.classList.remove('active'));
+          card.classList.add('active');
+          loadTicketDetail(ticket.id);
         });
 
-        ticketListEl.appendChild(item);
+        ticketListScroll.appendChild(card);
       });
     } catch (err) {
-      showToast(err.message, 'error');
+      ticketListScroll.innerHTML = `<div class="empty-tickets"><span class="empty-icon">⚠️</span><p>${escapeHtml(err.message)}</p></div>`;
+      showToast('Failed to load tickets: ' + err.message, 'error');
     }
   }
 
-  async function loadTicketDetails(id) {
+  // ── Load Ticket Detail ──
+  async function loadTicketDetail(id) {
     activeTicketId = id;
-    ticketViewEl.classList.remove('hidden');
-    ticketMessagesEl.innerHTML = '<div class="empty-state">Loading messages...</div>';
+
+    // Show content, hide empty
+    if (ticketDetailEmpty) ticketDetailEmpty.style.display = 'none';
+    if (ticketDetailContent) {
+      ticketDetailContent.style.display = 'flex';
+      ticketDetailContent.style.flexDirection = 'column';
+      ticketDetailContent.style.height = '100%';
+    }
+    ticketMessages.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);">⏳ Loading messages...</div>`;
 
     try {
       const data = await api(`/api/tickets/${id}/messages`);
       const ticket = data.ticket;
       const messages = data.messages || [];
-      const attachments = data.attachments || [];
 
-      if (viewTicketId) viewTicketId.textContent = ticket.ticket_id;
-      if (viewTicketSubject) viewTicketSubject.textContent = ticket.subject || ticket.reason;
-      if (viewTicketCategory) viewTicketCategory.textContent = `Category: ${ticket.category_name || 'General Inquiry'}`;
-      
+      // Populate header
+      if (viewTicketId) viewTicketId.textContent = ticket.ticket_id || `TKT-${ticket.id}`;
+      if (viewTicketSubject) viewTicketSubject.textContent = ticket.subject || ticket.reason || 'Support Request';
+      if (viewTicketCategory) viewTicketCategory.textContent = ticket.category_name ? `📂 ${ticket.category_name}` : '📂 General Inquiry';
+
       if (viewTicketPriority) {
-        viewTicketPriority.textContent = ticket.priority || 'medium';
-        const pColor = ticket.priority === 'urgent' ? '#ef4444' : ticket.priority === 'high' ? '#f59e0b' : '#6366f1';
-        viewTicketPriority.style.background = pColor;
-        viewTicketPriority.style.color = '#ffffff';
+        const p = ticket.priority || 'medium';
+        viewTicketPriority.textContent = p.charAt(0).toUpperCase() + p.slice(1);
+        viewTicketPriority.className = `badge-status badge-priority-${p}`;
       }
 
       if (viewTicketStatus) {
-        viewTicketStatus.textContent = ticket.ticket_status.replace(/_/g, ' ');
-        viewTicketStatus.className = `ticket-status status-${ticket.ticket_status}`;
+        const s = ticket.ticket_status || 'open';
+        viewTicketStatus.textContent = s.replace(/_/g, ' ');
+        viewTicketStatus.className = `badge-status badge-${s}`;
       }
 
-      ticketMessagesEl.innerHTML = '';
+      // Render messages
+      ticketMessages.innerHTML = '';
+      const allMsgs = [...messages];
 
-      if (messages.length === 0) {
-        const descHtml = ticket.report_description ? escapeHtml(ticket.report_description) : '<i>No message description provided</i>';
-        const initialMsg = document.createElement('div');
-        initialMsg.className = 'message-bubble msg-user';
-        initialMsg.innerHTML = `
-          <div class="msg-meta">
-            <span class="msg-author">👤 You</span>
-            <span>${new Date(ticket.created_at).toLocaleString()}</span>
-          </div>
-          <div class="msg-body">${descHtml}</div>
+      // If no messages, show the initial ticket description as user message
+      if (allMsgs.length === 0 && ticket.report_description) {
+        const initBubble = document.createElement('div');
+        initBubble.className = 'msg-bubble from-user';
+        initBubble.innerHTML = `
+          <div class="msg-sender user-sender">👤 You (Initial Report)</div>
+          <div class="msg-body-text">${escapeHtml(ticket.report_description)}</div>
+          <div class="msg-time">${ticket.created_at ? new Date(ticket.created_at).toLocaleString() : ''}</div>
         `;
-        ticketMessagesEl.appendChild(initialMsg);
+        ticketMessages.appendChild(initBubble);
       } else {
-        messages.forEach(msg => {
-          const bubble = document.createElement('div');
+        allMsgs.forEach(msg => {
           const isAdmin = msg.sender_role === 'admin' || msg.sender_role === 'system';
-          bubble.className = `message-bubble ${isAdmin ? 'msg-admin' : 'msg-user'}`;
-          
-          const authorHtml = isAdmin 
-            ? `<span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #ffffff; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 0.75rem;">🛡️ Midnight Support Team (Admin)</span>`
-            : `<span class="msg-author" style="color: var(--text-primary);">👤 You</span>`;
-          
-          let fileLinksHtml = '';
-          if (msg.attachment_url) {
-            fileLinksHtml = `<div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);"><a href="${msg.attachment_url}" target="_blank" style="color: #a5b4fc; text-decoration: underline; font-size: 0.85rem;">📁 View Attachment</a></div>`;
+          const bubble = document.createElement('div');
+          bubble.className = `msg-bubble ${isAdmin ? 'from-admin' : 'from-user'}`;
+
+          if (isAdmin) {
+            bubble.innerHTML = `
+              <div class="msg-sender admin-sender">
+                <span style="background:linear-gradient(135deg,#7c3aed,#6366f1); color:#fff; padding:2px 8px; border-radius:10px; font-size:0.7rem;">🛡️ Midnight Support Team</span>
+              </div>
+              <div class="msg-body-text">${escapeHtml(msg.message_body)}</div>
+              <div class="msg-time">${msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}</div>
+            `;
+          } else {
+            bubble.innerHTML = `
+              <div class="msg-sender user-sender">👤 You</div>
+              <div class="msg-body-text">${escapeHtml(msg.message_body)}</div>
+              <div class="msg-time">${msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}</div>
+            `;
           }
-
-          bubble.innerHTML = `
-            <div class="msg-meta" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              ${authorHtml}
-              <span style="font-size: 0.75rem; color: var(--text-muted);">${new Date(msg.created_at).toLocaleString()}</span>
-            </div>
-            <div class="msg-body" style="font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(msg.message_body)}${fileLinksHtml}</div>
-          `;
-          ticketMessagesEl.appendChild(bubble);
+          ticketMessages.appendChild(bubble);
         });
       }
 
-      if (attachments.length > 0) {
-        const attContainer = document.createElement('div');
-        attContainer.style.cssText = 'background: rgba(255,255,255,0.04); border: 1px dashed var(--border-card); border-radius: 8px; padding: 12px; margin-top: 12px;';
-        let attHtml = `<div style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">TICKET ATTACHMENTS (${attachments.length}):</div>`;
-        attachments.forEach(a => {
-          attHtml += `<div style="margin-bottom: 4px;"><a href="${a.file_path}" target="_blank" style="color: var(--primary); font-size: 0.88rem; text-decoration: underline;">📎 ${escapeHtml(a.file_name)} (${(a.file_size / 1024).toFixed(1)} KB)</a></div>`;
-        });
-        attContainer.innerHTML = attHtml;
-        ticketMessagesEl.appendChild(attContainer);
+      if (ticketMessages.children.length === 0) {
+        ticketMessages.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);">No messages yet. The support team will respond soon.</div>`;
       }
 
-      ticketMessagesEl.scrollTop = ticketMessagesEl.scrollHeight;
+      ticketMessages.scrollTop = ticketMessages.scrollHeight;
 
-      // Handle UI state based on ticket status & 7-day reopen eligibility
+      // Handle UI state
       const isResolved = ticket.ticket_status === 'resolved' || ticket.ticket_status === 'closed';
       if (isResolved) {
-        ticketReplyBox.classList.add('disabled');
+        if (ticketReplyArea) ticketReplyArea.style.display = 'none';
         if (ticket.can_reopen) {
-          resolvedNotice.style.display = 'none';
-          reopenNoticeSection.style.display = 'flex';
+          if (reopenBanner) reopenBanner.style.display = 'flex';
+          if (resolvedNotice) resolvedNotice.style.display = 'none';
         } else {
-          resolvedNotice.style.display = 'block';
-          reopenNoticeSection.style.display = 'none';
+          if (reopenBanner) reopenBanner.style.display = 'none';
+          if (resolvedNotice) resolvedNotice.style.display = 'block';
         }
       } else {
-        ticketReplyBox.classList.remove('disabled');
-        resolvedNotice.style.display = 'none';
-        reopenNoticeSection.style.display = 'none';
+        if (ticketReplyArea) ticketReplyArea.style.display = 'block';
+        if (reopenBanner) reopenBanner.style.display = 'none';
+        if (resolvedNotice) resolvedNotice.style.display = 'none';
       }
 
     } catch (err) {
-      showToast(err.message, 'error');
+      ticketMessages.innerHTML = `<div style="text-align:center; padding:20px; color:#f87171;">⚠️ ${escapeHtml(err.message)}</div>`;
+      showToast('Failed to load ticket: ' + err.message, 'error');
     }
   }
 
-  // Create Ticket Trigger
-  const btnOpenModal = document.getElementById('btnOpenCreateTicketModal');
-  if (btnOpenModal) {
-    btnOpenModal.addEventListener('click', () => {
-      document.getElementById('newTicketModal').classList.remove('hidden');
+  // ── Create Ticket Submit ──
+  const createTicketForm = document.getElementById('createTicketForm');
+  if (createTicketForm) {
+    createTicketForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const subject = document.getElementById('ticketSubjectInput').value.trim();
+      const category_id = document.getElementById('ticketCategorySelect').value;
+      const subcategory_id = document.getElementById('ticketSubcategorySelect').value;
+      const priority = document.getElementById('ticketPrioritySelect').value;
+      const details = document.getElementById('ticketDetailsInput').value.trim();
+
+      if (!subject || !details) {
+        return showToast('Please enter both a Subject and Detailed Description.', 'warning');
+      }
+      if (!category_id) {
+        return showToast('Please select a Category.', 'warning');
+      }
+
+      const customFields = {};
+      const storyUrl = document.getElementById('customStoryUrl');
+      if (storyUrl && storyUrl.value.trim()) customFields.story_url = storyUrl.value.trim();
+      const bookTitle = document.getElementById('customBookTitle');
+      if (bookTitle && bookTitle.value.trim()) customFields.book_title = bookTitle.value.trim();
+      const orderId = document.getElementById('customOrderId');
+      if (orderId && orderId.value.trim()) customFields.order_id = orderId.value.trim();
+      const device = document.getElementById('customDevice');
+      if (device && device.value.trim()) customFields.device = device.value.trim();
+
+      const submitBtn = document.getElementById('btnSubmitNewTicket');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '⏳ Submitting...';
+
+      try {
+        const formData = new FormData();
+        formData.append('subject', subject);
+        formData.append('category_id', category_id);
+        formData.append('subcategory_id', subcategory_id || '');
+        formData.append('priority', priority);
+        formData.append('details', details);
+        formData.append('custom_fields_json', JSON.stringify(customFields));
+
+        const fi = document.getElementById('ticketFileInput');
+        if (fi && fi.files.length > 0) {
+          const file = fi.files[0];
+          if (file.size > 10 * 1024 * 1024) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🚀 Create Ticket';
+            return showToast('Attachment exceeds 10MB limit.', 'warning');
+          }
+          formData.append('file', file);
+        }
+
+        const res = await api('/api/user/tickets/create', {
+          method: 'POST',
+          body: formData
+        });
+
+        showToast(`✅ Ticket created! Reference: ${res.ticket_id}`, 'success');
+        createTicketForm.reset();
+        document.getElementById('dynamicCustomFieldsContainer').innerHTML = '';
+        document.getElementById('selectedFileName').textContent = '';
+        closeModal();
+        await loadTickets();
+        if (res.id) {
+          setTimeout(() => {
+            const card = document.querySelector(`.ticket-card[data-id="${res.id}"]`);
+            if (card) card.click();
+          }, 300);
+        }
+      } catch (err) {
+        showToast('Failed to create ticket: ' + err.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🚀 Create Ticket';
+      }
     });
   }
 
-  window.handleUserCreateTicketSubmit = async function(e) {
-    if (e) e.preventDefault();
+  // ── Reply Button ──
+  if (replyBtn) {
+    replyBtn.addEventListener('click', async () => {
+      if (!activeTicketId) return;
+      const body = replyText.value.trim();
+      if (!body) return showToast('Please enter a message.', 'warning');
 
-    const subject = document.getElementById('ticketSubjectInput').value.trim();
-    const category_id = document.getElementById('ticketCategorySelect').value;
-    const subcategory_id = document.getElementById('ticketSubcategorySelect').value;
-    const priority = document.getElementById('ticketPrioritySelect').value;
-    const details = document.getElementById('ticketDetailsInput').value.trim();
-    const fileInput = document.getElementById('ticketFileInput');
+      replyBtn.textContent = '⏳ Sending...';
+      replyBtn.disabled = true;
 
-    if (!subject || !details) {
-      return showToast('Please enter both a Subject and Detailed Message.', 'warning');
-    }
-
-    const customFields = {};
-    const storyUrl = document.getElementById('customStoryUrl');
-    if (storyUrl && storyUrl.value.trim()) customFields.story_url = storyUrl.value.trim();
-    const bookTitle = document.getElementById('customBookTitle');
-    if (bookTitle && bookTitle.value.trim()) customFields.book_title = bookTitle.value.trim();
-    const orderId = document.getElementById('customOrderId');
-    if (orderId && orderId.value.trim()) customFields.order_id = orderId.value.trim();
-    const device = document.getElementById('customDevice');
-    if (device && device.value.trim()) customFields.device = device.value.trim();
-
-    const submitBtn = document.getElementById('btnSubmitNewTicket');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Submitting Ticket...';
-
-    try {
-      const formData = new FormData();
-      formData.append('subject', subject);
-      formData.append('category_id', category_id);
-      formData.append('subcategory_id', subcategory_id);
-      formData.append('priority', priority);
-      formData.append('details', details);
-      formData.append('custom_fields_json', JSON.stringify(customFields));
-
-      if (fileInput && fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        if (file.size > 10 * 1024 * 1024) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = '🚀 Create Ticket';
-          return showToast('Attachment exceeds maximum allowed size of 10MB.', 'warning');
-        }
-        formData.append('file', file);
+      try {
+        await api(`/api/tickets/${activeTicketId}/reply`, {
+          method: 'POST',
+          body: JSON.stringify({ message_body: body })
+        });
+        replyText.value = '';
+        showToast('✅ Message sent!', 'success');
+        await loadTicketDetail(activeTicketId);
+      } catch (err) {
+        showToast('Failed to send: ' + err.message, 'error');
+      } finally {
+        replyBtn.textContent = '📤 Send Update';
+        replyBtn.disabled = false;
       }
+    });
+  }
 
-      const res = await api('/api/user/tickets/create', {
-        method: 'POST',
-        body: formData
-      });
-
-      showToast(`Support Ticket created! Reference ID: ${res.ticket_id}`, 'success');
-      document.getElementById('createTicketForm').reset();
-      document.getElementById('newTicketModal').classList.add('hidden');
-      
-      await loadTickets();
-      if (res.id) loadTicketDetails(res.id);
-    } catch (err) {
-      showToast('Failed to create ticket: ' + err.message, 'error');
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = '🚀 Create Ticket';
-    }
-  };
-
-  // Reopen ticket action
+  // ── Reopen Ticket ──
   if (reopenTicketBtn) {
     reopenTicketBtn.addEventListener('click', async () => {
       if (!activeTicketId) return;
       if (!confirm('Reopen this ticket for additional support?')) return;
 
       reopenTicketBtn.disabled = true;
-      reopenTicketBtn.textContent = 'Reopening...';
+      reopenTicketBtn.textContent = '⏳ Reopening...';
 
       try {
         await api(`/api/user/tickets/${activeTicketId}/reopen`, { method: 'POST' });
-        showToast('Ticket reopened!', 'success');
+        showToast('✅ Ticket reopened!', 'success');
         await loadTickets();
-        await loadTicketDetails(activeTicketId);
+        await loadTicketDetail(activeTicketId);
       } catch (err) {
         showToast(err.message, 'error');
       } finally {
@@ -337,7 +455,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Filter chips for user tickets
+  // ── Filter Chips ──
   document.querySelectorAll('[data-user-filter]').forEach(chip => {
     chip.addEventListener('click', () => {
       document.querySelectorAll('[data-user-filter]').forEach(c => c.classList.remove('active'));
@@ -347,90 +465,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  replyBtn.addEventListener('click', async () => {
-    if (!activeTicketId) return;
-    const body = replyText.value.trim();
-    if (!body) return showToast('Please enter a message', 'warning');
-
-    const btnText = replyBtn.textContent;
-    replyBtn.textContent = 'Sending...';
-    replyBtn.disabled = true;
-
-    try {
-      await api(`/api/tickets/${activeTicketId}/reply`, {
-        method: 'POST',
-        body: JSON.stringify({ message_body: body })
-      });
-      replyText.value = '';
-      showToast('Message sent', 'success');
-      loadTicketDetails(activeTicketId);
-    } catch (err) {
-      showToast(err.message, 'error');
-    } finally {
-      replyBtn.textContent = btnText;
-      replyBtn.disabled = false;
-    }
-  });
-
-  async function loadAdminMessagesInbox() {
-    const listEl = document.getElementById('adminMessagesList');
-    const countEl = document.getElementById('adminMsgCount');
-    if (!listEl) return;
-
-    try {
-      const data = await api('/api/users/me/support-inbox');
-      const messages = data.messages || [];
-      
-      if (countEl) countEl.textContent = messages.length;
-
-      if (messages.length === 0) {
-        listEl.innerHTML = '<div class="empty-state">No direct messages or alerts from Admin.</div>';
-        return;
-      }
-
-      listEl.innerHTML = '';
-      messages.forEach(msg => {
-        const card = document.createElement('div');
-        card.style.cssText = 'background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(129, 140, 248, 0.35); border-radius: 12px; padding: 18px; text-align: left;';
-        
-        card.innerHTML = `
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-            <span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #ffffff; padding: 3px 10px; border-radius: 12px; font-weight: bold; font-size: 0.78rem;">🛡️ Official Admin Message</span>
-            <span style="font-size: 0.8rem; color: var(--text-muted);">${new Date(msg.created_at).toLocaleString()}</span>
-          </div>
-          <h4 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 8px; font-weight: 600;">${escapeHtml(msg.title)}</h4>
-          <div style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; white-space: pre-wrap;">${escapeHtml(msg.body)}</div>
-        `;
-        listEl.appendChild(card);
-      });
-    } catch (err) {
-      if (listEl) listEl.innerHTML = `<div class="empty-state">Failed to load admin messages: ${err.message}</div>`;
-    }
-  }
-
-  const tabTickets = document.getElementById('tabSupportTickets');
-  const tabAdminMsg = document.getElementById('tabAdminDirectMessages');
-  const layoutSection = document.getElementById('supportLayoutSection');
-  const msgSection = document.getElementById('adminMessagesSection');
-
-  if (tabTickets && tabAdminMsg) {
-    tabTickets.addEventListener('click', () => {
-      tabTickets.classList.add('active');
-      tabAdminMsg.classList.remove('active');
-      if (layoutSection) layoutSection.classList.remove('hidden');
-      if (msgSection) msgSection.classList.add('hidden');
-    });
-
-    tabAdminMsg.addEventListener('click', () => {
-      tabAdminMsg.classList.add('active');
-      tabTickets.classList.remove('active');
-      if (layoutSection) layoutSection.style.setProperty('display', 'none', 'important');
-      if (msgSection) msgSection.classList.remove('hidden');
-      loadAdminMessagesInbox();
-    });
-  }
-
+  // ── Initialize ──
   loadTicketFormConfig();
   loadTickets();
-  loadAdminMessagesInbox();
 });

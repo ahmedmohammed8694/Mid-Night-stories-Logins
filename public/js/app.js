@@ -716,16 +716,19 @@ async function checkAdminMessages() {
     if (data.messages && data.messages.length > 0) {
       const unreadMsgs = data.messages.filter(m => !m.is_read);
       if (unreadMsgs.length > 0) {
-        let banner = document.getElementById('adminMessageBanner');
-        if (!banner) {
-          banner = document.createElement('div');
-          banner.id = 'adminMessageBanner';
-          banner.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; background: var(--danger, #e53e3e); color: white; text-align: center; padding: 10px; z-index: 9999; font-weight: bold; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.5); font-size: 0.9rem;';
-          banner.innerHTML = `💬 Official Admin Message: You have an unread message from Midnight Support. Click here to open Chat ↗`;
-          banner.onclick = () => {
-            window.location.href = '/chat.html';
-          };
-          document.body.appendChild(banner);
+        // Show notification dot on the bell/notification icon — no intrusive banner
+        const notifBell = document.getElementById('notifBell') || document.querySelector('.navbar__notifications');
+        if (notifBell) {
+          let dot = notifBell.querySelector('.admin-msg-dot');
+          if (!dot) {
+            dot = document.createElement('span');
+            dot.className = 'admin-msg-dot';
+            dot.title = `${unreadMsgs.length} unread admin message(s) — go to Chat`;
+            dot.style.cssText = 'display:inline-block;width:10px;height:10px;background:#ef4444;border-radius:50%;position:absolute;top:2px;right:2px;animation:pulse 1.5s infinite;';
+            notifBell.style.position = 'relative';
+            notifBell.appendChild(dot);
+          }
+          notifBell.onclick = () => { window.location.href = '/chat.html'; };
         }
       }
     }
