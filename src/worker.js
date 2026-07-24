@@ -3762,7 +3762,7 @@ async function ensureHelpdeskSchema(db) {
 
     // Seed default categories if empty
     const catCount = await db.prepare('SELECT COUNT(*) as c FROM ticket_categories').first().catch(() => null);
-    if (catCount && catCount.c === 0) {
+    if (!catCount || catCount.c === 0) {
       const cats = [
         [1, '📖 Story & Content Moderation', '📖', 'Copyright, plagiarism, story takedowns, comment spam'],
         [2, '📚 Book Library & Reader Mode', '📚', 'EPUB/PDF bugs, corrupted files, upload issues'],
@@ -3778,7 +3778,7 @@ async function ensureHelpdeskSchema(db) {
 
     // Seed default subcategories if empty
     const subCount = await db.prepare('SELECT COUNT(*) as c FROM ticket_subcategories').first().catch(() => null);
-    if (subCount && subCount.c === 0) {
+    if (!subCount || subCount.c === 0) {
       const subs = [
         [1, 'Copyright / DMCA Takedown'], [1, 'Plagiarism Report'], [1, 'Story Spam / Inappropriate Content'], [1, 'Comment Harassment'],
         [2, 'EPUB/PDF Not Loading'], [2, 'Corrupted File Download'], [2, 'Book Upload Failed'], [2, 'Reader Mode Bug'],
