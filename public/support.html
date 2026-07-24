@@ -58,26 +58,88 @@
     
     <section class="container" style="max-width: 1200px; margin: 0 auto 2rem auto; padding: 0 1rem;">
       <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 24px; color: var(--text-secondary); line-height: 1.7;">
-        <h2 style="color: var(--text-primary); font-size: 1.3rem; margin-bottom: 10px; border-bottom: 1px solid var(--border-card); padding-bottom: 6px;">How Support Tickets Work</h2>
-        <p style="margin-bottom: 12px;">Welcome to our Support Desk. Our team is here to help keep our community safe, clean, and friendly. When you send a report or question, we give you a ticket ID so you can track progress easily.</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-card); padding-bottom: 12px; margin-bottom: 14px; flex-wrap: wrap; gap: 12px;">
+          <h2 style="color: var(--text-primary); font-size: 1.3rem; margin: 0;">How Support Tickets Work</h2>
+          <button class="btn btn--primary" id="btnOpenCreateTicketModal" style="height: 40px; padding: 0 20px;">➕ Submit Support Ticket</button>
+        </div>
+        <p style="margin-bottom: 12px;">Welcome to our Support Desk. Our team is here to help keep our community safe, clean, and friendly. When you send a report or question, we give you a unique ticket reference ID so you can track progress easily.</p>
         <p style="margin-bottom: 12px;">You can view updates on your tickets using the sidebar list on the left. Statuses show as <strong>Open</strong> (new report), <strong>Investigating</strong> (we are reviewing it), <strong>Waiting on User</strong> (we need details), or <strong>Resolved</strong> (completed).</p>
         
         <h3 style="color: var(--text-primary); font-size: 1.15rem; margin-top: 18px; margin-bottom: 8px;">Frequently Asked Questions</h3>
         <ul style="padding-left: 20px; margin-bottom: 14px;">
-          <li style="margin-bottom: 8px;"><strong>How fast will I get a response?</strong> Our moderation team reviews reports daily. Most support tickets receive a response within 12 to 24 hours.</li>
-          <li style="margin-bottom: 8px;"><strong>Can I edit or delete my anonymous story?</strong> Yes! When you post a story, you receive a unique story token. Keep this token safe, as it allows you to edit or remove your post anytime.</li>
-          <li style="margin-bottom: 8px;"><strong>How do I report bad behavior or harassment?</strong> Every story and comment has a <em>Report</em> button. Click the button to send a ticket straight to our moderation queue.</li>
+          <li style="margin-bottom: 8px;"><strong>How fast will I get a response?</strong> Our support team reviews tickets daily. Most support tickets receive a response within 12 to 24 hours.</li>
+          <li style="margin-bottom: 8px;"><strong>Can I reopen a resolved ticket?</strong> Yes! If your issue was marked resolved but you still need help, you can click <strong>Reopen Ticket</strong> within 7 days.</li>
         </ul>
-
-        <h3 style="color: var(--text-primary); font-size: 1.15rem; margin-top: 18px; margin-bottom: 8px;">Privacy &amp; Safety Guidelines</h3>
-        <p style="margin-bottom: 12px;">Your privacy is protected on Midnight Stories. We do not sell your personal data or track your activity across other websites. All uploaded images have EXIF data and GPS coordinates automatically removed to protect your identity.</p>
-        <p style="margin: 0;">If you need urgent crisis help or emergency assistance, please visit our <a href="/resources" style="color: var(--primary); text-decoration: underline;">Crisis &amp; Safety Resources</a> page or review our <a href="/guidelines" style="color: var(--primary); text-decoration: underline;">Community Guidelines</a>.</p>
       </div>
     </section>
 
-    <div style="max-width: 1200px; margin: 0 auto 1.5rem auto; padding: 0 1rem; display: flex; gap: 12px;">
-      <button class="filter-chip active" id="tabSupportTickets" style="font-size: 0.95rem; padding: 8px 18px;">💬 Support Tickets</button>
-      <button class="filter-chip" id="tabAdminDirectMessages" style="font-size: 0.95rem; padding: 8px 18px;">📥 Admin Direct Messages &amp; Alerts (<span id="adminMsgCount">0</span>)</button>
+    <!-- Create Ticket Modal -->
+    <div class="modal-overlay hidden" id="newTicketModal" style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); z-index: 2500; backdrop-filter: blur(4px);">
+      <div class="modal" style="max-width: 580px; width: 92%; padding: 28px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-card); text-align: left; box-shadow: var(--shadow-xl);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid var(--border-card); padding-bottom: 12px;">
+          <h2 style="font-family: 'Fraunces', serif; font-size: 1.35rem; color: var(--text-primary); margin: 0;">🎫 Submit Support Ticket</h2>
+          <button onclick="document.getElementById('newTicketModal').classList.add('hidden')" style="background: none; border: none; font-size: 1.4rem; color: var(--text-muted); cursor: pointer;">✕</button>
+        </div>
+
+        <form id="createTicketForm" onsubmit="window.handleUserCreateTicketSubmit(event)">
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" style="font-weight: 600;">Subject / Issue Title*</label>
+            <input type="text" class="form-input" id="ticketSubjectInput" placeholder="Brief summary of your inquiry or issue" required style="height: 42px;">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+            <div>
+              <label class="form-label" style="font-weight: 600;">Category*</label>
+              <select id="ticketCategorySelect" class="form-input" style="height: 42px; background: var(--bg-input); border: 1px solid var(--border-card); color: var(--text-primary);" required>
+                <option value="1">Technical Issue</option>
+                <option value="2">Account &amp; Security</option>
+                <option value="3">Billing &amp; Subscriptions</option>
+                <option value="4">Feature Request</option>
+                <option value="5">General Inquiry</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" style="font-weight: 600;">Priority Level*</label>
+              <select id="ticketPrioritySelect" class="form-input" style="height: 42px; background: var(--bg-input); border: 1px solid var(--border-card); color: var(--text-primary);" required>
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent 🔥</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" style="font-weight: 600;">Detailed Message*</label>
+            <textarea class="form-textarea" id="ticketDetailsInput" placeholder="Please describe your issue or question in detail..." rows="5" required style="resize: vertical;"></textarea>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 22px;">
+            <label class="form-label" style="font-weight: 600;">Attachment (Optional, Max 10MB)</label>
+            <input type="file" id="ticketFileInput" accept="image/png,image/jpeg,image/webp,application/pdf,.doc,.docx" style="display: block; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;">
+            <span style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; display: block;">Allowed formats: PNG, JPG, WEBP, PDF, DOC, DOCX</span>
+          </div>
+
+          <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <button type="button" class="btn btn--secondary btn--sm" onclick="document.getElementById('newTicketModal').classList.add('hidden')">Cancel</button>
+            <button type="submit" id="btnSubmitNewTicket" class="btn btn--primary btn--sm" style="height: 40px; padding: 0 24px;">🚀 Create Ticket</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div style="max-width: 1200px; margin: 0 auto 1.2rem auto; padding: 0 1rem; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <button class="filter-chip active" id="tabSupportTickets" style="font-size: 0.9rem; padding: 6px 16px;">💬 Support Tickets</button>
+        <button class="filter-chip" id="tabAdminDirectMessages" style="font-size: 0.9rem; padding: 6px 16px;">📥 Admin Messages (<span id="adminMsgCount">0</span>)</button>
+      </div>
+      <div id="userTicketFilterBar" style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <button class="filter-chip active" data-user-filter="all" style="font-size: 0.8rem; padding: 4px 12px;">All</button>
+        <button class="filter-chip" data-user-filter="open" style="font-size: 0.8rem; padding: 4px 12px;">Open</button>
+        <button class="filter-chip" data-user-filter="investigating" style="font-size: 0.8rem; padding: 4px 12px;">Investigating</button>
+        <button class="filter-chip" data-user-filter="waiting_on_user" style="font-size: 0.8rem; padding: 4px 12px;">Waiting</button>
+        <button class="filter-chip" data-user-filter="resolved" style="font-size: 0.8rem; padding: 4px 12px;">Resolved</button>
+      </div>
     </div>
 
     <!-- Support Tickets View -->
@@ -90,17 +152,34 @@
       <!-- Main View -->
       <section class="ticket-view hidden" id="ticketView">
         <div class="ticket-header">
-          <h3 id="viewTicketId" style="margin: 0; font-family: monospace; font-size: 1.5rem; color: var(--text-primary);">Ticket Overview &amp; Details</h3>
-          <div id="viewTicketReason" style="color: var(--text-secondary); margin-top: 0.5rem;"></div>
-          <div id="viewTicketStatus" class="ticket-status" style="margin-top: 1rem;"></div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h3 id="viewTicketId" style="margin: 0; font-family: monospace; font-size: 1.4rem; color: var(--text-primary);">Ticket Overview</h3>
+              <div id="viewTicketSubject" style="font-size: 1.1rem; font-weight: 600; color: var(--primary); margin-top: 4px;"></div>
+              <div id="viewTicketCategory" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;"></div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span id="viewTicketPriority" class="status-badge" style="font-size: 0.75rem; text-transform: uppercase;">Medium</span>
+              <div id="viewTicketStatus" class="ticket-status">Open</div>
+            </div>
+          </div>
         </div>
         
         <div class="ticket-messages" id="ticketMessages">
-          <!-- Messages will be injected here -->
+          <!-- Messages injected here -->
         </div>
 
-        <div id="resolvedNotice" class="ticket-reply-notice">
-          This ticket has been marked resolved. If you require additional help, please submit a new report.
+        <div id="resolvedNotice" class="ticket-reply-notice" style="display: none;">
+          This ticket has been marked resolved.
+        </div>
+
+        <!-- Reopen Ticket Workflow Banner -->
+        <div id="reopenNoticeSection" style="display: none; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(129, 140, 248, 0.4); border-radius: 10px; padding: 14px 18px; margin: 12px 0; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <strong style="color: var(--text-primary); font-size: 0.95rem;">Still need assistance?</strong>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 2px 0 0 0;">This ticket was marked resolved, but you can reopen it within 7 days if your issue is not fully fixed.</p>
+          </div>
+          <button class="btn btn--secondary btn--sm" id="reopenTicketBtn" style="height: 36px; padding: 0 16px;">🔄 Reopen Ticket</button>
         </div>
 
         <div class="ticket-reply" id="ticketReplyBox">
@@ -108,6 +187,7 @@
           <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
             <button class="btn btn--primary" id="replyBtn">Send Update</button>
           </div>
+        </div>
         </div>
     </div>
 

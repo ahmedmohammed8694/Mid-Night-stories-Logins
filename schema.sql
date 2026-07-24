@@ -414,11 +414,18 @@ INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Nautical St
 INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Ship Design & Architecture', 'ship-design-architecture', 'naval');
 INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Submarine Operations', 'submarine-operations', 'naval');
 
--- Seed Default Settings
-INSERT OR IGNORE INTO settings (key, value) VALUES ('rate_limit_posts_per_hour', '5');
-INSERT OR IGNORE INTO settings (key, value) VALUES ('rate_limit_comments_per_hour', '15');
-INSERT OR IGNORE INTO settings (key, value) VALUES ('auto_hide_report_threshold', '3');
-INSERT OR IGNORE INTO settings (key, value) VALUES ('require_manual_approval', 'true');
-INSERT OR IGNORE INTO settings (key, value) VALUES ('banned_keywords', '["kill yourself", "kys", "end it all"]');
+-- Seed Helpdesk Ticket Categories
+INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (1, 'Technical Issue', 'Bugs, platform errors, and reader mode glitches');
+INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (2, 'Account & Security', 'Password resets, email updates, and MFA login issues');
+INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (3, 'Billing & Subscriptions', 'Payment receipts, membership plans, and refund requests');
+INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (4, 'Feature Request', 'Suggestions for new library tools and app improvements');
+INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (5, 'General Inquiry', 'Questions regarding content submission and publishing');
+
+-- Seed Canned Responses
+INSERT OR IGNORE INTO canned_responses (id, title, content, category_id) VALUES 
+(1, 'Need More Information', 'Thank you for reaching out to Midnight Support. Could you please provide additional details or a screenshot of the issue so we can investigate further?', 1),
+(2, 'Issue Under Investigation', 'Hello! We have received your ticket and our engineering team is actively investigating this issue. We will update you as soon as a fix is deployed.', 1),
+(3, 'Password Reset Instructions', 'Hello, to reset your account password, please go to the Login page, click "Forgot Password", and follow the verification link sent to your registered email.', 2),
+(4, 'Ticket Resolved Confirmation', 'We are pleased to inform you that your request has been successfully resolved. If you require further assistance, you may reopen this ticket within 7 days.', 5);
 
 PRAGMA foreign_keys = ON;

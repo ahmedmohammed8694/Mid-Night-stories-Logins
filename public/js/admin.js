@@ -347,8 +347,43 @@
     }
   };
 
-  // ── Reports / Tickets ──
+  // ── Reports / Tickets (Helpdesk Management) ──
   let currentTicketStatus = 'open';
+  let adminReplyType = 'public'; // 'public' | 'internal'
+  let cachedCannedResponses = [];
+  let cachedSupportAgents = [];
+
+  async function loadCannedResponses() {
+    try {
+      cachedCannedResponses = await api('/api/admin/canned-responses');
+      const select = document.getElementById('cannedResponseSelect');
+      if (select) {
+        select.innerHTML = '<option value="">-- Insert Canned Response Template --</option>';
+        cachedCannedResponses.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r.id;
+          opt.textContent = r.title;
+          select.appendChild(opt);
+        });
+      }
+    } catch (e) {}
+  }
+
+  async function loadSupportAgents() {
+    try {
+      cachedSupportAgents = await api('/api/admin/support-agents');
+      const select = document.getElementById('modalUpdateAgent');
+      if (select) {
+        select.innerHTML = '<option value="">-- Unassigned --</option>';
+        cachedSupportAgents.forEach(a => {
+          const opt = document.createElement('option');
+          opt.value = a.id;
+          opt.textContent = `${a.username} (${a.role})`;
+          select.appendChild(opt);
+        });
+      }
+    } catch (e) {}
+  }
 
   window.loadReports = async function (status) {
     if (status !== undefined) currentTicketStatus = status;
@@ -369,16 +404,21 @@
 
       reports.forEach(report => {
         const tr = document.createElement('tr');
+        const priorityColor = report.priority === 'urgent' ? '#ef4444' : report.priority === 'high' ? '#f59e0b' : '#6366f1';
+        
         tr.innerHTML = `
           <td><span style="font-family: monospace; font-weight: bold;">${report.ticket_id || report.id}</span></td>
-          <td><span class="status-badge status-badge--pending">${report.reported_item_type}</span></td>
-          <td><div class="admin-table__preview">${escapeHtml(report.target_preview || `ID: ${report.reported_item_id}`)}</div></td>
-          <td>${escapeHtml(report.reason)}</td>
           <td>
-            <div style="font-size: 0.9rem;">${escapeHtml(report.reporter_name || 'User ' + report.reporter_id)}</div>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">${formatDate(report.created_at)}</div>
+            <div style="font-weight: 600; color: var(--text-primary); font-size: 0.92rem;">${escapeHtml(report.subject || report.reason)}</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">${escapeHtml(report.category_name || report.reported_item_type)}</div>
           </td>
-          <td><span class="status-badge status-badge--${report.ticket_status.replace('_', '-')}">${report.ticket_status.replace('_', ' ')}</span></td>
+          <td><span class="status-badge" style="background: ${priorityColor}; color: white; font-size: 0.7rem; text-transform: uppercase;">${report.priority || 'medium'}</span></td>
+          <td>
+            <div style="font-size: 0.88rem; font-weight: 500;">${escapeHtml(report.reporter_name || 'User #' + report.reporter_id)}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(report.reporter_email || '')}</div>
+          </td>
+          <td><span class="status-badge status-badge--${(report.ticket_status || 'open').replace('_', '-')}">${(report.ticket_status || 'open').replace(/_/g, ' ')}</span></td>
+          <td><span style="font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);">${escapeHtml(report.assigned_agent_name || 'Unassigned')}</span></td>
           <td>
             <div class="admin-table__actions">
               <button class="btn btn--primary btn--sm" onclick='window.openTicketModal(${JSON.stringify(report).replace(/'/g, "&#39;")})'>Review Ticket</button>
@@ -390,90 +430,179 @@
     } catch (err) {
       showToast('Failed to load tickets.', 'error');
     }
-  }
+  };
 
   window.openTicketModal = async function (report) {
     window.currentTicketId = report.id;
-    window.currentTicketTargetUser = report.target_user_id;
+    window.currentTicketTargetUser = report.reporter_id;
 
     document.getElementById('modalTicketId').textContent = report.ticket_id || report.id;
-    document.getElementById('modalTicketStatus').textContent = report.ticket_status.replace('_', ' ');
-    document.getElementById('modalTicketStatus').className = `filter-chip status-${report.ticket_status.replace('_', '-')}`;
+    document.getElementById('modalTicketStatus').textContent = (report.ticket_status || 'open').replace(/_/g, ' ');
+    document.getElementById('modalTicketStatus').className = `filter-chip status-${(report.ticket_status || 'open').replace('_', '-')}`;
     
-    document.getElementById('modalTargetType').textContent = report.reported_item_type;
-    document.getElementById('modalTargetId').textContent = report.reported_item_id;
-    document.getElementById('modalTargetUserId').textContent = report.target_user_id || 'Unknown';
-    document.getElementById('modalTargetPreview').textContent = report.target_preview || 'No preview available.';
+    document.getElementById('modalTargetType').textContent = report.reported_item_type || 'support';
+    document.getElementById('modalTargetId').textContent = report.id;
+    document.getElementById('modalTargetUserId').textContent = report.reporter_id || 'Unknown';
+    document.getElementById('modalTargetPreview').textContent = report.subject || report.reason || 'No subject preview.';
     
-    document.getElementById('enforcementAction').value = report.enforcement_action || '';
-    document.getElementById('adminMsgTitle').value = '';
-    document.getElementById('adminMsgBody').value = '';
+    if (document.getElementById('modalUpdateStatus')) document.getElementById('modalUpdateStatus').value = report.ticket_status || 'open';
+    if (document.getElementById('modalUpdatePriority')) document.getElementById('modalUpdatePriority').value = report.priority || 'medium';
+    if (document.getElementById('modalUpdateCategory')) document.getElementById('modalUpdateCategory').value = report.category_id || 1;
+    if (document.getElementById('modalUpdateAgent')) document.getElementById('modalUpdateAgent').value = report.assigned_agent_id || '';
+    
     document.getElementById('adminReplyText').value = '';
     
-    document.getElementById('ticketChatMessages').innerHTML = '<div class="empty-state">Loading chat...</div>';
+    await loadCannedResponses();
+    await loadSupportAgents();
+
+    document.getElementById('ticketChatMessages').innerHTML = '<div class="empty-state">Loading chat & audit timeline...</div>';
     document.getElementById('reportDetailsModal').classList.add('active');
     
     await loadTicketMessages(report);
-    window.loadUserAuditData(report.target_user_id);
   };
 
   async function loadTicketMessages(report) {
     try {
       const data = await api(`/api/tickets/${report.id}/messages`);
       const container = document.getElementById('ticketChatMessages');
+      const timeline = document.getElementById('ticketAuditLogTimeline');
       container.innerHTML = '';
       
       const descHtml = report.report_description ? escapeHtml(report.report_description) : '<i>[No description provided]</i>';
-      const attachHtml = report.attachment_url ? `<div style="margin-top: 1rem;"><a href="${report.attachment_url}" target="_blank" style="color: var(--primary);">View Attachment 📁</a></div>` : '';
+      const attachHtml = report.attachment_url ? `<div style="margin-top: 0.75rem;"><a href="${report.attachment_url}" target="_blank" style="color: var(--primary); text-decoration: underline;">View File Attachment 📁</a></div>` : '';
       
       container.innerHTML += `
         <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-          <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Original Report from User ${report.reporter_id}</div>
-          <div style="font-weight: bold; margin-bottom: 0.5rem;">Reason: ${escapeHtml(report.reason)}</div>
-          <div style="font-size: 0.9rem; color: var(--text-secondary);">${descHtml}${attachHtml}</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem;">Original Ticket Submission from User #${report.reporter_id}</div>
+          <div style="font-weight: bold; margin-bottom: 0.4rem;">Subject: ${escapeHtml(report.subject || report.reason)}</div>
+          <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">${descHtml}${attachHtml}</div>
         </div>
       `;
 
       data.messages.forEach(msg => {
-        const isUser = msg.sender_role === 'user';
+        const isInternalNote = msg.is_internal_note === 1;
         const isAdmin = msg.sender_role === 'admin' || msg.sender_role === 'system';
-        const color = isAdmin ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.06)';
-        const borderColor = isAdmin ? '#818cf8' : 'rgba(255,255,255,0.12)';
-        const align = isAdmin ? 'flex-end' : 'flex-start';
         
+        let color = isInternalNote ? 'rgba(245, 158, 11, 0.18)' : isAdmin ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.06)';
+        let borderColor = isInternalNote ? '#f59e0b' : isAdmin ? '#818cf8' : 'rgba(255,255,255,0.12)';
+        let align = isInternalNote ? 'stretch' : isAdmin ? 'flex-end' : 'flex-start';
+        
+        let badgeHtml = `<strong style="color: var(--text-primary);">👤 User</strong>`;
+        if (isInternalNote) {
+          badgeHtml = `<span style="background: #f59e0b; color: #000000; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 0.7rem;">🔒 Staff Internal Note</span>`;
+        } else if (isAdmin) {
+          badgeHtml = `<span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 0.7rem;">🛡️ Admin (You)</span>`;
+        }
+
         container.innerHTML += `
-          <div style="align-self: ${align}; max-width: 85%; background: ${color}; padding: 12px 16px; border-radius: 12px; border: 1px solid ${borderColor}; margin-bottom: 8px;">
+          <div style="align-self: ${align}; max-width: ${isInternalNote ? '100%' : '85%'}; background: ${color}; padding: 12px 16px; border-radius: 12px; border: 1px solid ${borderColor}; margin-bottom: 8px;">
             <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between; gap: 12px; align-items: center;">
-              ${isAdmin ? 
-                `<span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 0.7rem;">🛡️ Admin (You)</span>` : 
-                `<strong style="color: var(--text-primary);">👤 User</strong>`
-              }
+              ${badgeHtml}
               <span>${new Date(msg.created_at).toLocaleString()}</span>
             </div>
             <div style="font-size: 0.92rem; color: var(--text-primary); line-height: 1.5; white-space: pre-wrap;">${escapeHtml(msg.message_body)}</div>
           </div>
         `;
       });
+
       container.scrollTop = container.scrollHeight;
+
+      // Render Audit Log Timeline
+      if (timeline) {
+        timeline.innerHTML = '';
+        const auditLogs = data.auditLogs || [];
+        if (auditLogs.length === 0) {
+          timeline.innerHTML = '<div style="opacity:0.5;">No audit events recorded yet.</div>';
+        } else {
+          auditLogs.forEach(log => {
+            const timeStr = new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const actorName = log.actor_name || (log.actor_type === 'user' ? 'User' : 'System/Staff');
+            timeline.innerHTML += `
+              <div style="padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                <span style="color: var(--primary); font-weight: bold;">[${timeStr}]</span> 
+                <strong>${escapeHtml(actorName)}</strong>: ${escapeHtml(log.action_type.replace(/_/g, ' '))} 
+                <span style="opacity: 0.7; font-size: 0.72rem;">(${escapeHtml(log.new_value || '')})</span>
+              </div>
+            `;
+          });
+        }
+      }
     } catch (err) {
       document.getElementById('ticketChatMessages').innerHTML = `<div class="empty-state">Failed to load chat: ${err.message}</div>`;
     }
   }
 
+  window.toggleAdminReplyType = function(type) {
+    adminReplyType = type;
+    const btn = document.getElementById('btnSendTicketReply');
+    const input = document.getElementById('adminReplyText');
+    if (type === 'internal') {
+      if (btn) {
+        btn.textContent = '🔒 Post Internal Note (Staff Only)';
+        btn.className = 'btn btn--warning btn--sm';
+        btn.style.background = '#f59e0b';
+        btn.style.color = '#000000';
+      }
+      if (input) input.placeholder = 'Write a private internal note for staff members... (Not visible to user)';
+    } else {
+      if (btn) {
+        btn.textContent = 'Send Public Reply ↗';
+        btn.className = 'btn btn--primary btn--sm';
+        btn.style.background = '';
+        btn.style.color = '';
+      }
+      if (input) input.placeholder = 'Type public response to user...';
+    }
+  };
+
+  window.insertCannedResponseTemplate = function(templateId) {
+    if (!templateId) return;
+    const template = cachedCannedResponses.find(r => r.id == templateId);
+    if (template) {
+      document.getElementById('adminReplyText').value = template.content;
+    }
+  };
+
+  window.saveAdminTicketProperties = async function() {
+    const status = document.getElementById('modalUpdateStatus').value;
+    const priority = document.getElementById('modalUpdatePriority').value;
+    const category_id = document.getElementById('modalUpdateCategory').value;
+    const assigned_agent_id = document.getElementById('modalUpdateAgent').value;
+
+    try {
+      await api(`/api/admin/reports/${window.currentTicketId}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status, priority, category_id })
+      });
+
+      await api(`/api/admin/tickets/${window.currentTicketId}/assign`, {
+        method: 'PATCH',
+        body: JSON.stringify({ assigned_agent_id })
+      });
+
+      showToast('Ticket properties and agent assignment updated.', 'success');
+      window.loadReports();
+      loadTicketMessages({ id: window.currentTicketId });
+    } catch (err) {
+      showToast('Failed to update properties: ' + err.message, 'error');
+    }
+  };
+
   window.sendTicketReply = async function() {
     const text = document.getElementById('adminReplyText').value.trim();
     if (!text) return showToast('Enter a reply message.', 'warning');
     
+    const isInternal = adminReplyType === 'internal';
+
     try {
       await api(`/api/tickets/${window.currentTicketId}/reply`, {
         method: 'POST',
-        body: JSON.stringify({ message_body: text })
+        body: JSON.stringify({ message_body: text, is_internal_note: isInternal ? 1 : 0 })
       });
       document.getElementById('adminReplyText').value = '';
-      const dummyReport = { id: window.currentTicketId };
-      await loadTicketMessages(dummyReport); // Ideally fetch full report again, but this works to append chat
-      window.loadReports(); // Refresh table
-      showToast('Reply sent.', 'success');
+      await loadTicketMessages({ id: window.currentTicketId });
+      window.loadReports();
+      showToast(isInternal ? 'Internal note added.' : 'Public reply sent to user.', 'success');
     } catch (err) {
       showToast(err.message, 'error');
     }

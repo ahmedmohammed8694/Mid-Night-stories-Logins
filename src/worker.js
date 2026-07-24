@@ -1830,34 +1830,113 @@ app.put('/api/admin/settings', requireAdmin, async (c) => {
   return c.json({ message: 'Settings saved.' });
 });
 
-// ── Reports ──
+// ── ENTERPRISE HELPDESK & TICKETING ENDPOINTS ──
+
+app.get('/api/user/ticket-categories', async (c) => {
+  const db = c.env.DB;
+  const { results } = await db.prepare('SELECT id, name, description FROM ticket_categories WHERE is_active = 1 ORDER BY id ASC').all();
+  return c.json(results);
+});
+
+app.post('/api/user/tickets/create', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+
+  try {
+    const formData = await c.req.formData();
+    const subject = formData.get('subject') || 'Support Request';
+    const category_id = parseInt(formData.get('category_id')) || 1;
+    const priority = formData.get('priority') || 'medium';
+    const details = formData.get('details') || '';
+    const file = formData.get('attachment');
+    let attachment_url = null;
+    let attachmentRecord = null;
+
+    if (!subject || !details) {
+      return c.json({ success: false, error: 'Subject and Details are required.' }, 400);
+    }
+
+    if (file && file instanceof File && file.size > 0) {
+      if (file.size > 10 * 1024 * 1024) {
+        return c.json({ success: false, error: 'Maximum attachment file size is 10MB.' }, 400);
+      }
+      const allowedMimes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!allowedMimes.includes(file.type)) {
+        return c.json({ success: false, error: 'Invalid file format. Allowed: PNG, JPG, WEBP, PDF, DOC, DOCX.' }, 400);
+      }
+      if (c.env.IMAGES) {
+        const ext = file.name.split('.').pop() || 'bin';
+        const filename = `ticket_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+        await c.env.IMAGES.put(filename, await file.arrayBuffer(), {
+          httpMetadata: { contentType: file.type }
+        });
+        attachment_url = `/uploads/${filename}`;
+        attachmentRecord = {
+          file_name: file.name,
+          file_path: attachment_url,
+          file_size: file.size,
+          mime_type: file.type,
+          storage_key: filename
+        };
+      }
+    }
+
+    const tracking_number = 'TKT-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + Math.floor(1000 + Math.random() * 9000);
+
+    const reportRes = await db.prepare(`
+      INSERT INTO reports (ticket_id, subject, category_id, reported_item_type, reason, report_description, attachment_url, priority, ticket_status, reporter_id, reporter_ip_hash)
+      VALUES (?, ?, ?, 'support', ?, ?, ?, ?, 'open', ?, ?)
+    `).bind(
+      tracking_number, subject, category_id, subject, details, attachment_url, priority, user.id, c.req.header('cf-connecting-ip') || '0.0.0.0'
+    ).run();
+
+    const ticketId = reportRes.meta.last_row_id;
+
+    const msgRes = await db.prepare(`
+      INSERT INTO ticket_conversation_threads (report_id, sender_id, sender_role, is_internal_note, message_body, attachment_url)
+      VALUES (?, ?, 'user', 0, ?, ?)
+    `).bind(ticketId, user.id, details, attachment_url).run();
+
+    const messageId = msgRes.meta.last_row_id;
+
+    if (attachmentRecord) {
+      await db.prepare(`
+        INSERT INTO ticket_attachments (message_id, ticket_id, file_name, file_path, file_size, mime_type, storage_key)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).bind(messageId, ticketId, attachmentRecord.file_name, attachmentRecord.file_path, attachmentRecord.file_size, attachmentRecord.mime_type, attachmentRecord.storage_key).run();
+    }
+
+    await db.prepare(`
+      INSERT INTO ticket_audit_logs (ticket_id, actor_id, actor_type, action_type, new_value)
+      VALUES (?, ?, 'user', 'ticket_created', ?)
+    `).bind(ticketId, user.id, `Ticket created with tracking number ${tracking_number}`).run();
+
+    return c.json({ success: true, ticket_id: tracking_number, id: ticketId });
+  } catch (err) {
+    console.error('POST /api/user/tickets/create ERROR:', err);
+    return c.json({ success: false, error: 'Internal Server Error: ' + err.message }, 500);
+  }
+});
+
 app.post('/api/reports', requireUser, async (c) => {
   const db = c.env.DB;
   const user = c.get('user');
   
   try {
     const formData = await c.req.formData();
-    const target_type = formData.get('target_type') || formData.get('reported_item_type');
-    const target_id = parseInt(formData.get('target_id') || formData.get('reported_item_id'));
-    const reason = formData.get('reason');
+    const target_type = formData.get('target_type') || formData.get('reported_item_type') || 'support';
+    const target_id = parseInt(formData.get('target_id') || formData.get('reported_item_id')) || 0;
+    const reason = formData.get('reason') || 'General Report';
     const details = formData.get('details') || null;
     const file = formData.get('attachment');
     let attachment_url = null;
 
-    if (!target_type || !target_id || !reason) {
-      return c.json({ success: false, error: 'Missing required fields.' }, 400);
-    }
-
     if (file && file instanceof File) {
-      if (file.size > 5 * 1024 * 1024) {
-        return c.json({ success: false, error: 'Max file size is 5MB.' }, 400);
-      }
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
-        return c.json({ success: false, error: 'Only JPEG, PNG and WEBP are allowed.' }, 400);
+      if (file.size > 10 * 1024 * 1024) {
+        return c.json({ success: false, error: 'Max file size is 10MB.' }, 400);
       }
       if (c.env.IMAGES) {
-        const ext = file.type.split('/')[1] || 'jpg';
+        const ext = file.name.split('.').pop() || 'jpg';
         const filename = `report_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
         await c.env.IMAGES.put(filename, await file.arrayBuffer(), {
           httpMetadata: { contentType: file.type }
@@ -1868,8 +1947,8 @@ app.post('/api/reports', requireUser, async (c) => {
 
     const ticket_id = 'TKT-' + Math.floor(1000 + Math.random() * 9000) + '-' + Date.now().toString().slice(-4);
     
-    await db.prepare('INSERT INTO reports (ticket_id, reported_item_type, reported_item_id, reason, report_description, attachment_url, reporter_id, reporter_ip_hash, ticket_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(ticket_id, target_type, target_id, reason, details, attachment_url, user.id, c.req.header('cf-connecting-ip') || '0.0.0.0', 'open')
+    await db.prepare('INSERT INTO reports (ticket_id, subject, reported_item_type, reported_item_id, reason, report_description, attachment_url, reporter_id, reporter_ip_hash, ticket_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(ticket_id, reason, target_type, target_id, reason, details, attachment_url, user.id, c.req.header('cf-connecting-ip') || '0.0.0.0', 'open')
       .run();
 
     return c.json({ success: true, ticket_id });
@@ -1878,25 +1957,59 @@ app.post('/api/reports', requireUser, async (c) => {
     return c.json({ success: false, error: 'Internal Server Error' }, 500);
   }
 });
+
 app.get('/api/admin/reports', requireAdmin, async (c) => {
   const db = c.env.DB;
   const status = c.req.query('status') || 'open';
+  const priority = c.req.query('priority');
+  const category_id = c.req.query('category_id');
+  const search = c.req.query('search');
   
   try {
-    const { results } = await db.prepare(`
+    let query = `
       SELECT r.*,
              CASE WHEN r.reported_item_type = 'story' THEN (SELECT title FROM stories WHERE id = r.reported_item_id)
                   WHEN r.reported_item_type = 'comment' THEN (SELECT content FROM comments WHERE id = r.reported_item_id)
                   ELSE NULL END as target_preview,
-             CASE WHEN r.reported_item_type = 'story' THEN (SELECT user_id FROM stories WHERE id = r.reported_item_id)
-                  WHEN r.reported_item_type = 'comment' THEN (SELECT user_id FROM comments WHERE id = r.reported_item_id)
-                  ELSE r.reported_item_id END as target_user_id,
-             u.full_name as reporter_name, u.created_at as reporter_join_date
+             u.full_name as reporter_name, u.email as reporter_email,
+             tc.name as category_name,
+             au.username as assigned_agent_name
       FROM reports r
       LEFT JOIN users u ON r.reporter_id = u.id
-      WHERE r.ticket_status = ? OR (r.ticket_status != 'closed' AND r.ticket_status != 'resolved' AND ? = 'open')
-      ORDER BY r.created_at DESC
-    `).bind(status, status).all();
+      LEFT JOIN ticket_categories tc ON r.category_id = tc.id
+      LEFT JOIN admin_users au ON r.assigned_agent_id = au.id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (status && status !== 'all') {
+      if (status === 'open') {
+        query += " AND (r.ticket_status = 'open' OR r.ticket_status = 'investigating' OR r.ticket_status = 'waiting_on_user')";
+      } else {
+        query += " AND r.ticket_status = ?";
+        params.push(status);
+      }
+    }
+
+    if (priority && priority !== 'all') {
+      query += " AND r.priority = ?";
+      params.push(priority);
+    }
+
+    if (category_id && category_id !== 'all') {
+      query += " AND r.category_id = ?";
+      params.push(parseInt(category_id));
+    }
+
+    if (search) {
+      query += " AND (r.ticket_id LIKE ? OR r.subject LIKE ? OR r.reason LIKE ? OR u.full_name LIKE ? OR u.email LIKE ?)";
+      const searchPattern = `%${search}%`;
+      params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
+    }
+
+    query += " ORDER BY r.created_at DESC";
+
+    const { results } = await db.prepare(query).bind(...params).all();
     return c.json(results);
   } catch (err) {
     console.error('GET /api/admin/reports ERROR:', err);
@@ -1908,21 +2021,116 @@ app.post('/api/admin/reports/:id/status', requireAdmin, async (c) => {
   const db = c.env.DB;
   const adminPayload = c.get('admin');
   const id = parseInt(c.req.param('id'));
-  const { status, action } = await c.req.json().catch(() => ({}));
+  const { status, priority, category_id, action } = await c.req.json().catch(() => ({}));
+
+  const oldReport = await db.prepare('SELECT ticket_status, priority, category_id FROM reports WHERE id = ?').bind(id).first();
+  if (!oldReport) return c.json({ error: 'Ticket not found' }, 404);
+
+  const updates = [];
+  const binds = [];
+
+  if (status) {
+    updates.push('ticket_status = ?');
+    binds.push(status);
+    if (status === 'resolved' || status === 'closed') {
+      updates.push('resolved_by = ?');
+      binds.push(adminPayload.adminId);
+      updates.push('resolved_at = CURRENT_TIMESTAMP');
+    }
+  }
+
+  if (priority) {
+    updates.push('priority = ?');
+    binds.push(priority);
+  }
+
+  if (category_id) {
+    updates.push('category_id = ?');
+    binds.push(parseInt(category_id));
+  }
+
+  if (action !== undefined) {
+    updates.push('enforcement_action = ?');
+    binds.push(action);
+  }
+
+  updates.push('updated_at = CURRENT_TIMESTAMP');
+
+  if (updates.length > 0) {
+    binds.push(id);
+    await db.prepare(`UPDATE reports SET ${updates.join(', ')} WHERE id = ?`).bind(...binds).run();
+  }
 
   await db.prepare(`
-    UPDATE reports 
-    SET ticket_status = ?, enforcement_action = ?, resolved_by = ?, resolved_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `).bind(status || 'resolved', action || null, adminPayload.adminId, id).run();
+    INSERT INTO ticket_audit_logs (ticket_id, actor_id, actor_type, action_type, old_value, new_value)
+    VALUES (?, ?, 'admin', 'update_properties', ?, ?)
+  `).bind(id, adminPayload.adminId, JSON.stringify(oldReport), JSON.stringify({ status, priority, category_id })).run();
   
-  return c.json({ message: 'Ticket status updated.' });
+  return c.json({ message: 'Ticket updated successfully.' });
+});
+
+app.patch('/api/admin/tickets/:id/assign', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const id = parseInt(c.req.param('id'));
+  const { assigned_agent_id } = await c.req.json();
+
+  const report = await db.prepare('SELECT assigned_agent_id FROM reports WHERE id = ?').bind(id).first();
+  if (!report) return c.json({ error: 'Ticket not found' }, 404);
+
+  await db.prepare('UPDATE reports SET assigned_agent_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(assigned_agent_id || null, id).run();
+
+  await db.prepare(`
+    INSERT INTO ticket_audit_logs (ticket_id, actor_id, actor_type, action_type, old_value, new_value)
+    VALUES (?, ?, 'admin', 'assignment_change', ?, ?)
+  `).bind(id, adminPayload.adminId, String(report.assigned_agent_id || 'Unassigned'), String(assigned_agent_id || 'Unassigned')).run();
+
+  return c.json({ success: true, message: 'Ticket agent assigned.' });
+});
+
+app.get('/api/admin/canned-responses', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { results } = await db.prepare('SELECT * FROM canned_responses ORDER BY title ASC').all();
+  return c.json(results);
+});
+
+app.post('/api/admin/canned-responses', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { title, content, category_id } = await c.req.json();
+  if (!title || !content) return c.json({ error: 'Title and Content are required.' }, 400);
+
+  await db.prepare('INSERT INTO canned_responses (title, content, category_id) VALUES (?, ?, ?)').bind(title, content, category_id || null).run();
+  return c.json({ success: true, message: 'Canned response template added.' });
+});
+
+app.get('/api/admin/support-agents', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { results } = await db.prepare('SELECT id, username, email, role FROM admin_users ORDER BY username ASC').all();
+  return c.json(results);
 });
 
 app.get('/api/user/tickets', requireUser, async (c) => {
   const db = c.env.DB;
   const user = c.get('user');
-  const { results } = await db.prepare('SELECT id, ticket_id, reported_item_type, reason, ticket_status, created_at FROM reports WHERE reporter_id = ? ORDER BY created_at DESC').bind(user.id).all();
+  const statusFilter = c.req.query('status');
+
+  let query = `
+    SELECT r.id, r.ticket_id, r.subject, r.reason, r.priority, r.ticket_status, r.created_at, r.resolved_at,
+           tc.name as category_name
+    FROM reports r
+    LEFT JOIN ticket_categories tc ON r.category_id = tc.id
+    WHERE r.reporter_id = ?
+  `;
+  const params = [user.id];
+
+  if (statusFilter && statusFilter !== 'all') {
+    query += ' AND r.ticket_status = ?';
+    params.push(statusFilter);
+  }
+
+  query += ' ORDER BY r.created_at DESC';
+
+  const { results } = await db.prepare(query).bind(...params).all();
   return c.json(results);
 });
 
@@ -1930,11 +2138,89 @@ app.get('/api/tickets/:id/messages', async (c) => {
   const db = c.env.DB;
   const id = parseInt(c.req.param('id'));
   
-  const report = await db.prepare('SELECT * FROM reports WHERE id = ?').bind(id).first();
+  const report = await db.prepare(`
+    SELECT r.*, tc.name as category_name, au.username as assigned_agent_name
+    FROM reports r
+    LEFT JOIN ticket_categories tc ON r.category_id = tc.id
+    LEFT JOIN admin_users au ON r.assigned_agent_id = au.id
+    WHERE r.id = ?
+  `).bind(id).first();
+
   if (!report) return c.json({ error: 'Ticket not found' }, 404);
   
-  const { results } = await db.prepare('SELECT * FROM ticket_conversation_threads WHERE report_id = ? ORDER BY created_at ASC').bind(id).all();
-  return c.json({ ticket: report, messages: results });
+  let isAdmin = false;
+  const adminToken = c.req.header('x-admin-token') || c.req.cookie('admin_token');
+  if (adminToken) {
+    try {
+      const payload = await verifyJWT(adminToken, getAdminJwtSecret(c));
+      if (payload.adminId) isAdmin = true;
+    } catch(e){}
+  }
+
+  let msgQuery = 'SELECT * FROM ticket_conversation_threads WHERE report_id = ?';
+  if (!isAdmin) {
+    msgQuery += ' AND is_internal_note = 0';
+  }
+  msgQuery += ' ORDER BY created_at ASC';
+
+  const { results: messages } = await db.prepare(msgQuery).bind(id).all();
+  const { results: attachments } = await db.prepare('SELECT * FROM ticket_attachments WHERE ticket_id = ?').bind(id).all();
+  
+  let auditLogs = [];
+  if (isAdmin) {
+    const { results } = await db.prepare(`
+      SELECT al.*, au.username as actor_name
+      FROM ticket_audit_logs al
+      LEFT JOIN admin_users au ON al.actor_id = au.id
+      WHERE al.ticket_id = ?
+      ORDER BY al.created_at ASC
+    `).bind(id).all();
+    auditLogs = results;
+  }
+
+  let can_reopen = false;
+  if (report.ticket_status === 'resolved' || report.ticket_status === 'closed') {
+    if (report.resolved_at) {
+      const resolvedTime = new Date(report.resolved_at).getTime();
+      const diffDays = (Date.now() - resolvedTime) / (1000 * 3600 * 24);
+      if (diffDays <= 7) can_reopen = true;
+    } else {
+      can_reopen = true;
+    }
+  }
+
+  return c.json({ ticket: { ...report, can_reopen }, messages, attachments, auditLogs });
+});
+
+app.post('/api/user/tickets/:id/reopen', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const id = parseInt(c.req.param('id'));
+
+  const report = await db.prepare('SELECT * FROM reports WHERE id = ? AND reporter_id = ?').bind(id, user.id).first();
+  if (!report) return c.json({ error: 'Ticket not found or unauthorized.' }, 404);
+
+  if (report.ticket_status !== 'resolved' && report.ticket_status !== 'closed') {
+    return c.json({ error: 'Only resolved or closed tickets can be reopened.' }, 400);
+  }
+
+  await db.prepare(`
+    UPDATE reports 
+    SET ticket_status = 'open', reopened_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP 
+    WHERE id = ?
+  `).bind(id).run();
+
+  await db.prepare(`
+    INSERT INTO ticket_conversation_threads (report_id, sender_id, sender_role, is_internal_note, message_body)
+    VALUES (?, ?, 'user', 0, '🔄 Ticket reopened by user for additional support.')
+  `).bind(id, user.id).run();
+
+  await db.prepare(`
+    INSERT INTO ticket_audit_logs (ticket_id, actor_id, actor_type, action_type, old_value, new_value)
+    VALUES (?, ?, 'user', 'reopen_ticket', ?, 'open')
+  `).bind(id, user.id, report.ticket_status).run();
+
+  return c.json({ success: true, message: 'Ticket reopened successfully.' });
 });
 
 app.post('/api/tickets/:id/reply', async (c) => {
@@ -1951,9 +2237,7 @@ app.post('/api/tickets/:id/reply', async (c) => {
         sender_id = payload.adminId;
         sender_role = 'admin';
       }
-    } catch (err) {
-      // Not a valid admin token, try user token next
-    }
+    } catch (err) {}
   }
 
   if (!sender_role) {
@@ -1966,37 +2250,51 @@ app.post('/api/tickets/:id/reply', async (c) => {
           sender_id = payload.id;
           sender_role = 'user';
         }
-      } catch (err) {
-        return c.json({ error: 'Invalid token' }, 401);
-      }
+      } catch (err) {}
     }
   }
 
-  if (!sender_role) {
-    return c.json({ error: 'Unauthorized' }, 401);
-  }
+  if (!sender_role) return c.json({ error: 'Unauthorized' }, 401);
 
-  const { message_body } = await c.req.json();
+  const { message_body, is_internal_note = 0 } = await c.req.json();
   if (!message_body) return c.json({ error: 'Message required' }, 400);
 
-  await db.prepare('INSERT INTO ticket_conversation_threads (report_id, sender_id, sender_role, message_body) VALUES (?, ?, ?, ?)')
-    .bind(id, sender_id, sender_role, message_body).run();
+  const isNote = (sender_role === 'admin' && (is_internal_note === 1 || is_internal_note === true)) ? 1 : 0;
+
+  await db.prepare(`
+    INSERT INTO ticket_conversation_threads (report_id, sender_id, sender_role, is_internal_note, message_body)
+    VALUES (?, ?, ?, ?, ?)
+  `).bind(id, sender_id, sender_role, isNote, message_body).run();
 
   if (sender_role === 'admin') {
-    await db.prepare('UPDATE reports SET ticket_status = ? WHERE id = ?').bind('waiting_on_user', id).run();
-    try {
-      const reportRow = await db.prepare('SELECT reporter_id, ticket_id FROM reports WHERE id = ?').bind(id).first();
-      if (reportRow && reportRow.reporter_id) {
-        await db.prepare(`
-          INSERT INTO notifications (user_id, type, source_id, read)
-          VALUES (?, 'ticket_reply', ?, 0)
-        `).bind(reportRow.reporter_id, id).run();
-      }
-    } catch (e) {
-      console.warn('Failed to insert admin reply notification:', e);
+    if (isNote) {
+      await db.prepare(`
+        INSERT INTO ticket_audit_logs (ticket_id, actor_id, actor_type, action_type, new_value)
+        VALUES (?, ?, 'admin', 'internal_note', ?)
+      `).bind(id, sender_id, 'Added internal staff note').run();
+    } else {
+      await db.prepare('UPDATE reports SET ticket_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind('waiting_on_user', id).run();
+      try {
+        const reportRow = await db.prepare('SELECT reporter_id FROM reports WHERE id = ?').bind(id).first();
+        if (reportRow && reportRow.reporter_id) {
+          await db.prepare(`
+            INSERT INTO notifications (user_id, type, source_id, read)
+            VALUES (?, 'ticket_reply', ?, 0)
+          `).bind(reportRow.reporter_id, id).run();
+        }
+      } catch (e) {}
+
+      await db.prepare(`
+        INSERT INTO ticket_audit_logs (ticket_id, actor_id, actor_type, action_type, new_value)
+        VALUES (?, ?, 'admin', 'public_reply', ?)
+      `).bind(id, sender_id, 'Sent public reply to user').run();
     }
   } else {
-    await db.prepare('UPDATE reports SET ticket_status = ? WHERE id = ?').bind('investigating', id).run();
+    await db.prepare('UPDATE reports SET ticket_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind('investigating', id).run();
+    await db.prepare(`
+      INSERT INTO ticket_audit_logs (ticket_id, actor_id, actor_type, action_type, new_value)
+      VALUES (?, ?, 'user', 'public_reply', ?)
+    `).bind(id, sender_id, 'User submitted reply').run();
   }
 
   return c.json({ success: true });
