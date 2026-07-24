@@ -2567,6 +2567,122 @@ app.put('/api/admin/books/:id/status', requireAdmin, async (c) => {
   return c.json({ success: true, message: `Book status updated to ${status}.` });
 });
 
+// ── POST /api/admin/books/bulk-upload ──
+app.post('/api/admin/books/bulk-upload', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+
+  try {
+    const body = await c.req.json();
+    const { books } = body;
+
+    if (!Array.isArray(books) || books.length === 0) {
+      return c.json({ error: 'No books provided in batch payload.' }, 400);
+    }
+
+    if (books.length > 100) {
+      return c.json({ error: 'Batch upload exceeds maximum limit of 100 books.' }, 400);
+    }
+
+    const savedBooks = [];
+    const failedBooks = [];
+    const batchStatements = [];
+
+    for (const item of books) {
+      try {
+        const title = (item.title || '').trim();
+        const author = (item.author || '').trim();
+        const channelType = ['education', 'naval'].includes(item.channel_type) ? item.channel_type : 'education';
+
+        if (!title || !author) {
+          failedBooks.push({ filename: item.filename || title || 'Unknown', error: 'Missing Title or Author' });
+          continue;
+        }
+
+        const sanitizedTitle = title.replace(/[<>&'"]/g, '');
+        const sanitizedAuthor = author.replace(/[<>&'"]/g, '');
+
+        let fileUrl = item.file_url || null;
+        let coverImageUrl = item.cover_image_url || null;
+
+        if (item.file_base64 && c.env.IMAGES) {
+          const fileExt = item.file_ext || 'epub';
+          const fileKey = `bulk_book_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+          const fileBuffer = Uint8Array.from(atob(item.file_base64), ch => ch.charCodeAt(0));
+          await c.env.IMAGES.put(fileKey, fileBuffer, {
+            httpMetadata: { contentType: fileExt === 'pdf' ? 'application/pdf' : 'application/epub+zip' }
+          });
+          fileUrl = `/uploads/${fileKey}`;
+        }
+
+        if (item.cover_base64 && c.env.IMAGES) {
+          const coverExt = item.cover_ext || 'jpg';
+          const coverKey = `bulk_cover_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${coverExt}`;
+          const coverBuffer = Uint8Array.from(atob(item.cover_base64), ch => ch.charCodeAt(0));
+          await c.env.IMAGES.put(coverKey, coverBuffer, {
+            httpMetadata: { contentType: `image/${coverExt}` }
+          });
+          coverImageUrl = `/uploads/${coverKey}`;
+        }
+
+        if (!fileUrl) {
+          fileUrl = `/uploads/placeholder_book.epub`;
+        }
+
+        const statement = db.prepare(`
+          INSERT INTO books (
+            title, author, description, publisher, language, isbn,
+            page_count, est_read_minutes, cover_image_url, file_url,
+            file_type, status, visibility, uploaded_by, approved_by, channel_type
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', 'public', null, ?, ?)
+        `).bind(
+          sanitizedTitle,
+          sanitizedAuthor,
+          item.description || null,
+          item.publisher || null,
+          item.language || 'en',
+          item.isbn || null,
+          item.page_count ? parseInt(item.page_count) : null,
+          item.est_read_minutes ? parseInt(item.est_read_minutes) : null,
+          coverImageUrl,
+          fileUrl,
+          item.file_type || 'epub',
+          adminPayload ? adminPayload.adminId : null,
+          channelType
+        );
+
+        batchStatements.push({ statement, item });
+      } catch (err) {
+        failedBooks.push({ filename: item.filename || 'Unknown', error: err.message });
+      }
+    }
+
+    if (batchStatements.length > 0) {
+      const results = await db.batch(batchStatements.map(b => b.statement));
+      results.forEach((res, idx) => {
+        const item = batchStatements[idx].item;
+        savedBooks.push({
+          bookId: res.meta ? res.meta.last_row_id : null,
+          title: item.title,
+          author: item.author
+        });
+      });
+    }
+
+    return c.json({
+      success: true,
+      totalProcessed: books.length,
+      successCount: savedBooks.length,
+      failedCount: failedBooks.length,
+      savedBooks,
+      failedBooks
+    });
+  } catch (err) {
+    console.error('Bulk upload route error:', err);
+    return c.json({ error: 'Failed to process bulk book upload: ' + err.message }, 500);
+  }
+});
+
 // ── GET /api/admin/books ──
 app.get('/api/admin/books', requireAdmin, async (c) => {
   const db = c.env.DB;

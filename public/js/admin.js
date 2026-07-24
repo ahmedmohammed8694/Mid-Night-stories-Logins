@@ -905,11 +905,15 @@
     // Book tab triggers
     const btnBooksListTab = document.getElementById('btnBooksListTab');
     const btnBooksUploadTab = document.getElementById('btnBooksUploadTab');
+    const btnBooksBulkUploadTab = document.getElementById('btnBooksBulkUploadTab');
     const btnBooksSubmissionsTab = document.getElementById('btnBooksSubmissionsTab');
 
     if (btnBooksListTab) btnBooksListTab.addEventListener('click', () => switchBookTab('booksListTabSection', 'btnBooksListTab'));
     if (btnBooksUploadTab) btnBooksUploadTab.addEventListener('click', () => switchBookTab('booksUploadTabSection', 'btnBooksUploadTab'));
+    if (btnBooksBulkUploadTab) btnBooksBulkUploadTab.addEventListener('click', () => switchBookTab('booksBulkUploadTabSection', 'btnBooksBulkUploadTab'));
     if (btnBooksSubmissionsTab) btnBooksSubmissionsTab.addEventListener('click', () => switchBookTab('booksSubmissionsTabSection', 'btnBooksSubmissionsTab'));
+
+    initBulkBookUpload();
 
     // Book File select listener (for auto-fill metadata)
     const bookFileInput = document.getElementById('bookFile');
@@ -1653,5 +1657,524 @@
       showToast(err.message, 'error');
     }
   };
+
+  // ── Bulk Book Upload & Automated Metadata Extractor Engine ──
+  let bulkExtractedItems = [];
+
+  function switchBookTab(activeSectionId, activeBtnId) {
+    ['booksListTabSection', 'booksUploadTabSection', 'booksBulkUploadTabSection', 'booksSubmissionsTabSection'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('hidden');
+    });
+    ['btnBooksListTab', 'btnBooksUploadTab', 'btnBooksBulkUploadTab', 'btnBooksSubmissionsTab'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.classList.remove('active');
+    });
+    const section = document.getElementById(activeSectionId);
+    const btn = document.getElementById(activeBtnId);
+    if (section) section.classList.remove('hidden');
+    if (btn) btn.classList.add('active');
+  }
+
+  function initBulkBookUpload() {
+    const folderInput = document.getElementById('bulkFolderInput');
+    const zipInput = document.getElementById('bulkZipInput');
+    const dropZone = document.getElementById('bulkDropZone');
+    const resetBtn = document.getElementById('btnResetBulkExtractor');
+    const saveBtn = document.getElementById('btnSaveBulkBatch');
+
+    if (folderInput) folderInput.addEventListener('change', e => handleBulkFilesSelect(e.target.files));
+    if (zipInput) zipInput.addEventListener('change', e => handleBulkZipSelect(e.target.files[0]));
+
+    if (dropZone) {
+      dropZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--primary)';
+        dropZone.style.background = 'rgba(92, 106, 196, 0.12)';
+      });
+      dropZone.addEventListener('dragleave', e => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--primary)';
+        dropZone.style.background = 'rgba(92, 106, 196, 0.04)';
+      });
+      dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--primary)';
+        dropZone.style.background = 'rgba(92, 106, 196, 0.04)';
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          if (e.dataTransfer.files.length === 1 && (e.dataTransfer.files[0].name.endsWith('.zip') || e.dataTransfer.files[0].name.endsWith('.rar'))) {
+            handleBulkZipSelect(e.dataTransfer.files[0]);
+          } else {
+            handleBulkFilesSelect(e.dataTransfer.files);
+          }
+        }
+      });
+    }
+
+    if (resetBtn) resetBtn.addEventListener('click', resetBulkExtractor);
+    if (saveBtn) saveBtn.addEventListener('click', commitBulkSaveBatch);
+  }
+
+  function updateBulkProgress(stageText, percent, subText) {
+    const container = document.getElementById('bulkProgressContainer');
+    const stageEl = document.getElementById('bulkProgressStageText');
+    const percentEl = document.getElementById('bulkProgressPercentText');
+    const barEl = document.getElementById('bulkProgressBar');
+    const subtextEl = document.getElementById('bulkProgressSubtext');
+
+    if (container) container.classList.remove('hidden');
+    if (stageEl) stageEl.textContent = stageText;
+    if (percentEl) percentEl.textContent = `${Math.round(percent)}%`;
+    if (barEl) barEl.style.width = `${Math.round(percent)}%`;
+    if (subtextEl) subtextEl.textContent = subText || '';
+  }
+
+  function hideBulkProgress() {
+    const container = document.getElementById('bulkProgressContainer');
+    if (container) container.classList.add('hidden');
+  }
+
+  function cleanTitleFromFilename(name) {
+    let clean = name.replace(/\.[^/.]+$/, '');
+    clean = clean.replace(/[\-_]/g, ' ');
+    clean = clean.replace(/([a-z])([A-Z])/g, '$1 $2');
+    clean = clean.replace(/\s+/g, ' ').trim();
+    return clean ? clean.charAt(0).toUpperCase() + clean.slice(1) : 'Untitled Book';
+  }
+
+  function parseIsbn(text) {
+    if (!text) return '';
+    const match = text.match(/(?:ISBN(?:-13)?:?\s*)?(97[89][-\s]?\d{1,5}[-\s]?\d{1,7}[-\s]?\d{1,7}[-\s]?[\dX])/i);
+    return match ? match[1].replace(/[-\s]/g, '') : '';
+  }
+
+  async function handleBulkZipSelect(zipFile) {
+    if (!zipFile) return;
+    resetBulkExtractor();
+    updateBulkProgress('Stage 1: Reading Archive...', 10, `Unpacking ${zipFile.name}...`);
+
+    try {
+      const zip = await JSZip.loadAsync(zipFile);
+      const fileEntries = [];
+      let sidecarFile = null;
+
+      const entries = Object.keys(zip.files);
+      for (const path of entries) {
+        const entry = zip.files[path];
+        if (entry.dir) continue;
+
+        // Path Traversal Security Check
+        if (path.includes('../') || path.includes('..\\')) continue;
+
+        const lower = path.toLowerCase();
+        if (lower.endsWith('metadata.json') || lower.endsWith('metadata.csv')) {
+          sidecarFile = entry;
+        } else if (lower.endsWith('.epub') || lower.endsWith('.pdf')) {
+          fileEntries.push({ path, entry });
+        }
+      }
+
+      if (fileEntries.length === 0) {
+        throw new Error('No .EPUB or .PDF files found inside archive.');
+      }
+
+      if (fileEntries.length > 100) {
+        showToast('Hard limit of 100 books per batch upload enforced. Processing first 100.', 'warning');
+        fileEntries.length = 100;
+      }
+
+      let sidecarData = {};
+      if (sidecarFile) {
+        try {
+          const content = await sidecarFile.async('string');
+          if (sidecarFile.name.endsWith('.json')) {
+            sidecarData = JSON.parse(content);
+          }
+        } catch (e) {
+          console.warn('Sidecar metadata parse error:', e);
+        }
+      }
+
+      const total = fileEntries.length;
+      bulkExtractedItems = [];
+
+      for (let i = 0; i < total; i++) {
+        const { path, entry } = fileEntries[i];
+        const pct = 15 + ((i + 1) / total) * 65;
+        const filename = path.split('/').pop();
+        updateBulkProgress('Stage 2: Extracting Metadata...', pct, `Processing ${i + 1} of ${total}: ${filename}`);
+
+        const fileBlob = await entry.async('blob');
+        const fileObj = new File([fileBlob], filename, { type: filename.endsWith('.pdf') ? 'application/pdf' : 'application/epub+zip' });
+
+        let metadata = {
+          id: 'item_' + i + '_' + Date.now(),
+          file: fileObj,
+          filename: filename,
+          file_type: filename.endsWith('.pdf') ? 'pdf' : 'epub',
+          channel_type: document.getElementById('bulkDefaultChannel').value || 'education',
+          title: cleanTitleFromFilename(filename),
+          author: 'Unknown Author',
+          description: '',
+          publisher: 'Self-Published',
+          language: 'en',
+          isbn: parseIsbn(filename),
+          page_count: 100,
+          est_read_minutes: 25,
+          coverDataUrl: null,
+          isValid: true,
+          errorMsg: ''
+        };
+
+        if (fileObj.size > 52428800) { // 50MB
+          metadata.isValid = false;
+          metadata.errorMsg = 'File size exceeds 50MB limit';
+        } else if (filename.endsWith('.epub')) {
+          try {
+            const containerFile = zip.file("META-INF/container.xml");
+            if (containerFile) {
+              const containerText = await containerFile.async("string");
+              const parser = new DOMParser();
+              const containerXml = parser.parseFromString(containerText, "text/xml");
+              const rootfile = containerXml.querySelector("rootfile");
+              if (rootfile) {
+                const opfPath = rootfile.getAttribute("full-path");
+                const opfFile = zip.file(opfPath);
+                if (opfFile) {
+                  const opfText = await opfFile.async("string");
+                  const opfXml = parser.parseFromString(opfText, "text/xml");
+                  metadata.title = getXmlTagText(opfXml, 'title') || metadata.title;
+                  metadata.author = getXmlTagText(opfXml, 'creator') || metadata.author;
+                  metadata.description = getXmlTagText(opfXml, 'description') || '';
+                  metadata.publisher = getXmlTagText(opfXml, 'publisher') || metadata.publisher;
+                  metadata.language = getXmlTagText(opfXml, 'language') || 'en';
+                  metadata.isbn = parseIsbn(getXmlTagText(opfXml, 'identifier')) || metadata.isbn;
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('EPUB parsing notice:', err);
+          }
+        } else if (filename.endsWith('.pdf')) {
+          metadata.page_count = Math.max(12, Math.floor(fileObj.size / 35000));
+          metadata.est_read_minutes = Math.round(metadata.page_count * 1.5);
+        }
+
+        if (sidecarData[filename]) {
+          Object.assign(metadata, sidecarData[filename]);
+        }
+
+        bulkExtractedItems.push(metadata);
+      }
+
+      updateBulkProgress('Stage 3: Validating Batch...', 90, 'Building pre-save review grid...');
+      setTimeout(() => {
+        hideBulkProgress();
+        renderBulkReviewTable();
+      }, 500);
+    } catch (err) {
+      hideBulkProgress();
+      showToast('Archive processing error: ' + err.message, 'error');
+    }
+  }
+
+  async function handleBulkFilesSelect(fileList) {
+    if (!fileList || fileList.length === 0) return;
+    resetBulkExtractor();
+
+    const bookFiles = Array.from(fileList).filter(f => f.name.endsWith('.epub') || f.name.endsWith('.pdf'));
+    const imageFiles = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+
+    if (bookFiles.length === 0) {
+      showToast('No valid .EPUB or .PDF files found in selected folder.', 'warning');
+      return;
+    }
+
+    if (bookFiles.length > 100) {
+      showToast('Maximum batch limit is 100 books. Processing first 100.', 'warning');
+      bookFiles.length = 100;
+    }
+
+    const total = bookFiles.length;
+    bulkExtractedItems = [];
+
+    for (let i = 0; i < total; i++) {
+      const fileObj = bookFiles[i];
+      const filename = fileObj.name;
+      const pct = ((i + 1) / total) * 80;
+      updateBulkProgress('Stage 2: Extracting Metadata...', pct, `Processing ${i + 1} of ${total}: ${filename}`);
+
+      let metadata = {
+        id: 'item_' + i + '_' + Date.now(),
+        file: fileObj,
+        filename: filename,
+        file_type: filename.endsWith('.pdf') ? 'pdf' : 'epub',
+        channel_type: document.getElementById('bulkDefaultChannel').value || 'education',
+        title: cleanTitleFromFilename(filename),
+        author: 'Unknown Author',
+        description: '',
+        publisher: 'Self-Published',
+        language: 'en',
+        isbn: parseIsbn(filename),
+        page_count: 120,
+        est_read_minutes: 30,
+        coverDataUrl: null,
+        isValid: true,
+        errorMsg: ''
+      };
+
+      if (fileObj.size > 52428800) {
+        metadata.isValid = false;
+        metadata.errorMsg = 'File size exceeds 50MB limit';
+      } else if (filename.endsWith('.epub')) {
+        try {
+          const zip = await JSZip.loadAsync(fileObj);
+          const containerFile = zip.file("META-INF/container.xml");
+          if (containerFile) {
+            const containerText = await containerFile.async("string");
+            const parser = new DOMParser();
+            const containerXml = parser.parseFromString(containerText, "text/xml");
+            const rootfile = containerXml.querySelector("rootfile");
+            if (rootfile) {
+              const opfPath = rootfile.getAttribute("full-path");
+              const opfFile = zip.file(opfPath);
+              if (opfFile) {
+                const opfText = await opfFile.async("string");
+                const opfXml = parser.parseFromString(opfText, "text/xml");
+                metadata.title = getXmlTagText(opfXml, 'title') || metadata.title;
+                metadata.author = getXmlTagText(opfXml, 'creator') || metadata.author;
+                metadata.description = getXmlTagText(opfXml, 'description') || '';
+                metadata.publisher = getXmlTagText(opfXml, 'publisher') || metadata.publisher;
+                metadata.language = getXmlTagText(opfXml, 'language') || 'en';
+                metadata.isbn = parseIsbn(getXmlTagText(opfXml, 'identifier')) || metadata.isbn;
+              }
+            }
+          }
+        } catch (err) {
+          console.warn("Folder EPUB parse error:", err);
+        }
+      } else if (filename.endsWith('.pdf')) {
+        metadata.page_count = Math.max(10, Math.floor(fileObj.size / 35000));
+        metadata.est_read_minutes = Math.round(metadata.page_count * 1.4);
+      }
+
+      const baseName = filename.replace(/\.[^/.]+$/, '').toLowerCase();
+      const matchingImg = imageFiles.find(img => img.name.replace(/\.[^/.]+$/, '').toLowerCase() === baseName);
+      if (matchingImg) {
+        metadata.coverDataUrl = await readFileAsDataURL(matchingImg);
+      }
+
+      bulkExtractedItems.push(metadata);
+    }
+
+    updateBulkProgress('Stage 3: Validating Batch...', 95, 'Preparing review table...');
+    setTimeout(() => {
+      hideBulkProgress();
+      renderBulkReviewTable();
+    }, 400);
+  }
+
+  function getXmlTagText(xmlDoc, tagName) {
+    const el = xmlDoc.querySelector(tagName) || xmlDoc.querySelector(`dc\\:${tagName}`) || xmlDoc.querySelector(`[nodeName*="${tagName}"]`);
+    return el ? el.textContent.trim() : '';
+  }
+
+  function readFileAsDataURL(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function resetBulkExtractor() {
+    bulkExtractedItems = [];
+    document.getElementById('bulkReviewBody').innerHTML = '';
+    document.getElementById('bulkReviewTableWrapper').classList.add('hidden');
+    document.getElementById('bulkSummaryReport').classList.add('hidden');
+    document.getElementById('btnSaveBulkBatch').style.display = 'none';
+    document.getElementById('btnResetBulkExtractor').style.display = 'none';
+    hideBulkProgress();
+  }
+
+  function renderBulkReviewTable() {
+    const tbody = document.getElementById('bulkReviewBody');
+    tbody.innerHTML = '';
+
+    if (bulkExtractedItems.length === 0) return;
+
+    document.getElementById('bulkTotalCount').textContent = bulkExtractedItems.length;
+    document.getElementById('bulkReviewTableWrapper').classList.remove('hidden');
+    document.getElementById('btnSaveBulkBatch').style.display = '';
+    document.getElementById('btnResetBulkExtractor').style.display = '';
+
+    let validCount = 0;
+
+    bulkExtractedItems.forEach((item, index) => {
+      const isMissingTitle = !item.title || item.title.trim().length === 0;
+      const isMissingAuthor = !item.author || item.author.trim().length === 0;
+      const isMissingChannel = !item.channel_type;
+
+      if (!isMissingTitle && !isMissingAuthor && !isMissingChannel && item.isValid) {
+        validCount++;
+      }
+
+      const tr = document.createElement('tr');
+      tr.id = `row_${item.id}`;
+
+      tr.innerHTML = `
+        <td style="font-weight: bold; font-family: monospace;">${index + 1}</td>
+        <td>
+          <img src="${item.coverDataUrl || '/images/default-cover.svg'}" style="width: 35px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-card);">
+        </td>
+        <td style="font-size: 0.85rem; max-width: 140px; word-break: break-all; color: var(--text-secondary);">${escapeHtml(item.filename)}</td>
+        <td>
+          <select class="form-input ${isMissingChannel ? 'invalid-cell' : ''}" style="height: 32px; padding: 0 6px; font-size: 0.85rem; ${isMissingChannel ? 'border: 2px solid #ef4444;' : ''}" onchange="updateBulkItem('${item.id}', 'channel_type', this.value)">
+            <option value="education" ${item.channel_type === 'education' ? 'selected' : ''}>Educational</option>
+            <option value="naval" ${item.channel_type === 'naval' ? 'selected' : ''}>Naval</option>
+          </select>
+        </td>
+        <td>
+          <input type="text" class="form-input ${isMissingTitle ? 'invalid-cell' : ''}" value="${escapeHtml(item.title)}" style="height: 32px; padding: 0 8px; font-size: 0.85rem; min-width: 130px; ${isMissingTitle ? 'border: 2px solid #ef4444;' : ''}" oninput="updateBulkItem('${item.id}', 'title', this.value)">
+        </td>
+        <td>
+          <input type="text" class="form-input ${isMissingAuthor ? 'invalid-cell' : ''}" value="${escapeHtml(item.author)}" style="height: 32px; padding: 0 8px; font-size: 0.85rem; min-width: 110px; ${isMissingAuthor ? 'border: 2px solid #ef4444;' : ''}" oninput="updateBulkItem('${item.id}', 'author', this.value)">
+        </td>
+        <td>
+          <input type="text" class="form-input" value="${escapeHtml(item.description || '')}" style="height: 32px; padding: 0 8px; font-size: 0.85rem; min-width: 120px;" placeholder="Synopsis" oninput="updateBulkItem('${item.id}', 'description', this.value)">
+        </td>
+        <td>
+          <input type="text" class="form-input" value="${escapeHtml(item.publisher || '')}" style="height: 32px; padding: 0 8px; font-size: 0.85rem; min-width: 90px;" oninput="updateBulkItem('${item.id}', 'publisher', this.value)">
+        </td>
+        <td>
+          <input type="text" class="form-input" value="${escapeHtml(item.language || 'en')}" style="height: 32px; padding: 0 4px; font-size: 0.85rem; width: 45px; text-align: center;" oninput="updateBulkItem('${item.id}', 'language', this.value)">
+        </td>
+        <td>
+          <input type="text" class="form-input" value="${escapeHtml(item.isbn || '')}" style="height: 32px; padding: 0 6px; font-size: 0.85rem; min-width: 100px;" placeholder="ISBN" oninput="updateBulkItem('${item.id}', 'isbn', this.value)">
+        </td>
+        <td>
+          <input type="number" class="form-input" value="${item.page_count || 100}" style="height: 32px; padding: 0 4px; font-size: 0.85rem; width: 60px; text-align: center;" oninput="updateBulkItem('${item.id}', 'page_count', this.value)">
+        </td>
+        <td>
+          <input type="number" class="form-input" value="${item.est_read_minutes || 25}" style="height: 32px; padding: 0 4px; font-size: 0.85rem; width: 55px; text-align: center;" oninput="updateBulkItem('${item.id}', 'est_read_minutes', this.value)">
+        </td>
+        <td>
+          <button class="btn btn--danger btn--sm" style="padding: 2px 8px; font-size: 0.8rem;" onclick="removeBulkItem('${item.id}')">✕</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('bulkValidCount').textContent = validCount;
+  }
+
+  window.updateBulkItem = function(id, field, value) {
+    const item = bulkExtractedItems.find(i => i.id === id);
+    if (item) {
+      item[field] = value;
+      renderBulkReviewTable();
+    }
+  };
+
+  window.removeBulkItem = function(id) {
+    bulkExtractedItems = bulkExtractedItems.filter(i => i.id !== id);
+    renderBulkReviewTable();
+  };
+
+  async function commitBulkSaveBatch() {
+    const validItems = bulkExtractedItems.filter(i => i.title && i.author && i.channel_type && i.isValid);
+
+    if (validItems.length === 0) {
+      showToast('No valid items ready to save. Please fix required fields highlighted in red.', 'warning');
+      return;
+    }
+
+    const btn = document.getElementById('btnSaveBulkBatch');
+    btn.disabled = true;
+    btn.textContent = 'Saving Batch...';
+
+    updateBulkProgress('Stage 4: Saving to Database & Storage...', 10, `Submitting ${validItems.length} books...`);
+
+    try {
+      const payloadBooks = await Promise.all(validItems.map(async item => {
+        let fileBase64 = null;
+        if (item.file) {
+          const buffer = await item.file.arrayBuffer();
+          fileBase64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+        }
+
+        let coverBase64 = null;
+        if (item.coverDataUrl && item.coverDataUrl.startsWith('data:image')) {
+          coverBase64 = item.coverDataUrl.split(',')[1];
+        }
+
+        return {
+          filename: item.filename,
+          title: item.title,
+          author: item.author,
+          channel_type: item.channel_type,
+          description: item.description,
+          publisher: item.publisher,
+          language: item.language,
+          isbn: item.isbn,
+          page_count: item.page_count,
+          est_read_minutes: item.est_read_minutes,
+          file_ext: item.file_type,
+          file_base64: fileBase64,
+          cover_ext: 'jpg',
+          cover_base64: coverBase64
+        };
+      }));
+
+      updateBulkProgress('Stage 4: Saving to Database & Storage...', 60, 'Executing database transaction...');
+
+      const res = await api('/api/admin/books/bulk-upload', {
+        method: 'POST',
+        body: JSON.stringify({ books: payloadBooks })
+      });
+
+      updateBulkProgress('Stage 4: Complete!', 100, 'Batch upload successfully finalized.');
+      setTimeout(() => {
+        hideBulkProgress();
+        showBulkSummaryReport(res);
+        loadBooks();
+      }, 500);
+    } catch (err) {
+      hideBulkProgress();
+      showToast('Failed to commit bulk save: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '💾 Commit & Save Batch (' + validItems.length + ')';
+    }
+  }
+
+  function showBulkSummaryReport(res) {
+    document.getElementById('summaryTotalProcessed').textContent = res.totalProcessed || 0;
+    document.getElementById('summarySuccessCount').textContent = res.successCount || 0;
+    document.getElementById('summaryFailedCount').textContent = res.failedCount || 0;
+
+    const failedWrapper = document.getElementById('summaryFailedListWrapper');
+    const failedBody = document.getElementById('summaryFailedBody');
+    failedBody.innerHTML = '';
+
+    if (res.failedBooks && res.failedBooks.length > 0) {
+      failedWrapper.classList.remove('hidden');
+      res.failedBooks.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(item.filename)}</td>
+          <td><span style="color: #e74c3c; font-weight: bold;">Upload Error</span></td>
+          <td>${escapeHtml(item.error)}</td>
+        `;
+        failedBody.appendChild(tr);
+      });
+    } else {
+      failedWrapper.classList.add('hidden');
+    }
+
+    document.getElementById('bulkSummaryReport').classList.remove('hidden');
+    showToast(`Bulk upload complete! ${res.successCount} books saved.`, 'success');
+  }
 })();
 

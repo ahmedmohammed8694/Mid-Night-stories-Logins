@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/reader.css">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
   <div class="page-wrapper">
@@ -459,6 +460,7 @@
           <div class="mb-24 flex gap-12" style="gap: 8px;">
             <button class="filter-chip active" id="btnBooksListTab">Books List</button>
             <button class="filter-chip" id="btnBooksUploadTab">Upload Book</button>
+            <button class="filter-chip" id="btnBooksBulkUploadTab">📦 Bulk Upload &amp; Extractor</button>
             <button class="filter-chip" id="btnBooksSubmissionsTab">User Submissions (<span id="submissionsCount">0</span>)</button>
             <button class="filter-chip" id="btnBooksPendingTab" style="display:none;">Pending Approval (<span id="pendingBooksCount">0</span>)</button>
           </div>
@@ -654,6 +656,124 @@
               <div class="empty-state__icon">✅</div>
               <h3 class="empty-state__title">No user submissions</h3>
               <p class="empty-state__description">All community uploads have been reviewed.</p>
+            </div>
+          </div>
+
+          <!-- Tab 4: Bulk Book Upload & Extractor -->
+          <div id="booksBulkUploadTabSection" class="hidden">
+            <div class="card card--flat card--no-hover" style="padding: 28px; max-width: 1100px; margin: 0 auto;">
+              <h2 style="font-family: 'Fraunces', serif; font-size: 1.4rem; color: var(--text-primary); margin-bottom: 6px;">Bulk Book Upload &amp; Automated Metadata Extractor</h2>
+              <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 24px;">Upload up to 100 books simultaneously via folder selector or .ZIP archive. Metadata (Title, Author, Description, Publisher, Language, ISBN, Page Count, Read Time, Categories) will be automatically parsed.</p>
+
+              <!-- Upload Zone -->
+              <div id="bulkDropZone" class="upload-zone" style="border: 2px dashed var(--primary); border-radius: 12px; padding: 40px 20px; text-align: center; background: rgba(92, 106, 196, 0.04); cursor: pointer; transition: all 0.2s;">
+                <div style="font-size: 3rem; margin-bottom: 12px;">📁 📦</div>
+                <h3 style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: 8px;">Drag &amp; Drop Folder or .ZIP Archive Here</h3>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;">Supports folders containing .EPUB, .PDF files or .ZIP/.RAR archives up to 100 files.</p>
+
+                <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+                  <label class="btn btn--primary btn--sm" style="cursor: pointer;">
+                    📂 Select Folder
+                    <input type="file" id="bulkFolderInput" webkitdirectory directory multiple style="display: none;">
+                  </label>
+                  <label class="btn btn--secondary btn--sm" style="cursor: pointer;">
+                    📦 Select .ZIP Archive
+                    <input type="file" id="bulkZipInput" accept=".zip,.rar" style="display: none;">
+                  </label>
+                </div>
+              </div>
+
+              <!-- Options Bar -->
+              <div style="display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 20px; padding: 16px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-card);">
+                <div style="display: flex; gap: 16px; align-items: center;">
+                  <label style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);">Default Channel:</label>
+                  <select id="bulkDefaultChannel" class="form-input" style="height: 36px; margin-top: 0; min-width: 160px;">
+                    <option value="education" selected>Educational</option>
+                    <option value="naval">Naval</option>
+                  </select>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                  <button class="btn btn--secondary btn--sm" id="btnResetBulkExtractor" style="display: none;">✕ Reset Extractor</button>
+                  <button class="btn btn--primary btn--sm" id="btnSaveBulkBatch" style="display: none;">💾 Commit &amp; Save Batch (<span id="bulkValidCount">0</span>)</button>
+                </div>
+              </div>
+
+              <!-- 4-Stage Live Progress Container -->
+              <div id="bulkProgressContainer" class="hidden" style="margin-top: 24px; padding: 20px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--border-card);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span id="bulkProgressStageText" style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">Stage 1: Reading Files...</span>
+                  <span id="bulkProgressPercentText" style="font-size: 0.9rem; font-weight: bold; color: var(--text-primary);">0%</span>
+                </div>
+                <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden;">
+                  <div id="bulkProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary), #818cf8); transition: width 0.3s ease;"></div>
+                </div>
+                <p id="bulkProgressSubtext" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px; margin-bottom: 0;">Preparing extraction engine...</p>
+              </div>
+
+              <!-- Interactive Pre-Save Review & Edit Batch Table -->
+              <div id="bulkReviewTableWrapper" class="hidden" style="margin-top: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <h3 style="font-size: 1.1rem; color: var(--text-primary); margin: 0;">Extracted Metadata Review Grid (<span id="bulkTotalCount">0</span> items)</h3>
+                  <span style="font-size: 0.85rem; color: var(--text-muted);">Red borders indicate required missing fields (Channel*, Title*, Author*)</span>
+                </div>
+
+                <div class="admin-table-wrapper" style="max-height: 500px; overflow-y: auto;">
+                  <table class="admin-table" id="bulkReviewTable">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Cover</th>
+                        <th>File Name</th>
+                        <th>Channel*</th>
+                        <th>Title*</th>
+                        <th>Author*</th>
+                        <th>Description</th>
+                        <th>Publisher</th>
+                        <th>Lang</th>
+                        <th>ISBN</th>
+                        <th>Pages</th>
+                        <th>Read Time</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="bulkReviewBody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Post-Upload Summary Report -->
+              <div id="bulkSummaryReport" class="hidden" style="margin-top: 24px; padding: 24px; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-card);">
+                <h3 style="font-size: 1.2rem; color: var(--text-primary); margin-bottom: 16px;">📊 Post-Upload Batch Summary Report</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                  <div class="stat-card" style="padding: 16px;">
+                    <p class="stat-card__label">Total Processed</p>
+                    <p class="stat-card__value" id="summaryTotalProcessed">0</p>
+                  </div>
+                  <div class="stat-card" style="padding: 16px;">
+                    <p class="stat-card__label">Successfully Saved</p>
+                    <p class="stat-card__value stat-card__value--purple" id="summarySuccessCount" style="color: #2ecc71;">0</p>
+                  </div>
+                  <div class="stat-card" style="padding: 16px;">
+                    <p class="stat-card__label">Failed / Errors</p>
+                    <p class="stat-card__value stat-card__value--amber" id="summaryFailedCount" style="color: #e74c3c;">0</p>
+                  </div>
+                </div>
+
+                <div id="summaryFailedListWrapper" class="hidden">
+                  <h4 style="font-size: 1rem; color: #e74c3c; margin-bottom: 8px;">Failed Items &amp; Error Details</h4>
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Filename</th>
+                        <th>Error Type</th>
+                        <th>Reason / Details</th>
+                      </tr>
+                    </thead>
+                    <tbody id="summaryFailedBody"></tbody>
+                  </table>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
