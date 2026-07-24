@@ -877,7 +877,7 @@ app.post('/api/admin/books', requireAdminOrUser, uploadBook.fields([{ name: 'boo
 
   const fileType = bookFile.originalname.endsWith('.pdf') ? 'pdf' : 'epub';
   const fileUrl = `/uploads/${bookFile.filename}`;
-  const coverImageUrl = coverFile ? `/uploads/${coverFile.filename}` : '/images/default-cover.png';
+  const coverImageUrl = coverFile ? `/uploads/${coverFile.filename}` : '/images/default-cover.svg';
 
   const {
     title, author, description, publisher, language = 'en', isbn,
@@ -1381,7 +1381,7 @@ app.post('/api/user/books/upload', requireUser, uploadBook.fields([{ name: 'book
   const coverFile = req.files['cover'] ? req.files['cover'][0] : null;
 
   const fileUrl = `/uploads/${bookFile.filename}`;
-  const coverImageUrl = coverFile ? `/uploads/${coverFile.filename}` : '/images/default-cover.png';
+  const coverImageUrl = coverFile ? `/uploads/${coverFile.filename}` : '/images/default-cover.svg';
 
   const { title, author, channel_type, category_id, description } = req.body;
 

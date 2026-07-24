@@ -75,6 +75,31 @@ async function createNotification(db, userId, actorId, type, targetId, content) 
 
 const app = new Hono();
 
+// ── Global Security & Privacy Headers ──
+app.use('*', async (c, next) => {
+  await next();
+  if (c.res) {
+    const newHeaders = new Headers(c.res.headers);
+    
+    // Apply all security headers to every response
+    newHeaders.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    newHeaders.set('X-Content-Type-Options', 'nosniff');
+    newHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    newHeaders.set('X-Frame-Options', 'SAMEORIGIN');
+    newHeaders.set(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss: https:; frame-src 'self' https://challenges.cloudflare.com;"
+    );
+    
+    // Reconstruct response with modified headers (bypassing immutability)
+    c.res = new Response(c.res.body, {
+      status: c.res.status,
+      statusText: c.res.statusText,
+      headers: newHeaders
+    });
+  }
+});
+
 // ── Navigation Redirects & Clean Slug Routing ──
 app.get('/education', (c) => c.redirect('/books?category=education', 301));
 app.get('/sitemap.xml', (c) => {
@@ -151,7 +176,7 @@ app.get('/sitemap.xml', (c) => {
 });
 
 app.get('/robots.txt', (c) => {
-  const robots = `User-agent: *\nDisallow: /admin\nDisallow: /admin.html\n\nSitemap: https://midnightstories.dpdns.org/sitemap.xml\n`;
+  const robots = `User-agent: *\nDisallow: /admin\nDisallow: /admin.html\nDisallow: /api/\nDisallow: /login?*\nDisallow: /*?*\n\nSitemap: https://midnightstories.dpdns.org/sitemap.xml\n`;
   return new Response(robots, {
     status: 200,
     headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400' },
@@ -217,34 +242,9 @@ app.get('/story', async (c) => {
   return c.redirect('/story.html');
 });
 
-// ── Global Security & Privacy Headers ──
-app.use('*', async (c, next) => {
-  await next();
-  if (c.res) {
-    const contentType = c.res.headers.get('Content-Type') || '';
-    const newHeaders = new Headers(c.res.headers);
-    
-    // Apply all security headers to every response
-    newHeaders.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-    newHeaders.set('X-Content-Type-Options', 'nosniff');
-    newHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    newHeaders.set('X-Frame-Options', 'SAMEORIGIN');
-    newHeaders.set(
-      'Content-Security-Policy',
-      "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://static.cloudflareinsights.com https://challenges.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' wss: https:; frame-src 'self' https://challenges.cloudflare.com;"
-    );
-    
-    // Reconstruct response with modified headers (bypassing immutability)
-    c.res = new Response(c.res.body, {
-      status: c.res.status,
-      statusText: c.res.statusText,
-      headers: newHeaders
-    });
-  }
-});
 
 // Serve default book cover image asset if missing from storage
-app.get('/images/default-cover.png', (c) => {
+app.get('/images/default-cover.svg', (c) => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450" viewBox="0 0 300 450">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -266,6 +266,8 @@ app.get('/images/default-cover.png', (c) => {
 </svg>`;
   return c.text(svg, 200, { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=31536000' });
 });
+
+app.get('/images/default-cover.png', (c) => c.redirect('/images/default-cover.svg', 301));
 
 // ── In-Memory Rate Limiting ──
 const rateLimitMap = new Map();
@@ -2359,7 +2361,7 @@ app.post('/api/admin/books', requireAdminOrUser, async (c) => {
   });
   const fileUrl = `/uploads/${bookFilename}`;
 
-  let coverImageUrl = '/images/default-cover.png';
+  let coverImageUrl = '/images/default-cover.svg';
   if (coverFile && coverFile instanceof File && coverFile.size > 0) {
     const coverExt = coverFile.type.split('/')[1] || 'jpg';
     const coverFilename = `${crypto.randomUUID()}.${coverExt}`;
@@ -3062,7 +3064,7 @@ app.post('/api/user/books/upload', requireUser, async (c) => {
   });
   const fileUrl = `/uploads/${bookFilename}`;
 
-  let coverImageUrl = '/images/default-cover.png';
+  let coverImageUrl = '/images/default-cover.svg';
   if (coverFile && coverFile instanceof File && coverFile.size > 0) {
     const coverExt = coverFile.type.split('/')[1] || 'jpg';
     const coverFilename = `${crypto.randomUUID()}.${coverExt}`;

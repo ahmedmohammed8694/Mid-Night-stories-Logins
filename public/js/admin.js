@@ -1190,7 +1190,7 @@
           <td><input type="checkbox" class="book-select-checkbox" data-book-id="${book.id}" style="cursor:pointer; transform:scale(1.25);"></td>
           <td>
             <a href="#" class="admin-book-review-trigger" data-book-id="${book.id}">
-              <img src="${book.cover_image_url || '/images/default-cover.png'}" style="width: 40px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-card); cursor: pointer;" title="Click to review book">
+              <img src="${book.cover_image_url || '/images/default-cover.svg'}" style="width: 40px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-card); cursor: pointer;" title="Click to review book">
             </a>
           </td>
           <td style="font-weight: 500;">
@@ -1239,7 +1239,7 @@
     activeReviewBookId = book.id;
     const modal = document.getElementById('adminBookReviewModal');
 
-    document.getElementById('adminModalBookCover').src = book.cover_image_url || '/images/default-cover.png';
+    document.getElementById('adminModalBookCover').src = book.cover_image_url || '/images/default-cover.svg';
     document.getElementById('adminModalBookTitle').textContent = book.title || 'Untitled Book';
     document.getElementById('adminModalBookAuthor').textContent = `By ${book.author || 'Unknown'}`;
     document.getElementById('adminModalBookChannel').textContent = (book.channel_type || 'education').toUpperCase();
@@ -1342,7 +1342,7 @@
           const fileExt = sub.book_file_url.split('.').pop().toUpperCase();
           const submissionDate = new Date(sub.created_at).toLocaleDateString();
           tr.innerHTML = `
-            <td><img src="${sub.cover_image_url || '/images/default-cover.png'}" style="width: 40px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-card);"></td>
+            <td><img src="${sub.cover_image_url || '/images/default-cover.svg'}" style="width: 40px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-card);"></td>
             <td style="font-weight: 500;">${escapeHtml(sub.title)}</td>
             <td>${escapeHtml(sub.author)}</td>
             <td><span class="filter-chip" style="font-size: 0.75rem;">${sub.channel_type.toUpperCase()}</span></td>

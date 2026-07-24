@@ -209,7 +209,7 @@
           card.style.cursor = 'pointer';
           card.onclick = () => window.location.href = `/books?id=${book.id}`;
           card.innerHTML = `
-            <img src="${book.cover_image_url || '/images/default-cover.png'}" style="width: 100%; height: 220px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;">
+            <img src="${book.cover_image_url || '/images/default-cover.svg'}" style="width: 100%; height: 220px; object-fit: cover; border-radius: 8px; margin-bottom: 12px;">
             <div style="font-weight: 700; font-size: 1rem; color: var(--text-primary); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(book.title)}</div>
             <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">By ${escapeHtml(book.author || 'Unknown')}</div>
             <span class="filter-chip" style="font-size: 0.75rem; text-transform: uppercase;">${escapeHtml(book.channel_type || 'education')}</span>

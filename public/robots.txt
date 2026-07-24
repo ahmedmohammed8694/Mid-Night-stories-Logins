@@ -1,5 +1,8 @@
 User-agent: *
 Disallow: /admin
 Disallow: /admin.html
+Disallow: /api/
+Disallow: /login?*
+Disallow: /*?*
 
 Sitemap: https://midnightstories.dpdns.org/sitemap.xml

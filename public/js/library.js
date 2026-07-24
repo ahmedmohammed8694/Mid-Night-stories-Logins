@@ -214,7 +214,7 @@
 
     card.innerHTML = `
       <div class="book-card__cover-wrapper" onclick="location.href='/reader?bookId=${book.id}'">
-        <img class="book-card__cover" src="${book.cover_image_url || '/images/default-cover.png'}" alt="${escapeHtml(book.title)} cover" loading="lazy">
+        <img class="book-card__cover" src="${book.cover_image_url || '/images/default-cover.svg'}" alt="${escapeHtml(book.title)} cover" loading="lazy">
         <span class="book-card__badge" style="background: ${typeBadgeColor};">${book.file_type.toUpperCase()}</span>
       </div>
       <div class="book-card__details" style="display: flex; flex-direction: column; flex-grow: 1;">
