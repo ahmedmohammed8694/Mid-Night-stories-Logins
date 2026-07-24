@@ -410,7 +410,7 @@ function initAuthLayout() {
     authSection = `
       <a href="/login" class="btn btn--secondary btn--sm guest-only">Login</a>
       <a href="/signup" class="btn btn--primary btn--sm guest-only">Sign Up</a>
-      <a href="/login" class="btn btn--secondary btn--sm guest-only" rel="nofollow" style="margin-left: 8px;">📤 Upload Book</a>
+      <a href="/login" class="btn btn--secondary btn--sm guest-only" style="margin-left: 8px;">📤 Upload Book</a>
     `;
   }
 

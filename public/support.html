@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Support Center | Midnight Stories</title>
   <meta name="description" content="Manage your support tickets and communicate with the Midnight Stories administration team.">
+  <link rel="canonical" href="https://midnightstories.dpdns.org/support">
+  <meta name="robots" content="noindex, follow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/css/style.css">
@@ -51,9 +53,18 @@
   </nav>
 
   <main class="page-wrapper" style="padding-top: 80px;">
-    <h1 style="text-align: center; font-family: 'Fraunces', serif; color: var(--text-primary);">Support Center</h1>
-    <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Track and manage your submitted reports</p>
+    <h1 style="text-align: center; font-family: 'Fraunces', serif; color: var(--text-primary);">Support Center &amp; Community Helpdesk</h1>
+    <p style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem;">Track, manage, and receive live updates on your submitted reports and inquiries.</p>
     
+    <section class="container" style="max-width: 1200px; margin: 0 auto 2rem auto; padding: 0 1rem;">
+      <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 24px; color: var(--text-secondary); line-height: 1.7;">
+        <h2 style="color: var(--text-primary); font-size: 1.3rem; margin-bottom: 10px; border-bottom: 1px solid var(--border-card); padding-bottom: 6px;">How Support Tickets Work</h2>
+        <p style="margin-bottom: 12px;">Welcome to the Midnight Stories Support Desk. Our dedicated administration and moderation team works around the clock to ensure a safe, respectful, and transparent experience for all members of our platform. When you submit a report or inquiry, a unique ticket ID is generated for your reference.</p>
+        <p style="margin-bottom: 12px;">You can track the status of your reports in real-time using the sidebar panel below. Statuses include <strong>Open</strong> (received and awaiting review), <strong>Investigating</strong> (under active staff review), <strong>Waiting on User</strong> (requiring additional information), and <strong>Resolved</strong> (completed).</p>
+        <p style="margin: 0;">For urgent safety concerns, crisis intervention resources, or immediate reporting of harmful content, please consult our <a href="/resources" style="color: var(--primary); text-decoration: underline;">Crisis &amp; Safety Resources</a> or review our <a href="/guidelines" style="color: var(--primary); text-decoration: underline;">Community Guidelines</a>.</p>
+      </div>
+    </section>
+
     <div class="support-layout">
       <!-- Sidebar List -->
       <aside class="ticket-list" id="ticketList">
@@ -63,7 +74,7 @@
       <!-- Main View -->
       <section class="ticket-view hidden" id="ticketView">
         <div class="ticket-header">
-          <h2 id="viewTicketId" style="margin: 0; font-family: monospace; font-size: 1.5rem; color: var(--text-primary);"></h2>
+          <h2 id="viewTicketId" style="margin: 0; font-family: monospace; font-size: 1.5rem; color: var(--text-primary);">Ticket Overview &amp; Details</h2>
           <div id="viewTicketReason" style="color: var(--text-secondary); margin-top: 0.5rem;"></div>
           <div id="viewTicketStatus" class="ticket-status" style="margin-top: 1rem;"></div>
         </div>
