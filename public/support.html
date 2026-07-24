@@ -612,14 +612,22 @@
   <!-- ── Main Content ── -->
   <main class="support-main">
 
-    <!-- Filter Bar -->
-    <div class="filter-bar">
-      <span class="filter-bar-label">Filter:</span>
-      <button class="chip active" data-user-filter="all">All Tickets</button>
-      <button class="chip" data-user-filter="open">🟢 Open</button>
-      <button class="chip" data-user-filter="investigating">🟡 Investigating</button>
-      <button class="chip" data-user-filter="waiting_on_user">🟠 Waiting on Me</button>
-      <button class="chip" data-user-filter="resolved">🔵 Resolved</button>
+    <!-- Filter & Search Bar -->
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:20px;">
+      <div class="filter-bar" style="margin-bottom:0;">
+        <span class="filter-bar-label">Filter:</span>
+        <button class="chip active" data-user-filter="all">All Tickets <span id="cntAll" class="chip-count">(0)</span></button>
+        <button class="chip" data-user-filter="open">🟢 Open <span id="cntOpen" class="chip-count">(0)</span></button>
+        <button class="chip" data-user-filter="investigating">🟡 Investigating <span id="cntInv" class="chip-count">(0)</span></button>
+        <button class="chip" data-user-filter="waiting_on_user">🟠 Waiting on Me <span id="cntWait" class="chip-count">(0)</span></button>
+        <button class="chip" data-user-filter="resolved">🔵 Resolved <span id="cntRes" class="chip-count">(0)</span></button>
+      </div>
+
+      <!-- Quick Ticket Search -->
+      <div style="position:relative; width:100%; max-width:280px;">
+        <input type="text" id="userTicketSearch" placeholder="🔍 Search ticket ID or subject..." style="width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:20px; color:var(--text-primary); padding:7px 16px 7px 34px; font-size:0.84rem; outline:none;">
+        <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); opacity:0.5; font-size:0.85rem;">🔍</span>
+      </div>
     </div>
 
     <!-- Split Layout -->
@@ -628,7 +636,7 @@
       <!-- ── Sidebar: Ticket List ── -->
       <aside class="ticket-sidebar">
         <div class="ticket-sidebar-header">
-          <h3>📋 My Tickets</h3>
+          <h3>📋 My Support Tickets</h3>
           <span id="ticketCountBadge" style="font-size:0.75rem; color: var(--text-muted);"></span>
         </div>
         <div class="ticket-list-scroll" id="ticketListScroll">
@@ -639,12 +647,13 @@
         </div>
       </aside>
 
-      <!-- ── Main: Ticket Detail ── -->
+      <!-- ── Main: Ticket Detail Workspace ── -->
       <section class="ticket-detail" id="ticketDetailSection">
         <div class="ticket-detail-empty" id="ticketDetailEmpty">
           <span class="empty-icon">🎫</span>
-          <p>Select a ticket to view details and messages</p>
-          <p style="font-size:0.8rem; opacity:0.6;">Or submit a new support request to get started</p>
+          <p style="font-weight:600; font-size:1.1rem; color:var(--text-primary);">Select a ticket to view conversation history</p>
+          <p style="font-size:0.84rem; opacity:0.7; max-width:400px; text-align:center;">Or click below to create a new enterprise support ticket</p>
+          <button class="hero-submit-btn" onclick="window.openSupportModal()" style="margin-top:8px; padding:10px 24px; font-size:0.9rem;">➕ New Support Request</button>
         </div>
 
         <!-- Ticket Header (hidden until ticket selected) -->
@@ -652,7 +661,10 @@
           <div class="ticket-detail-header">
             <div class="ticket-detail-title-row">
               <div>
-                <div class="ticket-detail-id" id="viewTicketId">TKT-2026-XXXXX</div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <div class="ticket-detail-id" id="viewTicketId">TKT-2026-XXXXX</div>
+                  <span id="viewSlaTimer" style="font-size:0.72rem; padding:2px 8px; border-radius:10px; background:rgba(124,58,237,0.15); color:var(--support-accent); border:1px solid rgba(124,58,237,0.3); display:none;">⏱️ SLA On Track</span>
+                </div>
                 <div class="ticket-detail-subject" id="viewTicketSubject">Ticket Subject</div>
                 <div class="ticket-detail-cat" id="viewTicketCategory">Category</div>
               </div>
@@ -666,11 +678,28 @@
           <!-- Message Thread -->
           <div class="ticket-thread" id="ticketMessages"></div>
 
+          <!-- CSAT Rating Card for Resolved Tickets -->
+          <div id="csatRatingContainer" style="display:none; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:12px; margin:12px 24px; padding:16px; text-align:center;">
+            <div style="font-size:0.9rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">⭐ How was your support experience?</div>
+            <p style="font-size:0.78rem; color:var(--text-muted); margin:0 0 12px;">Please rate our support agent's resolution speed and helpfulness.</p>
+            <div id="csatStarRow" style="display:flex; justify-content:center; gap:8px; font-size:1.8rem; cursor:pointer; margin-bottom:10px;">
+              <span class="csat-star" data-star="1" onclick="window.setCsatRating(1)">☆</span>
+              <span class="csat-star" data-star="2" onclick="window.setCsatRating(2)">☆</span>
+              <span class="csat-star" data-star="3" onclick="window.setCsatRating(3)">☆</span>
+              <span class="csat-star" data-star="4" onclick="window.setCsatRating(4)">☆</span>
+              <span class="csat-star" data-star="5" onclick="window.setCsatRating(5)">☆</span>
+            </div>
+            <input type="text" id="csatFeedbackInput" placeholder="Optional feedback or comments..." style="width:100%; max-width:400px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:8px 12px; color:var(--text-primary); font-size:0.82rem; margin-bottom:10px;">
+            <div>
+              <button onclick="window.submitCsatRating()" style="background:linear-gradient(135deg,#f59e0b,#d97706); color:#000; border:none; padding:8px 20px; border-radius:8px; font-weight:700; font-size:0.82rem; cursor:pointer;">Submit CSAT Rating</button>
+            </div>
+          </div>
+
           <!-- Reopen Banner -->
           <div class="reopen-banner" id="reopenBanner">
             <div>
-              <strong style="color:var(--text-primary); font-size:0.9rem;">Still need help?</strong>
-              <p>This ticket was resolved. You can reopen it within 7 days if the issue persists.</p>
+              <strong style="color:var(--text-primary); font-size:0.9rem;">Still need assistance?</strong>
+              <p>This ticket was marked as resolved. You can reopen it within 7 days.</p>
             </div>
             <button class="btn-reopen" id="reopenTicketBtn">🔄 Reopen Ticket</button>
           </div>
@@ -680,9 +709,9 @@
 
           <!-- Reply Box -->
           <div class="ticket-reply-area" id="ticketReplyArea">
-            <textarea class="reply-textarea" id="replyText" placeholder="Add more details or follow-up information for the support team..." rows="3"></textarea>
+            <textarea class="reply-textarea" id="replyText" placeholder="Add more details or follow-up information for the support team... (Ctrl + Enter to send)" rows="3"></textarea>
             <div class="reply-actions">
-              <span class="reply-hint">💡 Your reply will be sent to the Midnight Support Team</span>
+              <span class="reply-hint">💡 Official replies are monitored by Support Operations</span>
               <button class="btn-send" id="replyBtn">📤 Send Update</button>
             </div>
           </div>
@@ -692,70 +721,125 @@
     </div>
   </main>
 
-  <!-- ── Create Ticket Modal ── -->
+  <!-- ── Enterprise Create Ticket Modal ── -->
   <div class="modal-overlay" id="newTicketModal">
-    <div class="modal-box">
+    <div class="modal-box" style="max-width:720px;">
       <div class="modal-head">
         <div>
-          <h2>🎫 Submit Support Ticket</h2>
-          <span>Fill in the details below for faster resolution</span>
+          <h2>🎫 Enterprise Support Portal</h2>
+          <span>Submit your request — mapped directly to specialized support agents</span>
         </div>
         <button class="modal-close" id="btnCloseModal">✕</button>
       </div>
 
       <form id="createTicketForm">
-        <div class="form-row">
-          <div>
-            <label class="form-label">Category *</label>
-            <select id="ticketCategorySelect" class="form-select" required>
-              <option value="">Loading categories...</option>
-            </select>
+        <!-- Visual Category Grid -->
+        <div class="form-group">
+          <label class="form-label">Select Requirement Category *</label>
+          <div id="categoryCardsGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:12px;">
+            <div class="cat-card active" data-cat-id="1" onclick="window.selectCategoryCard(1)" style="background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.4); border-radius:10px; padding:12px; cursor:pointer; transition:all 0.2s;">
+              <div style="font-size:1.4rem;">📖</div>
+              <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary); margin-top:4px;">Story Moderation</div>
+              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">DMCA, copyright, spam, harassment</div>
+            </div>
+            <div class="cat-card" data-cat-id="2" onclick="window.selectCategoryCard(2)" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; cursor:pointer; transition:all 0.2s;">
+              <div style="font-size:1.4rem;">📚</div>
+              <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary); margin-top:4px;">Library & Reader</div>
+              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">EPUB/PDF bugs, corrupted uploads</div>
+            </div>
+            <div class="cat-card" data-cat-id="3" onclick="window.selectCategoryCard(3)" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; cursor:pointer; transition:all 0.2s;">
+              <div style="font-size:1.4rem;">👤</div>
+              <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary); margin-top:4px;">Account & Access</div>
+              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Password reset, suspension appeals</div>
+            </div>
+            <div class="cat-card" data-cat-id="4" onclick="window.selectCategoryCard(4)" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; cursor:pointer; transition:all 0.2s;">
+              <div style="font-size:1.4rem;">💳</div>
+              <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary); margin-top:4px;">Billing & Payments</div>
+              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Refunds, failed payments, invoices</div>
+            </div>
+            <div class="cat-card" data-cat-id="5" onclick="window.selectCategoryCard(5)" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; cursor:pointer; transition:all 0.2s;">
+              <div style="font-size:1.4rem;">🛠️</div>
+              <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary); margin-top:4px;">Technical Bugs</div>
+              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">App crashes, UI glitches, 500 errors</div>
+            </div>
+            <div class="cat-card" data-cat-id="6" onclick="window.selectCategoryCard(6)" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; cursor:pointer; transition:all 0.2s;">
+              <div style="font-size:1.4rem;">💡</div>
+              <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary); margin-top:4px;">Feature Requests</div>
+              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Author tools, API access, ideas</div>
+            </div>
           </div>
+
+          <!-- Hidden select synced with cards for backend compatibility -->
+          <select id="ticketCategorySelect" class="form-select" style="display:none;">
+            <option value="1" selected>Story Moderation</option>
+            <option value="2">Library & Reader</option>
+            <option value="3">Account & Access</option>
+            <option value="4">Billing & Payments</option>
+            <option value="5">Technical Bugs</option>
+            <option value="6">Feature Requests</option>
+          </select>
+        </div>
+
+        <div class="form-row">
           <div>
             <label class="form-label">Sub-Category *</label>
             <select id="ticketSubcategorySelect" class="form-select" required>
-              <option value="">Select Category First</option>
+              <option value="">Select Sub-Category</option>
             </select>
           </div>
-        </div>
-
-        <div class="form-row">
           <div>
-            <label class="form-label">Priority Level *</label>
-            <select id="ticketPrioritySelect" class="form-select" required>
+            <label class="form-label">Priority Level (SLA Guarantee) *</label>
+            <select id="ticketPrioritySelect" class="form-select" onchange="window.updateSlaPreview(this.value)" required>
               <option value="low">🟢 Low — General Inquiry (24h SLA)</option>
               <option value="medium" selected>🔵 Medium — Standard Request (12h SLA)</option>
               <option value="high">🟡 High — Billing / Major Issue (4h SLA)</option>
-              <option value="urgent">🔴 Urgent — App Crash / Copyright (1h SLA)</option>
+              <option value="urgent">🔴 Urgent — App Crash / DMCA (1h SLA)</option>
             </select>
           </div>
-          <div class="custom-field-wrapper" id="dynamicCustomFieldsContainer">
-            <!-- Dynamic fields injected here -->
+        </div>
+
+        <!-- SLA Live Preview Indicator -->
+        <div id="slaPreviewCard" style="background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.25); border-radius:10px; padding:10px 14px; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+          <div style="font-size:1.3rem;">⏱️</div>
+          <div>
+            <div style="font-size:0.8rem; font-weight:700; color:var(--support-accent);" id="slaPreviewTitle">Medium Priority Guarantee</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);" id="slaPreviewDesc">Guaranteed first agent response within 12 hours.</div>
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Subject / Issue Title *</label>
-          <input type="text" class="form-input-field" id="ticketSubjectInput" placeholder="Brief summary of your issue or inquiry" required>
+        <!-- Dynamic Contextual Fields -->
+        <div class="custom-field-wrapper" id="dynamicCustomFieldsContainer" style="margin-bottom:16px;">
+          <!-- Dynamically populated per category -->
         </div>
 
         <div class="form-group">
-          <label class="form-label">Detailed Description *</label>
-          <textarea class="form-textarea-field" id="ticketDetailsInput" placeholder="Please describe your issue in detail. Include any error messages, steps you tried, and relevant information..." rows="4" required></textarea>
+          <label class="form-label">Subject / Issue Summary *</label>
+          <input type="text" class="form-input-field" id="ticketSubjectInput" placeholder="Brief summary of your issue or request" required>
         </div>
 
+        <div class="form-group">
+          <label class="form-label">Detailed Description &amp; Steps to Reproduce *</label>
+          <textarea class="form-textarea-field" id="ticketDetailsInput" placeholder="Please describe your issue in detail. Include any error codes, URLs, timestamps, or steps you performed..." rows="4" required></textarea>
+        </div>
+
+        <!-- Drag and Drop File Zone -->
         <div class="form-group">
           <label class="form-label">Attachment <span style="color:var(--text-muted); font-weight:400; text-transform:none; letter-spacing:0;">(Optional, Max 10MB)</span></label>
-          <label class="form-file-label" for="ticketFileInput">
-            📎 Click to attach a file (PNG, JPG, PDF, DOC)
-          </label>
-          <input type="file" class="form-file-input" id="ticketFileInput" accept="image/png,image/jpeg,image/webp,application/pdf,.doc,.docx">
-          <span id="selectedFileName" style="font-size:0.78rem; color:var(--text-muted); margin-top:4px; display:block;"></span>
+          <div id="fileDropzone" style="border:2px dashed rgba(124,58,237,0.3); border-radius:12px; padding:22px; text-align:center; background:rgba(124,58,237,0.03); cursor:pointer; transition:all 0.2s;" ondragover="event.preventDefault(); this.style.background='rgba(124,58,237,0.1)'" ondragleave="this.style.background='rgba(124,58,237,0.03)'" ondrop="window.handleFileDrop(event)">
+            <div style="font-size:1.6rem; margin-bottom:4px;">📎</div>
+            <div style="font-size:0.88rem; font-weight:600; color:var(--text-primary);">Drag and drop file here, or <span style="color:var(--support-accent); text-decoration:underline;">browse files</span></div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Supports PNG, JPG, WEBP, PDF, DOCX (Max 10MB)</div>
+          </div>
+          <input type="file" class="form-file-input" id="ticketFileInput" accept="image/png,image/jpeg,image/webp,application/pdf,.doc,.docx" onchange="window.handleFileSelect(this)">
+          <div id="filePreviewBadge" style="display:none; align-items:center; gap:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); padding:8px 14px; border-radius:8px; margin-top:8px; font-size:0.82rem; color:var(--text-primary);">
+            <span>📄</span> <span id="filePreviewName">file.png</span> <span id="filePreviewSize" style="color:var(--text-muted); font-size:0.75rem;">(1.2 MB)</span>
+            <button type="button" onclick="window.removeSelectedFile()" style="margin-left:auto; background:none; border:none; color:#f87171; font-weight:bold; cursor:pointer;">✕ Remove</button>
+          </div>
         </div>
 
         <div class="modal-footer">
           <button type="button" class="btn-cancel" id="btnCancelModal">Cancel</button>
-          <button type="submit" class="btn-create" id="btnSubmitNewTicket">🚀 Create Ticket</button>
+          <button type="submit" class="btn-create" id="btnSubmitNewTicket">🚀 Submit Support Request</button>
         </div>
       </form>
     </div>
@@ -766,3 +850,4 @@
   <script src="/js/support.js"></script>
 </body>
 </html>
+
