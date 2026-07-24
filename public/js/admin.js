@@ -115,6 +115,7 @@
       case 'stories-queue': loadStoriesQueue(); break;
       case 'comments-queue': loadCommentsQueue(); break;
       case 'reports': loadReports(); break;
+      case 'crm-analytics': loadCrmAnalytics(); break;
       case 'users': loadUsers(); break;
       case 'categories': loadCategories(); break;
       case 'bans': loadBans(); break;
@@ -177,6 +178,42 @@
       badge.classList.remove('hidden');
     } else {
       badge.classList.add('hidden');
+    }
+  }
+
+  async function loadCrmAnalytics() {
+    try {
+      const data = await api('/api/admin/analytics');
+      const summary = data.summary || {};
+      
+      const elTotal = document.getElementById('metricTotalTickets');
+      if (elTotal) elTotal.textContent = summary.total_tickets || 0;
+      
+      const elSla = document.getElementById('metricSlaCompliance');
+      if (elSla) elSla.textContent = `${summary.sla_compliance_pct || 100}%`;
+
+      const elCsat = document.getElementById('metricCsatScore');
+      if (elCsat) elCsat.textContent = `${summary.csat_score || 5.0} ⭐ (${summary.csat_count || 0} reviews)`;
+
+      const elOpen = document.getElementById('metricOpenTickets');
+      if (elOpen) elOpen.textContent = summary.open_tickets || 0;
+
+      const topContainer = document.getElementById('topCategoriesContainer');
+      if (topContainer) {
+        const topCats = data.topCategories || [];
+        if (topCats.length === 0) {
+          topContainer.innerHTML = '<p style="color: var(--text-muted);">No categories recorded yet.</p>';
+        } else {
+          topContainer.innerHTML = topCats.map(c => `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-card);">
+              <span style="font-weight: 600; color: var(--text-primary);">${escapeHtml(c.category_name || 'General Inquiries')}</span>
+              <span class="status-badge" style="background: var(--primary); color: white;">${c.ticket_count} Tickets</span>
+            </div>
+          `).join('');
+        }
+      }
+    } catch (err) {
+      showToast('Failed to load CRM Analytics: ' + err.message, 'error');
     }
   }
 

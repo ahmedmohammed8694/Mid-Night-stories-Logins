@@ -75,43 +75,57 @@
 
     <!-- Create Ticket Modal -->
     <div class="modal-overlay hidden" id="newTicketModal" style="display: flex; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); z-index: 2500; backdrop-filter: blur(4px);">
-      <div class="modal" style="max-width: 580px; width: 92%; padding: 28px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-card); text-align: left; box-shadow: var(--shadow-xl);">
+      <div class="modal" style="max-width: 640px; width: 92%; padding: 28px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-card); text-align: left; box-shadow: var(--shadow-xl); max-height: 90vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1px solid var(--border-card); padding-bottom: 12px;">
-          <h2 style="font-family: 'Fraunces', serif; font-size: 1.35rem; color: var(--text-primary); margin: 0;">🎫 Submit Support Ticket</h2>
+          <div>
+            <h2 style="font-family: 'Fraunces', serif; font-size: 1.35rem; color: var(--text-primary); margin: 0;">🎫 Dynamic Support &amp; Helpdesk Inquiry</h2>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Please select your requirements for faster resolution</span>
+          </div>
           <button onclick="document.getElementById('newTicketModal').classList.add('hidden')" style="background: none; border: none; font-size: 1.4rem; color: var(--text-muted); cursor: pointer;">✕</button>
         </div>
 
         <form id="createTicketForm" onsubmit="window.handleUserCreateTicketSubmit(event)">
+          <!-- Step 1: Category & Subcategory -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+            <div>
+              <label class="form-label" style="font-weight: 600;">Category*</label>
+              <select id="ticketCategorySelect" class="form-input" style="height: 42px; background: var(--bg-input); border: 1px solid var(--border-card); color: var(--text-primary);" required>
+                <option value="">Loading categories...</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" style="font-weight: 600;">Sub-Category / Specific Issue*</label>
+              <select id="ticketSubcategorySelect" class="form-input" style="height: 42px; background: var(--bg-input); border: 1px solid var(--border-card); color: var(--text-primary);" required>
+                <option value="">Select Category First</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Step 2: Urgency & Dynamic Fields -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+            <div>
+              <label class="form-label" style="font-weight: 600;">Urgency / Priority Level*</label>
+              <select id="ticketPrioritySelect" class="form-input" style="height: 42px; background: var(--bg-input); border: 1px solid var(--border-card); color: var(--text-primary);" required>
+                <option value="low">Low (General Inquiry - 24h SLA)</option>
+                <option value="medium" selected>Medium (Standard Request - 12h SLA)</option>
+                <option value="high">High (Major Feature / Billing - 4h SLA)</option>
+                <option value="urgent">Urgent (App Crash / Copyright Takedown - 1h SLA) 🔥</option>
+              </select>
+            </div>
+            <div id="dynamicCustomFieldsContainer" style="grid-column: span 1;">
+              <!-- Dynamically populated custom fields -->
+            </div>
+          </div>
+
+          <!-- Step 3: Subject & Description -->
           <div class="form-group" style="margin-bottom: 16px;">
             <label class="form-label" style="font-weight: 600;">Subject / Issue Title*</label>
             <input type="text" class="form-input" id="ticketSubjectInput" placeholder="Brief summary of your inquiry or issue" required style="height: 42px;">
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
-            <div>
-              <label class="form-label" style="font-weight: 600;">Category*</label>
-              <select id="ticketCategorySelect" class="form-input" style="height: 42px; background: var(--bg-input); border: 1px solid var(--border-card); color: var(--text-primary);" required>
-                <option value="1">Technical Issue</option>
-                <option value="2">Account &amp; Security</option>
-                <option value="3">Billing &amp; Subscriptions</option>
-                <option value="4">Feature Request</option>
-                <option value="5">General Inquiry</option>
-              </select>
-            </div>
-            <div>
-              <label class="form-label" style="font-weight: 600;">Priority Level*</label>
-              <select id="ticketPrioritySelect" class="form-input" style="height: 42px; background: var(--bg-input); border: 1px solid var(--border-card); color: var(--text-primary);" required>
-                <option value="low">Low</option>
-                <option value="medium" selected>Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent 🔥</option>
-              </select>
-            </div>
-          </div>
-
           <div class="form-group" style="margin-bottom: 16px;">
             <label class="form-label" style="font-weight: 600;">Detailed Message*</label>
-            <textarea class="form-textarea" id="ticketDetailsInput" placeholder="Please describe your issue or question in detail..." rows="5" required style="resize: vertical;"></textarea>
+            <textarea class="form-textarea" id="ticketDetailsInput" placeholder="Please describe your issue or question in detail..." rows="4" required style="resize: vertical;"></textarea>
           </div>
 
           <div class="form-group" style="margin-bottom: 22px;">

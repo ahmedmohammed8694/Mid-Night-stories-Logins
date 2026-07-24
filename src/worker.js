@@ -1965,9 +1965,18 @@ app.get('/api/admin/reports', requireAdmin, async (c) => {
   const category_id = c.req.query('category_id');
   const search = c.req.query('search');
   
+  await ensureHelpdeskSchema(db);
+
+  try {
+    await db.prepare("UPDATE reports SET ticket_status = 'open' WHERE ticket_status IS NULL OR ticket_status = ''").run();
+  } catch (e) {}
+
   try {
     let query = `
       SELECT r.*,
+             COALESCE(r.ticket_id, 'TKT-#' || r.id) as ticket_id,
+             COALESCE(r.ticket_status, 'open') as ticket_status,
+             COALESCE(r.priority, 'medium') as priority,
              CASE WHEN r.reported_item_type = 'story' THEN (SELECT title FROM stories WHERE id = r.reported_item_id)
                   WHEN r.reported_item_type = 'comment' THEN (SELECT content FROM comments WHERE id = r.reported_item_id)
                   ELSE NULL END as target_preview,
@@ -1984,7 +1993,7 @@ app.get('/api/admin/reports', requireAdmin, async (c) => {
 
     if (status && status !== 'all') {
       if (status === 'open') {
-        query += " AND (r.ticket_status = 'open' OR r.ticket_status = 'investigating' OR r.ticket_status = 'waiting_on_user')";
+        query += " AND (r.ticket_status = 'open' OR r.ticket_status = 'investigating' OR r.ticket_status = 'waiting_on_user' OR r.ticket_status IS NULL OR r.ticket_status = '')";
       } else {
         query += " AND r.ticket_status = ?";
         params.push(status);
@@ -2010,7 +2019,7 @@ app.get('/api/admin/reports', requireAdmin, async (c) => {
     query += " ORDER BY r.created_at DESC";
 
     const { results } = await db.prepare(query).bind(...params).all();
-    return c.json(results);
+    return c.json(results || []);
   } catch (err) {
     console.error('GET /api/admin/reports ERROR:', err);
     return c.json({ error: 'Internal Server Error' }, 500);
@@ -2109,29 +2118,346 @@ app.get('/api/admin/support-agents', requireAdmin, async (c) => {
   return c.json(results);
 });
 
+async function ensureHelpdeskSchema(db) {
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS ticket_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`).run();
+
+    await db.prepare(`CREATE TABLE IF NOT EXISTS ticket_subcategories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      category_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`).run();
+
+    await db.prepare(`CREATE TABLE IF NOT EXISTS ticket_custom_fields (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      category_id INTEGER,
+      subcategory_id INTEGER,
+      field_name TEXT NOT NULL,
+      field_label TEXT NOT NULL,
+      field_type TEXT NOT NULL DEFAULT 'text',
+      options_json TEXT,
+      is_required INTEGER DEFAULT 0,
+      placeholder TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`).run();
+
+    await db.prepare(`CREATE TABLE IF NOT EXISTS sla_rules (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      priority TEXT NOT NULL UNIQUE,
+      frt_hours REAL NOT NULL,
+      ttr_hours REAL NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`).run();
+
+    await db.prepare(`CREATE TABLE IF NOT EXISTS ticket_ratings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ticket_id INTEGER NOT NULL UNIQUE,
+      user_id INTEGER NOT NULL,
+      rating INTEGER NOT NULL,
+      feedback TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`).run();
+
+    await db.prepare(`CREATE TABLE IF NOT EXISTS ticket_attachments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      message_id INTEGER,
+      ticket_id INTEGER NOT NULL,
+      file_name TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      file_size INTEGER NOT NULL,
+      mime_type TEXT NOT NULL,
+      storage_key TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`).run();
+
+    await db.prepare(`CREATE TABLE IF NOT EXISTS ticket_audit_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ticket_id INTEGER NOT NULL,
+      actor_id INTEGER NOT NULL,
+      actor_type TEXT NOT NULL,
+      action_type TEXT NOT NULL,
+      old_value TEXT,
+      new_value TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`).run();
+
+    await db.prepare(`CREATE TABLE IF NOT EXISTS canned_responses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      category_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`).run();
+
+    await db.prepare(`CREATE TABLE IF NOT EXISTS ticket_conversation_threads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      report_id INTEGER NOT NULL,
+      sender_id INTEGER NOT NULL,
+      sender_role TEXT NOT NULL,
+      message_body TEXT NOT NULL,
+      is_internal_note INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`).run();
+
+    const cols = [
+      'ticket_id TEXT', 'subject TEXT', 'category_id INTEGER', 'subcategory_id INTEGER',
+      'custom_fields_json TEXT', 'priority TEXT DEFAULT "medium"', 'ticket_status TEXT DEFAULT "open"',
+      'report_description TEXT', 'attachment_url TEXT', 'assigned_agent_id INTEGER',
+      'resolved_at DATETIME', 'reopened_at DATETIME', 'sla_due_at DATETIME', 'frt_due_at DATETIME',
+      'frt_responded_at DATETIME', 'csat_rating INTEGER', 'csat_feedback TEXT'
+    ];
+    for (const colDef of cols) {
+      try {
+        await db.prepare(`ALTER TABLE reports ADD COLUMN ${colDef}`).run();
+      } catch (e) {}
+    }
+  } catch (err) {}
+}
+
+app.get('/api/user/ticket-form-config', async (c) => {
+  const db = c.env.DB;
+  await ensureHelpdeskSchema(db);
+
+  const { results: categories } = await db.prepare('SELECT * FROM ticket_categories ORDER BY id ASC').all();
+  const { results: subcategories } = await db.prepare('SELECT * FROM ticket_subcategories ORDER BY id ASC').all();
+  const { results: customFields } = await db.prepare('SELECT * FROM ticket_custom_fields ORDER BY id ASC').all();
+  const { results: slaRules } = await db.prepare('SELECT * FROM sla_rules ORDER BY id ASC').all();
+
+  return c.json({
+    categories: categories || [],
+    subcategories: subcategories || [],
+    customFields: customFields || [],
+    slaRules: slaRules || []
+  });
+});
+
+app.post('/api/user/tickets/create', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  await ensureHelpdeskSchema(db);
+
+  try {
+    const contentType = c.req.header('content-type') || '';
+    let subject, category_id, subcategory_id, priority = 'medium', report_description, reason, custom_fields_data = {}, reported_item_type = 'support', reported_item_id = 0, file = null;
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await c.req.parseBody();
+      subject = formData['subject'];
+      category_id = formData['category_id'];
+      subcategory_id = formData['subcategory_id'];
+      priority = formData['priority'] || 'medium';
+      report_description = formData['report_description'] || formData['details'];
+      reason = formData['reason'] || subject;
+      reported_item_type = formData['reported_item_type'] || 'support';
+      reported_item_id = formData['reported_item_id'] ? parseInt(formData['reported_item_id']) : 0;
+      if (formData['custom_fields_json']) {
+        try { custom_fields_data = JSON.parse(formData['custom_fields_json']); } catch(e){}
+      }
+      if (formData['file'] && formData['file'] instanceof File && formData['file'].size > 0) {
+        file = formData['file'];
+      }
+    } else {
+      const body = await c.req.json();
+      subject = body.subject;
+      category_id = body.category_id;
+      subcategory_id = body.subcategory_id;
+      priority = body.priority || 'medium';
+      report_description = body.report_description || body.details;
+      reason = body.reason || subject;
+      reported_item_type = body.reported_item_type || 'support';
+      reported_item_id = body.reported_item_id ? parseInt(body.reported_item_id) : 0;
+      custom_fields_data = body.custom_fields || {};
+    }
+
+    if (!subject || !report_description) {
+      return c.json({ error: 'Subject and Detailed Message are required.' }, 400);
+    }
+
+    const randomNum = Math.floor(10000 + Math.random() * 90000);
+    const year = new Date().getFullYear();
+    const ticket_id = `TKT-${year}-${randomNum}`;
+
+    let frtHours = 12, ttrHours = 24;
+    const slaRule = await db.prepare('SELECT frt_hours, ttr_hours FROM sla_rules WHERE priority = ?').bind(priority).first();
+    if (slaRule) {
+      frtHours = slaRule.frt_hours;
+      ttrHours = slaRule.ttr_hours;
+    }
+
+    const nowMs = Date.now();
+    const frtDueAt = new Date(nowMs + frtHours * 3600 * 1000).toISOString();
+    const slaDueAt = new Date(nowMs + ttrHours * 3600 * 1000).toISOString();
+
+    const agent = await db.prepare('SELECT id FROM admin_users ORDER BY RANDOM() LIMIT 1').first();
+    const assigned_agent_id = agent ? agent.id : null;
+
+    let attachment_url = null;
+    if (file && c.env.IMAGES) {
+      const fileExt = file.name.split('.').pop() || 'bin';
+      const storageKey = `attachments/${crypto.randomUUID()}.${fileExt}`;
+      await c.env.IMAGES.put(storageKey, await file.arrayBuffer(), {
+        httpMetadata: { contentType: file.type }
+      });
+      attachment_url = `/uploads/${storageKey}`;
+    }
+
+    const res = await db.prepare(`
+      INSERT INTO reports (
+        ticket_id, subject, category_id, subcategory_id, reported_item_type, reported_item_id,
+        reason, report_description, attachment_url, priority, ticket_status, reporter_id,
+        assigned_agent_id, custom_fields_json, frt_due_at, sla_due_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?, ?, ?, ?)
+    `).bind(
+      ticket_id, subject, category_id ? parseInt(category_id) : 1, subcategory_id ? parseInt(subcategory_id) : null,
+      reported_item_type, reported_item_id, reason || subject, report_description, attachment_url,
+      priority, user.id, assigned_agent_id, JSON.stringify(custom_fields_data), frtDueAt, slaDueAt
+    ).run();
+
+    const reportDbId = res.meta.last_row_id;
+
+    await db.prepare(`
+      INSERT INTO ticket_conversation_threads (report_id, sender_id, sender_role, is_internal_note, message_body)
+      VALUES (?, ?, 'user', 0, ?)
+    `).bind(reportDbId, user.id, report_description).run();
+
+    await db.prepare(`
+      INSERT INTO ticket_audit_logs (ticket_id, actor_id, actor_type, action_type, new_value)
+      VALUES (?, ?, 'user', 'create_ticket', ?)
+    `).bind(reportDbId, user.id, `Created ticket ${ticket_id} (${priority.toUpperCase()})`).run();
+
+    return c.json({
+      success: true,
+      ticket_id,
+      id: reportDbId,
+      message: `Support Ticket ${ticket_id} created successfully.`
+    }, 201);
+  } catch (err) {
+    console.error('Error creating ticket:', err);
+    return c.json({ error: 'Failed to create support ticket: ' + err.message }, 500);
+  }
+});
+
+app.post('/api/user/tickets/:id/rate', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const ticketId = parseInt(c.req.param('id'));
+  const { rating, feedback } = await c.req.json();
+
+  if (!rating || rating < 1 || rating > 5) {
+    return c.json({ error: 'Rating must be a star score between 1 and 5.' }, 400);
+  }
+
+  const report = await db.prepare('SELECT * FROM reports WHERE id = ? AND reporter_id = ?').bind(ticketId, user.id).first();
+  if (!report) return c.json({ error: 'Ticket not found or unauthorized.' }, 404);
+
+  try {
+    await db.prepare(`
+      INSERT INTO ticket_ratings (ticket_id, user_id, rating, feedback)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(ticket_id) DO UPDATE SET rating = excluded.rating, feedback = excluded.feedback, created_at = CURRENT_TIMESTAMP
+    `).bind(ticketId, user.id, parseInt(rating), feedback || null).run();
+
+    await db.prepare('UPDATE reports SET csat_rating = ?, csat_feedback = ? WHERE id = ?').bind(parseInt(rating), feedback || null, ticketId).run();
+
+    await db.prepare(`
+      INSERT INTO ticket_audit_logs (ticket_id, actor_id, actor_type, action_type, new_value)
+      VALUES (?, ?, 'user', 'submit_csat_rating', ?)
+    `).bind(ticketId, user.id, `${rating} Stars (${feedback || 'No text feedback'})`).run();
+
+    return c.json({ success: true, message: 'Thank you for your rating!' });
+  } catch (err) {
+    return c.json({ error: 'Failed to record rating: ' + err.message }, 500);
+  }
+});
+
+app.get('/api/admin/analytics', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  await ensureHelpdeskSchema(db);
+
+  try {
+    const totalTicketsRow = await db.prepare('SELECT COUNT(*) as count FROM reports').first();
+    const openTicketsRow = await db.prepare("SELECT COUNT(*) as count FROM reports WHERE ticket_status = 'open'").first();
+    const investigatingRow = await db.prepare("SELECT COUNT(*) as count FROM reports WHERE ticket_status = 'investigating'").first();
+    const waitingRow = await db.prepare("SELECT COUNT(*) as count FROM reports WHERE ticket_status = 'waiting_on_user'").first();
+    const resolvedRow = await db.prepare("SELECT COUNT(*) as count FROM reports WHERE ticket_status = 'resolved' OR ticket_status = 'closed'").first();
+
+    const csatRow = await db.prepare('SELECT AVG(rating) as avg_csat, COUNT(*) as count FROM ticket_ratings').first();
+    const metSlaRow = await db.prepare("SELECT COUNT(*) as count FROM reports WHERE (ticket_status = 'resolved' OR ticket_status = 'closed') AND (resolved_at <= sla_due_at OR sla_due_at IS NULL)").first();
+
+    const totalResolved = resolvedRow ? resolvedRow.count : 0;
+    const metSlaCount = metSlaRow ? metSlaRow.count : 0;
+    const slaCompliancePct = totalResolved > 0 ? Math.round((metSlaCount / totalResolved) * 100) : 100;
+
+    const { results: topCategories } = await db.prepare(`
+      SELECT tc.name as category_name, COUNT(r.id) as ticket_count
+      FROM reports r
+      LEFT JOIN ticket_categories tc ON r.category_id = tc.id
+      GROUP BY r.category_id
+      ORDER BY ticket_count DESC LIMIT 5
+    `).all();
+
+    return c.json({
+      summary: {
+        total_tickets: totalTicketsRow ? totalTicketsRow.count : 0,
+        open_tickets: openTicketsRow ? openTicketsRow.count : 0,
+        investigating_tickets: investigatingRow ? investigatingRow.count : 0,
+        waiting_tickets: waitingRow ? waitingRow.count : 0,
+        resolved_tickets: totalResolved,
+        csat_score: csatRow && csatRow.avg_csat ? parseFloat(csatRow.avg_csat.toFixed(1)) : 5.0,
+        csat_count: csatRow ? csatRow.count : 0,
+        sla_compliance_pct: slaCompliancePct
+      },
+      topCategories: topCategories || []
+    });
+  } catch (err) {
+    console.error('Error fetching analytics:', err);
+    return c.json({ error: 'Failed to load analytics: ' + err.message }, 500);
+  }
+});
+
 app.get('/api/user/tickets', requireUser, async (c) => {
   const db = c.env.DB;
   const user = c.get('user');
   const statusFilter = c.req.query('status');
 
-  let query = `
-    SELECT r.id, r.ticket_id, r.subject, r.reason, r.priority, r.ticket_status, r.created_at, r.resolved_at,
-           tc.name as category_name
-    FROM reports r
-    LEFT JOIN ticket_categories tc ON r.category_id = tc.id
-    WHERE r.reporter_id = ?
-  `;
-  const params = [user.id];
+  await ensureHelpdeskSchema(db);
 
-  if (statusFilter && statusFilter !== 'all') {
-    query += ' AND r.ticket_status = ?';
-    params.push(statusFilter);
+  try {
+    let query = `
+      SELECT r.id,
+             COALESCE(r.ticket_id, 'TKT-#' || r.id) as ticket_id,
+             COALESCE(r.subject, r.reason) as subject,
+             r.reason,
+             COALESCE(r.priority, 'medium') as priority,
+             COALESCE(r.ticket_status, 'open') as ticket_status,
+             r.created_at, r.resolved_at,
+             tc.name as category_name
+      FROM reports r
+      LEFT JOIN ticket_categories tc ON r.category_id = tc.id
+      WHERE r.reporter_id = ?
+    `;
+    const params = [user.id];
+
+    if (statusFilter && statusFilter !== 'all') {
+      query += ' AND r.ticket_status = ?';
+      params.push(statusFilter);
+    }
+
+    query += ' ORDER BY r.created_at DESC';
+
+    const { results } = await db.prepare(query).bind(...params).all();
+    return c.json(results || []);
+  } catch (err) {
+    console.error('Error fetching user tickets:', err);
+    return c.json([]);
   }
-
-  query += ' ORDER BY r.created_at DESC';
-
-  const { results } = await db.prepare(query).bind(...params).all();
-  return c.json(results);
 });
 
 app.get('/api/tickets/:id/messages', async (c) => {

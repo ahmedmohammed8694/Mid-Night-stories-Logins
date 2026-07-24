@@ -157,6 +157,45 @@ CREATE TABLE ticket_attachments (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE ticket_subcategories (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category_id INTEGER NOT NULL REFERENCES ticket_categories(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ticket_custom_fields (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category_id INTEGER REFERENCES ticket_categories(id) ON DELETE CASCADE,
+  subcategory_id INTEGER REFERENCES ticket_subcategories(id) ON DELETE CASCADE,
+  field_name TEXT NOT NULL,
+  field_label TEXT NOT NULL,
+  field_type TEXT NOT NULL DEFAULT 'text' CHECK(field_type IN ('text', 'number', 'select', 'textarea', 'url')),
+  options_json TEXT,
+  is_required INTEGER DEFAULT 0,
+  placeholder TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE sla_rules (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  priority TEXT NOT NULL UNIQUE CHECK(priority IN ('urgent', 'high', 'medium', 'low')),
+  frt_hours REAL NOT NULL,
+  ttr_hours REAL NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ticket_ratings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ticket_id INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
+  feedback TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(ticket_id)
+);
+
 CREATE TABLE canned_responses (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
@@ -415,17 +454,39 @@ INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Ship Design
 INSERT OR IGNORE INTO categories (name, slug, channel_type) VALUES ('Submarine Operations', 'submarine-operations', 'naval');
 
 -- Seed Helpdesk Ticket Categories
-INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (1, 'Technical Issue', 'Bugs, platform errors, and reader mode glitches');
-INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (2, 'Account & Security', 'Password resets, email updates, and MFA login issues');
-INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (3, 'Billing & Subscriptions', 'Payment receipts, membership plans, and refund requests');
-INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (4, 'Feature Request', 'Suggestions for new library tools and app improvements');
-INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (5, 'General Inquiry', 'Questions regarding content submission and publishing');
+INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (1, '📖 Story & Content Moderation', 'Copyright, plagiarism, inappropriate content, and story/comment reports');
+INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (2, '📚 Book Library & Reader Mode', 'EPUB/PDF rendering bugs, missing pages, corrupt files, and audiobook errors');
+INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (3, '👤 Account & Access', 'Password resets, email verification, profile updates, and suspension appeals');
+INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (4, '💳 Billing & Subscriptions', 'Payment failures, receipts, premium upgrades, and refund inquiries');
+INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (5, '🛠️ Platform & Technical Bugs', 'App crashes, slow performance, bookmark sync issues, and broken links');
+INSERT OR IGNORE INTO ticket_categories (id, name, description) VALUES (6, '💡 Feature Requests & Feedback', 'Reader UI suggestions, author tools, and publishing partnerships');
+
+-- Seed Subcategories
+INSERT OR IGNORE INTO ticket_subcategories (id, category_id, name, description) VALUES
+(1, 1, 'Story Report / Takedown', 'Report infringing, plagiarized, or inappropriate story content'),
+(2, 1, 'Comment Report / Spam', 'Report offensive, harassing, or spam comments'),
+(3, 2, 'EPUB / PDF Reader Bug', 'Fix file formatting, rendering, or page flip glitches'),
+(4, 2, 'Corrupt File / Upload Error', 'Report unreadable or corrupted book downloads'),
+(5, 3, 'Login / Password Reset', 'Assistance with locked or unaccessible accounts'),
+(6, 3, 'Suspension Appeal', 'Appeal an account suspension or interaction restriction'),
+(7, 4, 'Failed Payment / Renewal', 'Help with declined card transactions or billing retries'),
+(8, 4, 'Refund Request', 'Request invoice receipt or subscription refund'),
+(9, 5, 'Reader Sync / Crash Bug', 'Technical bug report for bookmark sync or application crash'),
+(10, 6, 'New Reader Feature Idea', 'Suggestions for reader UI and community experience');
+
+-- Seed Default SLA Rules (in Hours)
+INSERT OR IGNORE INTO sla_rules (id, priority, frt_hours, ttr_hours) VALUES
+(1, 'urgent', 1.0, 4.0),
+(2, 'high', 4.0, 12.0),
+(3, 'medium', 12.0, 24.0),
+(4, 'low', 24.0, 72.0);
 
 -- Seed Canned Responses
 INSERT OR IGNORE INTO canned_responses (id, title, content, category_id) VALUES 
 (1, 'Need More Information', 'Thank you for reaching out to Midnight Support. Could you please provide additional details or a screenshot of the issue so we can investigate further?', 1),
 (2, 'Issue Under Investigation', 'Hello! We have received your ticket and our engineering team is actively investigating this issue. We will update you as soon as a fix is deployed.', 1),
-(3, 'Password Reset Instructions', 'Hello, to reset your account password, please go to the Login page, click "Forgot Password", and follow the verification link sent to your registered email.', 2),
-(4, 'Ticket Resolved Confirmation', 'We are pleased to inform you that your request has been successfully resolved. If you require further assistance, you may reopen this ticket within 7 days.', 5);
+(3, 'Password Reset Instructions', 'Hello, to reset your account password, please go to the Login page, click "Forgot Password", and follow the verification link sent to your registered email.', 3),
+(4, 'Content Takedown Actioned', 'Thank you for your report. Our moderation team has reviewed the flagged story/comment and taken appropriate enforcement action.', 1),
+(5, 'Ticket Resolved Confirmation', 'We are pleased to inform you that your request has been successfully resolved. If you require further assistance, you may reopen this ticket within 7 days.', 5);
 
 PRAGMA foreign_keys = ON;

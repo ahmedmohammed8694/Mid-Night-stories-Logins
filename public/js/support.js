@@ -23,20 +23,74 @@ document.addEventListener('DOMContentLoaded', async () => {
   let activeTicketId = null;
   let currentUserFilter = 'all';
 
-  async function loadTicketCategories() {
+  let formConfig = { categories: [], subcategories: [], customFields: [] };
+
+  async function loadTicketFormConfig() {
     try {
-      const categories = await api('/api/user/ticket-categories');
-      const select = document.getElementById('ticketCategorySelect');
-      if (select && categories.length > 0) {
-        select.innerHTML = '';
-        categories.forEach(c => {
+      const config = await api('/api/user/ticket-form-config');
+      formConfig = config;
+      const catSelect = document.getElementById('ticketCategorySelect');
+      if (catSelect && config.categories.length > 0) {
+        catSelect.innerHTML = '<option value="">Select Category...</option>';
+        config.categories.forEach(c => {
           const opt = document.createElement('option');
           opt.value = c.id;
           opt.textContent = c.name;
-          select.appendChild(opt);
+          catSelect.appendChild(opt);
         });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Error loading ticket form config:', e);
+    }
+  }
+
+  const categorySelect = document.getElementById('ticketCategorySelect');
+  if (categorySelect) {
+    categorySelect.addEventListener('change', (e) => {
+      const catId = parseInt(e.target.value);
+      const subSelect = document.getElementById('ticketSubcategorySelect');
+      const customContainer = document.getElementById('dynamicCustomFieldsContainer');
+
+      if (!catId) {
+        subSelect.innerHTML = '<option value="">Select Category First</option>';
+        customContainer.innerHTML = '';
+        return;
+      }
+
+      const subs = formConfig.subcategories.filter(s => s.category_id === catId);
+      subSelect.innerHTML = '<option value="">Select Sub-Category...</option>';
+      subs.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.name;
+        subSelect.appendChild(opt);
+      });
+
+      // Render custom fields based on category
+      if (catId === 1) { // Story & Content Moderation
+        customContainer.innerHTML = `
+          <label class="form-label" style="font-weight: 600;">Infringing Story Title / URL</label>
+          <input type="text" class="form-input" id="customStoryUrl" placeholder="e.g. Midnight Chapter 4 or story URL" style="height: 42px;">
+        `;
+      } else if (catId === 2) { // Reader / Book Library
+        customContainer.innerHTML = `
+          <label class="form-label" style="font-weight: 600;">Book Title / Format</label>
+          <input type="text" class="form-input" id="customBookTitle" placeholder="e.g. Dark Waters (.epub)" style="height: 42px;">
+        `;
+      } else if (catId === 4) { // Billing
+        customContainer.innerHTML = `
+          <label class="form-label" style="font-weight: 600;">Transaction / Order ID</label>
+          <input type="text" class="form-input" id="customOrderId" placeholder="e.g. INV-99428" style="height: 42px;">
+        `;
+      } else if (catId === 5) { // Tech Bugs
+        customContainer.innerHTML = `
+          <label class="form-label" style="font-weight: 600;">Operating System / Device</label>
+          <input type="text" class="form-input" id="customDevice" placeholder="e.g. Windows 11 / Chrome v120" style="height: 42px;">
+        `;
+      } else {
+        customContainer.innerHTML = '';
+      }
+    });
   }
 
   async function loadTickets() {
@@ -199,6 +253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const subject = document.getElementById('ticketSubjectInput').value.trim();
     const category_id = document.getElementById('ticketCategorySelect').value;
+    const subcategory_id = document.getElementById('ticketSubcategorySelect').value;
     const priority = document.getElementById('ticketPrioritySelect').value;
     const details = document.getElementById('ticketDetailsInput').value.trim();
     const fileInput = document.getElementById('ticketFileInput');
@@ -206,6 +261,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!subject || !details) {
       return showToast('Please enter both a Subject and Detailed Message.', 'warning');
     }
+
+    const customFields = {};
+    const storyUrl = document.getElementById('customStoryUrl');
+    if (storyUrl && storyUrl.value.trim()) customFields.story_url = storyUrl.value.trim();
+    const bookTitle = document.getElementById('customBookTitle');
+    if (bookTitle && bookTitle.value.trim()) customFields.book_title = bookTitle.value.trim();
+    const orderId = document.getElementById('customOrderId');
+    if (orderId && orderId.value.trim()) customFields.order_id = orderId.value.trim();
+    const device = document.getElementById('customDevice');
+    if (device && device.value.trim()) customFields.device = device.value.trim();
 
     const submitBtn = document.getElementById('btnSubmitNewTicket');
     submitBtn.disabled = true;
@@ -215,8 +280,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const formData = new FormData();
       formData.append('subject', subject);
       formData.append('category_id', category_id);
+      formData.append('subcategory_id', subcategory_id);
       formData.append('priority', priority);
       formData.append('details', details);
+      formData.append('custom_fields_json', JSON.stringify(customFields));
 
       if (fileInput && fileInput.files.length > 0) {
         const file = fileInput.files[0];
@@ -225,7 +292,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           submitBtn.textContent = '🚀 Create Ticket';
           return showToast('Attachment exceeds maximum allowed size of 10MB.', 'warning');
         }
-        formData.append('attachment', file);
+        formData.append('file', file);
       }
 
       const res = await api('/api/user/tickets/create', {
@@ -363,7 +430,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  loadTicketCategories();
+  loadTicketFormConfig();
   loadTickets();
   loadAdminMessagesInbox();
 });

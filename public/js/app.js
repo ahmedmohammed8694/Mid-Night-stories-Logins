@@ -442,6 +442,7 @@ function initAuthLayout() {
         <a href="/submit" class="nav-link ${path === '/submit.html' ? 'active' : ''}">Share Story</a>
         <a href="/profile" class="nav-link ${path === '/profile.html' ? 'active' : ''}">Find User</a>
         ${token ? `<a href="/chat" class="nav-link ${path === '/chat.html' ? 'active' : ''}">Chats</a>` : ''}
+        <a href="/support" class="nav-link ${path === '/support.html' || path === '/support' ? 'active' : ''}">🎫 Helpdesk</a>
         <a href="/resources" class="nav-link ${path === '/resources.html' ? 'active' : ''}">Resources</a>
         <a href="/about" class="nav-link ${path === '/about.html' ? 'active' : ''}">About</a>
       </nav>
@@ -665,7 +666,7 @@ async function handleNotifClick(n) {
     window.location.href = `/stories/story-${n.target_id}`;
   } else if (n.type === 'follow') {
     window.location.href = `/profile.html?id=${n.actor_user_id || n.actor_id}`;
-  } else if (n.type === 'chat_request' || n.type === 'chat_accepted' || n.type === 'chat_declined' || n.type === 'chat_message') {
+  } else if (n.type === 'chat_request' || n.type === 'chat_accepted' || n.type === 'chat_declined' || n.type === 'chat_message' || n.type === 'admin_message') {
     window.location.href = `/chat.html`;
   }
 }
@@ -719,10 +720,10 @@ async function checkAdminMessages() {
         if (!banner) {
           banner = document.createElement('div');
           banner.id = 'adminMessageBanner';
-          banner.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; background: var(--danger, #e53e3e); color: white; text-align: center; padding: 12px; z-index: 9999; font-weight: bold; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.5);';
-          banner.innerHTML = `⚠️ Official System Message: You have an unread admin notification. Click here to view.`;
+          banner.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; background: var(--danger, #e53e3e); color: white; text-align: center; padding: 10px; z-index: 9999; font-weight: bold; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.5); font-size: 0.9rem;';
+          banner.innerHTML = `💬 Official Admin Message: You have an unread message from Midnight Support. Click here to open Chat ↗`;
           banner.onclick = () => {
-            window.location.href = '/profile.html';
+            window.location.href = '/chat.html';
           };
           document.body.appendChild(banner);
         }
