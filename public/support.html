@@ -59,9 +59,19 @@
     <section class="container" style="max-width: 1200px; margin: 0 auto 2rem auto; padding: 0 1rem;">
       <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 24px; color: var(--text-secondary); line-height: 1.7;">
         <h2 style="color: var(--text-primary); font-size: 1.3rem; margin-bottom: 10px; border-bottom: 1px solid var(--border-card); padding-bottom: 6px;">How Support Tickets Work</h2>
-        <p style="margin-bottom: 12px;">Welcome to our Support Desk. Our team is here to help keep our community safe, clean, and friendly. When you send a report or question, we give you a ticket ID so you can track progress.</p>
-        <p style="margin-bottom: 12px;">You can view updates on your tickets using the sidebar on the left. Statuses show as <strong>Open</strong> (new report), <strong>Investigating</strong> (we are reviewing it), <strong>Waiting on User</strong> (we need details), or <strong>Resolved</strong> (done).</p>
-        <p style="margin: 0;">If you need urgent crisis help or want to report bad behavior, please see our <a href="/resources" style="color: var(--primary); text-decoration: underline;">Crisis &amp; Safety Resources</a> or read our <a href="/guidelines" style="color: var(--primary); text-decoration: underline;">Community Rules</a>.</p>
+        <p style="margin-bottom: 12px;">Welcome to our Support Desk. Our team is here to help keep our community safe, clean, and friendly. When you send a report or question, we give you a ticket ID so you can track progress easily.</p>
+        <p style="margin-bottom: 12px;">You can view updates on your tickets using the sidebar list on the left. Statuses show as <strong>Open</strong> (new report), <strong>Investigating</strong> (we are reviewing it), <strong>Waiting on User</strong> (we need details), or <strong>Resolved</strong> (completed).</p>
+        
+        <h3 style="color: var(--text-primary); font-size: 1.15rem; margin-top: 18px; margin-bottom: 8px;">Frequently Asked Questions</h3>
+        <ul style="padding-left: 20px; margin-bottom: 14px;">
+          <li style="margin-bottom: 8px;"><strong>How fast will I get a response?</strong> Our moderation team reviews reports daily. Most support tickets receive a response within 12 to 24 hours.</li>
+          <li style="margin-bottom: 8px;"><strong>Can I edit or delete my anonymous story?</strong> Yes! When you post a story, you receive a unique story token. Keep this token safe, as it allows you to edit or remove your post anytime.</li>
+          <li style="margin-bottom: 8px;"><strong>How do I report bad behavior or harassment?</strong> Every story and comment has a <em>Report</em> button. Click the button to send a ticket straight to our moderation queue.</li>
+        </ul>
+
+        <h3 style="color: var(--text-primary); font-size: 1.15rem; margin-top: 18px; margin-bottom: 8px;">Privacy &amp; Safety Guidelines</h3>
+        <p style="margin-bottom: 12px;">Your privacy is protected on Midnight Stories. We do not sell your personal data or track your activity across other websites. All uploaded images have EXIF data and GPS coordinates automatically removed to protect your identity.</p>
+        <p style="margin: 0;">If you need urgent crisis help or emergency assistance, please visit our <a href="/resources" style="color: var(--primary); text-decoration: underline;">Crisis &amp; Safety Resources</a> page or review our <a href="/guidelines" style="color: var(--primary); text-decoration: underline;">Community Guidelines</a>.</p>
       </div>
     </section>
 
@@ -74,7 +84,7 @@
       <!-- Main View -->
       <section class="ticket-view hidden" id="ticketView">
         <div class="ticket-header">
-          <h2 id="viewTicketId" style="margin: 0; font-family: monospace; font-size: 1.5rem; color: var(--text-primary);">Ticket Overview &amp; Details</h2>
+          <h3 id="viewTicketId" style="margin: 0; font-family: monospace; font-size: 1.5rem; color: var(--text-primary);">Ticket Overview &amp; Details</h3>
           <div id="viewTicketReason" style="color: var(--text-secondary); margin-top: 0.5rem;"></div>
           <div id="viewTicketStatus" class="ticket-status" style="margin-top: 1rem;"></div>
         </div>
