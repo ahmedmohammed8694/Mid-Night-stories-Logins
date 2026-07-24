@@ -2082,6 +2082,19 @@
     renderBulkReviewTable();
   };
 
+  function arrayBufferToBase64(buffer) {
+    if (!buffer || buffer.byteLength === 0) return null;
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    const chunkSize = 8192;
+    for (let i = 0; i < len; i += chunkSize) {
+      const chunk = bytes.subarray(i, Math.min(i + chunkSize, len));
+      binary += String.fromCharCode.apply(null, chunk);
+    }
+    return btoa(binary);
+  }
+
   async function commitBulkSaveBatch() {
     const validItems = bulkExtractedItems.filter(i => i.title && i.author && i.channel_type && i.isValid);
 
@@ -2094,52 +2107,89 @@
     btn.disabled = true;
     btn.textContent = 'Saving Batch...';
 
-    updateBulkProgress('Stage 4: Saving to Database & Storage...', 10, `Submitting ${validItems.length} books...`);
+    const totalToSave = validItems.length;
+    let savedTotal = 0;
+    let failedTotal = 0;
+    const allSavedBooks = [];
+    const allFailedBooks = [];
+
+    updateBulkProgress('Stage 4: Saving to Database & Storage...', 5, `Preparing ${totalToSave} books...`);
+
+    const CHUNK_SIZE = 3;
 
     try {
-      const payloadBooks = await Promise.all(validItems.map(async item => {
-        let fileBase64 = null;
-        if (item.file) {
-          const buffer = await item.file.arrayBuffer();
-          fileBase64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+      for (let i = 0; i < totalToSave; i += CHUNK_SIZE) {
+        const chunk = validItems.slice(i, i + CHUNK_SIZE);
+        const currentProgress = 5 + Math.round(((i + chunk.length) / totalToSave) * 90);
+        updateBulkProgress('Stage 4: Saving to Database & Storage...', currentProgress, `Saving books ${i + 1} - ${Math.min(i + chunk.length, totalToSave)} of ${totalToSave}...`);
+
+        const payloadBooks = await Promise.all(chunk.map(async item => {
+          let fileBase64 = null;
+          if (item.file) {
+            try {
+              const buffer = await item.file.arrayBuffer();
+              fileBase64 = arrayBufferToBase64(buffer);
+            } catch (e) {
+              console.warn('Failed to convert file buffer for:', item.filename, e);
+            }
+          }
+
+          let coverBase64 = null;
+          if (item.coverDataUrl && item.coverDataUrl.startsWith('data:image')) {
+            coverBase64 = item.coverDataUrl.split(',')[1];
+          }
+
+          return {
+            filename: item.filename,
+            title: item.title,
+            author: item.author,
+            channel_type: item.channel_type,
+            description: item.description,
+            publisher: item.publisher,
+            language: item.language,
+            isbn: item.isbn,
+            page_count: item.page_count,
+            est_read_minutes: item.est_read_minutes,
+            file_ext: item.file_type,
+            file_base64: fileBase64,
+            cover_ext: 'jpg',
+            cover_base64: coverBase64
+          };
+        }));
+
+        try {
+          const res = await api('/api/admin/books/bulk-upload', {
+            method: 'POST',
+            body: JSON.stringify({ books: payloadBooks })
+          });
+
+          if (res.success) {
+            savedTotal += (res.successCount || 0);
+            failedTotal += (res.failedCount || 0);
+            if (res.savedBooks) allSavedBooks.push(...res.savedBooks);
+            if (res.failedBooks) allFailedBooks.push(...res.failedBooks);
+          }
+        } catch (err) {
+          console.error('Batch sub-chunk upload error:', err);
+          failedTotal += chunk.length;
+          chunk.forEach(c => allFailedBooks.push({ filename: c.filename, error: err.message }));
         }
+      }
 
-        let coverBase64 = null;
-        if (item.coverDataUrl && item.coverDataUrl.startsWith('data:image')) {
-          coverBase64 = item.coverDataUrl.split(',')[1];
-        }
+      updateBulkProgress('Stage 4: Complete!', 100, `Successfully saved ${savedTotal} of ${totalToSave} books.`);
 
-        return {
-          filename: item.filename,
-          title: item.title,
-          author: item.author,
-          channel_type: item.channel_type,
-          description: item.description,
-          publisher: item.publisher,
-          language: item.language,
-          isbn: item.isbn,
-          page_count: item.page_count,
-          est_read_minutes: item.est_read_minutes,
-          file_ext: item.file_type,
-          file_base64: fileBase64,
-          cover_ext: 'jpg',
-          cover_base64: coverBase64
-        };
-      }));
-
-      updateBulkProgress('Stage 4: Saving to Database & Storage...', 60, 'Executing database transaction...');
-
-      const res = await api('/api/admin/books/bulk-upload', {
-        method: 'POST',
-        body: JSON.stringify({ books: payloadBooks })
-      });
-
-      updateBulkProgress('Stage 4: Complete!', 100, 'Batch upload successfully finalized.');
       setTimeout(() => {
         hideBulkProgress();
-        showBulkSummaryReport(res);
+        showBulkSummaryReport({
+          totalProcessed: totalToSave,
+          successCount: savedTotal,
+          failedCount: failedTotal,
+          savedBooks: allSavedBooks,
+          failedBooks: allFailedBooks
+        });
         loadBooks();
       }, 500);
+
     } catch (err) {
       hideBulkProgress();
       showToast('Failed to commit bulk save: ' + err.message, 'error');
