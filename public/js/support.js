@@ -1,3 +1,14 @@
+window.openSupportModal = function() {
+  const m = document.getElementById('newTicketModal');
+  if (m) {
+    m.classList.add('open');
+    m.style.display = 'flex';
+  }
+  const token = localStorage.getItem('token');
+  const guestBox = document.getElementById('guestEmailContainer');
+  if (guestBox) guestBox.style.display = (!token) ? 'block' : 'none';
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
   // ── Auth Check ──
   const token = localStorage.getItem('token');
@@ -37,11 +48,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnCancel = document.getElementById('btnCancelModal');
 
   window.openSupportModal = function() { 
-    if (modal) modal.classList.add('open'); 
+    const m = document.getElementById('newTicketModal');
+    if (m) {
+      m.classList.add('open');
+      m.style.display = 'flex';
+    }
+    const token = localStorage.getItem('token');
     const guestBox = document.getElementById('guestEmailContainer');
-    if (guestBox) guestBox.style.display = isGuest ? 'block' : 'none';
+    if (guestBox) guestBox.style.display = (!token) ? 'block' : 'none';
   };
-  function closeModal() { if (modal) modal.classList.remove('open'); }
+  function closeModal() {
+    const m = document.getElementById('newTicketModal');
+    if (m) {
+      m.classList.remove('open');
+      m.style.display = 'none';
+    }
+  }
 
   if (btnOpen) btnOpen.addEventListener('click', window.openSupportModal);
   if (btnClose) btnClose.addEventListener('click', closeModal);

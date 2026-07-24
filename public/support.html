@@ -412,14 +412,14 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(6px);
-      z-index: 3000;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(8px);
+      z-index: 99999 !important;
       align-items: center;
       justify-content: center;
       padding: 16px;
     }
-    .modal-overlay.open { display: flex; }
+    .modal-overlay.open { display: flex !important; }
     .modal-box {
       background: var(--bg-card, #1a1a2e);
       border: 1px solid rgba(124,58,237,0.3);
@@ -576,7 +576,7 @@
   <div class="support-hero" style="padding-top: 100px;">
     <h1>🎫 Support <span>Helpdesk</span></h1>
     <p>Submit a ticket, track your requests, and get real-time responses from the Midnight Stories team.</p>
-    <button class="hero-submit-btn" id="btnOpenCreateTicketModal">
+    <button class="hero-submit-btn" id="btnOpenCreateTicketModal" onclick="window.openSupportModal()">
       ➕ Submit Support Ticket
     </button>
 
@@ -850,6 +850,11 @@
       </form>
     </div>
   </div>
+
+  <!-- ── Floating Create Ticket Action Button ── -->
+  <button onclick="window.openSupportModal()" style="position:fixed; bottom:28px; right:28px; z-index:2000; background:linear-gradient(135deg,#7c3aed,#6366f1); color:#fff; border:none; padding:14px 24px; border-radius:50px; font-weight:700; font-size:0.95rem; cursor:pointer; box-shadow:0 8px 30px rgba(124,58,237,0.5); display:flex; align-items:center; gap:8px; transition:all 0.3s ease; letter-spacing:0.3px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+    <span>➕</span> <span>New Support Request</span>
+  </button>
 
   <div class="toast-container" id="toastContainer"></div>
   <script src="/js/app.js"></script>
