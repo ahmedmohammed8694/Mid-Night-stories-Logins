@@ -2606,23 +2606,31 @@ app.post('/api/admin/books/bulk-upload', requireAdmin, async (c) => {
         let coverImageUrl = item.cover_image_url || null;
 
         if (item.file_base64 && c.env.IMAGES) {
-          const fileExt = item.file_ext || 'epub';
-          const fileKey = `bulk_book_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-          const fileBuffer = Uint8Array.from(atob(item.file_base64), ch => ch.charCodeAt(0));
-          await c.env.IMAGES.put(fileKey, fileBuffer, {
-            httpMetadata: { contentType: fileExt === 'pdf' ? 'application/pdf' : 'application/epub+zip' }
-          });
-          fileUrl = `/uploads/${fileKey}`;
+          try {
+            const fileExt = item.file_ext || 'epub';
+            const fileKey = `bulk_book_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+            const fileBuffer = Uint8Array.from(atob(item.file_base64), ch => ch.charCodeAt(0));
+            await c.env.IMAGES.put(fileKey, fileBuffer, {
+              httpMetadata: { contentType: fileExt === 'pdf' ? 'application/pdf' : 'application/epub+zip' }
+            });
+            fileUrl = `/uploads/${fileKey}`;
+          } catch (storageErr) {
+            console.warn('R2 storage file save notice:', storageErr);
+          }
         }
 
         if (item.cover_base64 && c.env.IMAGES) {
-          const coverExt = item.cover_ext || 'jpg';
-          const coverKey = `bulk_cover_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${coverExt}`;
-          const coverBuffer = Uint8Array.from(atob(item.cover_base64), ch => ch.charCodeAt(0));
-          await c.env.IMAGES.put(coverKey, coverBuffer, {
-            httpMetadata: { contentType: `image/${coverExt}` }
-          });
-          coverImageUrl = `/uploads/${coverKey}`;
+          try {
+            const coverExt = item.cover_ext || 'jpg';
+            const coverKey = `bulk_cover_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${coverExt}`;
+            const coverBuffer = Uint8Array.from(atob(item.cover_base64), ch => ch.charCodeAt(0));
+            await c.env.IMAGES.put(coverKey, coverBuffer, {
+              httpMetadata: { contentType: `image/${coverExt}` }
+            });
+            coverImageUrl = `/uploads/${coverKey}`;
+          } catch (storageErr) {
+            console.warn('R2 storage cover save notice:', storageErr);
+          }
         }
 
         if (!fileUrl) {

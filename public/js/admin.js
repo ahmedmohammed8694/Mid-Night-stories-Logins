@@ -2115,42 +2115,44 @@
 
     updateBulkProgress('Stage 4: Saving to Database & Storage...', 5, `Preparing ${totalToSave} books...`);
 
-    const CHUNK_SIZE = 3;
+    const CHUNK_SIZE = 1;
 
     try {
       for (let i = 0; i < totalToSave; i += CHUNK_SIZE) {
         const chunk = validItems.slice(i, i + CHUNK_SIZE);
         const currentProgress = 5 + Math.round(((i + chunk.length) / totalToSave) * 90);
-        updateBulkProgress('Stage 4: Saving to Database & Storage...', currentProgress, `Saving books ${i + 1} - ${Math.min(i + chunk.length, totalToSave)} of ${totalToSave}...`);
+        const item = chunk[0];
+        updateBulkProgress('Stage 4: Saving to Database & Storage...', currentProgress, `Saving (${i + 1} of ${totalToSave}): ${item.title}`);
 
-        const payloadBooks = await Promise.all(chunk.map(async item => {
+        const payloadBooks = await Promise.all(chunk.map(async it => {
           let fileBase64 = null;
-          if (item.file) {
+          // Only base64 encode if file size is <= 10MB to prevent worker HTTP payload limits
+          if (it.file && it.file.size <= 10485760) {
             try {
-              const buffer = await item.file.arrayBuffer();
+              const buffer = await it.file.arrayBuffer();
               fileBase64 = arrayBufferToBase64(buffer);
             } catch (e) {
-              console.warn('Failed to convert file buffer for:', item.filename, e);
+              console.warn('Failed to convert file buffer for:', it.filename, e);
             }
           }
 
           let coverBase64 = null;
-          if (item.coverDataUrl && item.coverDataUrl.startsWith('data:image')) {
-            coverBase64 = item.coverDataUrl.split(',')[1];
+          if (it.coverDataUrl && it.coverDataUrl.startsWith('data:image')) {
+            coverBase64 = it.coverDataUrl.split(',')[1];
           }
 
           return {
-            filename: item.filename,
-            title: item.title,
-            author: item.author,
-            channel_type: item.channel_type,
-            description: item.description,
-            publisher: item.publisher,
-            language: item.language,
-            isbn: item.isbn,
-            page_count: item.page_count,
-            est_read_minutes: item.est_read_minutes,
-            file_ext: item.file_type,
+            filename: it.filename,
+            title: it.title,
+            author: it.author,
+            channel_type: it.channel_type,
+            description: it.description,
+            publisher: it.publisher,
+            language: it.language,
+            isbn: it.isbn,
+            page_count: it.page_count,
+            est_read_minutes: it.est_read_minutes,
+            file_ext: it.file_type,
             file_base64: fileBase64,
             cover_ext: 'jpg',
             cover_base64: coverBase64
@@ -2170,7 +2172,7 @@
             if (res.failedBooks) allFailedBooks.push(...res.failedBooks);
           }
         } catch (err) {
-          console.error('Batch sub-chunk upload error:', err);
+          console.error('Batch upload item error:', err);
           failedTotal += chunk.length;
           chunk.forEach(c => allFailedBooks.push({ filename: c.filename, error: err.message }));
         }

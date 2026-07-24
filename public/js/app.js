@@ -58,7 +58,18 @@ async function api(url, options = {}) {
       ...options
     });
 
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        const err = new Error(`Server HTTP ${res.status}: File payload limit or gateway timeout.`);
+        err.status = res.status;
+        throw err;
+      }
+      throw new Error('Invalid JSON response received from server.');
+    }
 
     if (!res.ok) {
       const err = new Error(data.error || data.message || `Request failed (${res.status})`);
