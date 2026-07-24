@@ -685,12 +685,18 @@
 
               <!-- Options Bar -->
               <div style="display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 20px; padding: 16px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-card);">
-                <div style="display: flex; gap: 16px; align-items: center;">
-                  <label style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);">Default Channel:</label>
-                  <select id="bulkDefaultChannel" class="form-input" style="height: 36px; margin-top: 0; min-width: 160px;">
-                    <option value="education" selected>Educational</option>
-                    <option value="naval">Naval</option>
-                  </select>
+                <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <label style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);">Default Channel:</label>
+                    <select id="bulkDefaultChannel" class="form-input" style="height: 36px; margin-top: 0; min-width: 150px;">
+                      <option value="education" selected>Educational</option>
+                      <option value="naval">Naval</option>
+                    </select>
+                  </div>
+                  <label style="font-size: 0.9rem; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <input type="checkbox" id="chkSkipDuplicates" checked style="cursor: pointer; transform: scale(1.15);">
+                    <span>Auto-skip duplicates found in database</span>
+                  </label>
                 </div>
                 <div style="display: flex; gap: 12px; align-items: center;">
                   <button class="btn btn--secondary btn--sm" id="btnResetBulkExtractor" style="display: none;">✕ Reset Extractor</button>
@@ -712,9 +718,13 @@
 
               <!-- Interactive Pre-Save Review & Edit Batch Table -->
               <div id="bulkReviewTableWrapper" class="hidden" style="margin-top: 24px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 12px;">
                   <h3 style="font-size: 1.1rem; color: var(--text-primary); margin: 0;">Extracted Metadata Review Grid (<span id="bulkTotalCount">0</span> items)</h3>
-                  <span style="font-size: 0.85rem; color: var(--text-muted);">Red borders indicate required missing fields (Channel*, Title*, Author*)</span>
+                  <div style="display: flex; gap: 16px; font-size: 0.85rem;">
+                    <span style="color: #2ecc71;">✨ <strong id="countUnique">0</strong> Unique</span>
+                    <span style="color: #f39c12;">⚠️ <strong id="countDuplicates">0</strong> Duplicates</span>
+                    <span style="color: var(--text-muted);">Red borders = missing required fields</span>
+                  </div>
                 </div>
 
                 <div class="admin-table-wrapper" style="max-height: 500px; overflow-y: auto;">
@@ -724,6 +734,7 @@
                         <th>#</th>
                         <th>Cover</th>
                         <th>File Name</th>
+                        <th>Duplicate Status</th>
                         <th>Channel*</th>
                         <th>Title*</th>
                         <th>Author*</th>
@@ -744,7 +755,7 @@
               <!-- Post-Upload Summary Report -->
               <div id="bulkSummaryReport" class="hidden" style="margin-top: 24px; padding: 24px; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border-card);">
                 <h3 style="font-size: 1.2rem; color: var(--text-primary); margin-bottom: 16px;">📊 Post-Upload Batch Summary Report</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 20px;">
                   <div class="stat-card" style="padding: 16px;">
                     <p class="stat-card__label">Total Processed</p>
                     <p class="stat-card__value" id="summaryTotalProcessed">0</p>
@@ -752,6 +763,10 @@
                   <div class="stat-card" style="padding: 16px;">
                     <p class="stat-card__label">Successfully Saved</p>
                     <p class="stat-card__value stat-card__value--purple" id="summarySuccessCount" style="color: #2ecc71;">0</p>
+                  </div>
+                  <div class="stat-card" style="padding: 16px;">
+                    <p class="stat-card__label">Duplicates Skipped</p>
+                    <p class="stat-card__value stat-card__value--amber" id="summaryDuplicateCount" style="color: #f39c12;">0</p>
                   </div>
                   <div class="stat-card" style="padding: 16px;">
                     <p class="stat-card__label">Failed / Errors</p>

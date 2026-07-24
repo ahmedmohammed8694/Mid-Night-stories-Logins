@@ -1998,11 +1998,71 @@
     hideBulkProgress();
   }
 
+  function normalizeText(str) {
+    return (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  function detectDuplicates() {
+    let dupCount = 0;
+    let uniqueCount = 0;
+
+    const seenTitlesInBatch = new Map();
+
+    bulkExtractedItems.forEach(item => {
+      const normTitle = normalizeText(item.title);
+      const normAuthor = normalizeText(item.author);
+
+      item.isDuplicateInDb = false;
+      item.isDuplicateInBatch = false;
+      item.matchedDbBook = null;
+
+      if (allBooksList && allBooksList.length > 0) {
+        const matched = allBooksList.find(b => {
+          const bTitle = normalizeText(b.title);
+          const bAuthor = normalizeText(b.author);
+          const bIsbn = (b.isbn || '').replace(/[^0-9X]/gi, '');
+          const itemIsbn = (item.isbn || '').replace(/[^0-9X]/gi, '');
+
+          if (itemIsbn && bIsbn && itemIsbn === bIsbn) return true;
+          if (normTitle && bTitle && normTitle === bTitle && (!normAuthor || normAuthor === bAuthor)) return true;
+          if (normTitle && bTitle && normTitle === bTitle) return true;
+          return false;
+        });
+
+        if (matched) {
+          item.isDuplicateInDb = true;
+          item.matchedDbBook = matched;
+        }
+      }
+
+      if (normTitle) {
+        if (seenTitlesInBatch.has(normTitle)) {
+          item.isDuplicateInBatch = true;
+        } else {
+          seenTitlesInBatch.set(normTitle, item.id);
+        }
+      }
+
+      if (item.isDuplicateInDb || item.isDuplicateInBatch) {
+        dupCount++;
+      } else {
+        uniqueCount++;
+      }
+    });
+
+    const countUniqueEl = document.getElementById('countUnique');
+    const countDupEl = document.getElementById('countDuplicates');
+    if (countUniqueEl) countUniqueEl.textContent = uniqueCount;
+    if (countDupEl) countDupEl.textContent = dupCount;
+  }
+
   function renderBulkReviewTable() {
     const tbody = document.getElementById('bulkReviewBody');
     tbody.innerHTML = '';
 
     if (bulkExtractedItems.length === 0) return;
+
+    detectDuplicates();
 
     document.getElementById('bulkTotalCount').textContent = bulkExtractedItems.length;
     document.getElementById('bulkReviewTableWrapper').classList.remove('hidden');
@@ -2023,12 +2083,20 @@
       const tr = document.createElement('tr');
       tr.id = `row_${item.id}`;
 
+      let dupBadge = '<span class="filter-chip" style="background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 0.75rem; border: 1px solid rgba(46, 204, 113, 0.3);">✨ Unique</span>';
+      if (item.isDuplicateInDb) {
+        dupBadge = `<span class="filter-chip" style="background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 0.75rem; border: 1px solid rgba(243, 156, 18, 0.3);" title="Already in library catalog (ID: ${item.matchedDbBook ? item.matchedDbBook.id : '?'})">⚠️ In Library</span>`;
+      } else if (item.isDuplicateInBatch) {
+        dupBadge = `<span class="filter-chip" style="background: rgba(230, 126, 34, 0.15); color: #e67e22; font-size: 0.75rem; border: 1px solid rgba(230, 126, 34, 0.3);">⚠️ Batch Dup</span>`;
+      }
+
       tr.innerHTML = `
         <td style="font-weight: bold; font-family: monospace;">${index + 1}</td>
         <td>
           <img src="${item.coverDataUrl || '/images/default-cover.svg'}" style="width: 35px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-card);">
         </td>
         <td style="font-size: 0.85rem; max-width: 140px; word-break: break-all; color: var(--text-secondary);">${escapeHtml(item.filename)}</td>
+        <td>${dupBadge}</td>
         <td>
           <select class="form-input ${isMissingChannel ? 'invalid-cell' : ''}" style="height: 32px; padding: 0 6px; font-size: 0.85rem; ${isMissingChannel ? 'border: 2px solid #ef4444;' : ''}" onchange="updateBulkItem('${item.id}', 'channel_type', this.value)">
             <option value="education" ${item.channel_type === 'education' ? 'selected' : ''}>Educational</option>
@@ -2096,10 +2164,32 @@
   }
 
   async function commitBulkSaveBatch() {
-    const validItems = bulkExtractedItems.filter(i => i.title && i.author && i.channel_type && i.isValid);
+    const skipDuplicates = document.getElementById('chkSkipDuplicates') ? document.getElementById('chkSkipDuplicates').checked : false;
+
+    let validItems = bulkExtractedItems.filter(i => i.title && i.author && i.channel_type && i.isValid);
 
     if (validItems.length === 0) {
       showToast('No valid items ready to save. Please fix required fields highlighted in red.', 'warning');
+      return;
+    }
+
+    let duplicateSkippedCount = 0;
+    if (skipDuplicates) {
+      const originalCount = validItems.length;
+      validItems = validItems.filter(i => !i.isDuplicateInDb && !i.isDuplicateInBatch);
+      duplicateSkippedCount = originalCount - validItems.length;
+    }
+
+    if (validItems.length === 0) {
+      showToast(`All ${duplicateSkippedCount} books were detected as duplicates and skipped.`, 'info');
+      showBulkSummaryReport({
+        totalProcessed: bulkExtractedItems.length,
+        successCount: 0,
+        duplicateCount: duplicateSkippedCount,
+        failedCount: 0,
+        savedBooks: [],
+        failedBooks: []
+      });
       return;
     }
 
@@ -2126,8 +2216,7 @@
 
         const payloadBooks = await Promise.all(chunk.map(async it => {
           let fileBase64 = null;
-          // Only base64 encode if file size is <= 10MB to prevent worker HTTP payload limits
-          if (it.file && it.file.size <= 10485760) {
+          if (it.file && it.file.size <= 2097152) {
             try {
               const buffer = await it.file.arrayBuffer();
               fileBase64 = arrayBufferToBase64(buffer);
@@ -2183,8 +2272,9 @@
       setTimeout(() => {
         hideBulkProgress();
         showBulkSummaryReport({
-          totalProcessed: totalToSave,
+          totalProcessed: bulkExtractedItems.length,
           successCount: savedTotal,
+          duplicateCount: duplicateSkippedCount,
           failedCount: failedTotal,
           savedBooks: allSavedBooks,
           failedBooks: allFailedBooks
@@ -2204,6 +2294,8 @@
   function showBulkSummaryReport(res) {
     document.getElementById('summaryTotalProcessed').textContent = res.totalProcessed || 0;
     document.getElementById('summarySuccessCount').textContent = res.successCount || 0;
+    const dupEl = document.getElementById('summaryDuplicateCount');
+    if (dupEl) dupEl.textContent = res.duplicateCount || 0;
     document.getElementById('summaryFailedCount').textContent = res.failedCount || 0;
 
     const failedWrapper = document.getElementById('summaryFailedListWrapper');
