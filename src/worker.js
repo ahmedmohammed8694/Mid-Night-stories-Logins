@@ -3824,8 +3824,26 @@ const requireUserOrAdmin = async (c, next) => {
   return c.json({ error: 'Unauthorized. Session expired or invalid.' }, 401);
 };
 
+// ── Auth helper allowing user OR guest ──
+const requireUserOrGuest = async (c, next) => {
+  const authHeader = c.req.header('Authorization');
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token) {
+    try {
+      const payload = await verifyJWT(token, getUserJwtSecret(c));
+      const db = c.env.DB;
+      const userRow = await db.prepare('SELECT interaction_permissions FROM users WHERE id = ?').bind(payload.id).first().catch(() => null);
+      const permissions = userRow && userRow.interaction_permissions ? JSON.parse(userRow.interaction_permissions) : {};
+      c.set('user', { ...payload, permissions });
+      return await next();
+    } catch (e) {}
+  }
+  c.set('user', { id: 0, full_name: 'Guest User', role: 'guest' });
+  return await next();
+};
+
 // GET /api/user/ticket-form-config — Dynamic form config for ticket creation
-app.get('/api/user/ticket-form-config', requireUser, async (c) => {
+app.get('/api/user/ticket-form-config', requireUserOrGuest, async (c) => {
   const db = c.env.DB;
   await ensureHelpdeskSchema(db);
 
@@ -3875,7 +3893,7 @@ app.get('/api/user/tickets', requireUser, async (c) => {
 });
 
 // POST /api/user/tickets/create — Create a new support ticket
-app.post('/api/user/tickets/create', requireUser, async (c) => {
+app.post('/api/user/tickets/create', requireUserOrGuest, async (c) => {
   const db = c.env.DB;
   await ensureHelpdeskSchema(db);
   const user = c.get('user');

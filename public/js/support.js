@@ -1,10 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  // ── Auth Guard ──
+  // ── Auth Check ──
   const token = localStorage.getItem('token');
-  if (!token) {
-    window.location.href = '/login.html';
-    return;
-  }
+  const isGuest = !token;
 
   // ── DOM References ──
   const ticketListScroll = document.getElementById('ticketListScroll');
@@ -39,7 +36,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnClose = document.getElementById('btnCloseModal');
   const btnCancel = document.getElementById('btnCancelModal');
 
-  window.openSupportModal = function() { if (modal) modal.classList.add('open'); };
+  window.openSupportModal = function() { 
+    if (modal) modal.classList.add('open'); 
+    const guestBox = document.getElementById('guestEmailContainer');
+    if (guestBox) guestBox.style.display = isGuest ? 'block' : 'none';
+  };
   function closeModal() { if (modal) modal.classList.remove('open'); }
 
   if (btnOpen) btnOpen.addEventListener('click', window.openSupportModal);
@@ -232,6 +233,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Load Tickets List ──
   async function loadTickets() {
+    if (isGuest) {
+      if (ticketListScroll) {
+        ticketListScroll.innerHTML = `
+          <div class="empty-tickets" style="padding:24px 16px; text-align:center;">
+            <span class="empty-icon">🔒</span>
+            <p style="font-weight:600; font-size:0.9rem; color:var(--text-primary);">Guest Mode Active</p>
+            <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:12px; line-height:1.4;">Log in or create an account to view ticket status history & track SLA updates.</p>
+            <a href="/login.html" class="btn-send" style="display:inline-block; text-decoration:none; padding:8px 18px; font-size:0.82rem;">🔐 Log In / Register</a>
+          </div>
+        `;
+      }
+      return;
+    }
+
     if (ticketListScroll) {
       ticketListScroll.innerHTML = `<div class="empty-tickets"><span class="empty-icon">⏳</span><p>Loading your tickets...</p></div>`;
     }
@@ -499,6 +514,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       const customFields = {};
+      if (isGuest) {
+        const gEmail = document.getElementById('guestEmailInput') ? document.getElementById('guestEmailInput').value.trim() : '';
+        if (!gEmail || !gEmail.includes('@')) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '🚀 Submit Support Request';
+          return showToast('Please enter a valid email address so we can reply to your request.', 'warning');
+        }
+        customFields.guest_email = gEmail;
+      }
       const storyUrl = document.getElementById('customStoryUrl');
       if (storyUrl && storyUrl.value.trim()) customFields.story_url = storyUrl.value.trim();
       const bookTitle = document.getElementById('customBookTitle');
