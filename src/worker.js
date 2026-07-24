@@ -2411,7 +2411,16 @@ app.post('/api/admin/users/:id/force-unfollow', requireAdmin, async (c) => {
   const { following_id } = await c.req.json();
   
   await db.prepare('DELETE FROM follows WHERE follower_id = ? AND following_id = ?').bind(followerId, following_id).run();
-  return c.json({ message: 'Force un  await db.prepare(`
+  return c.json({ message: 'Force unfollow successful.' });
+});
+
+app.post('/api/admin/users/:id/warn', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const userId = parseInt(c.req.param('id'));
+  const { level, template, reason, rule_broken, penalties } = await c.req.json();
+
+  await db.prepare(`
     INSERT INTO user_warnings (user_id, admin_id, level, template, reason, rule_broken, penalties) 
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `).bind(userId, adminPayload.adminId, level, template, reason, rule_broken || null, penalties || null).run();
