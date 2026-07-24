@@ -922,6 +922,20 @@
     if (countEl) countEl.textContent = checked.length;
   }
 
+  window.openAdminMessagingModal = function() {
+    const modal = document.getElementById('adminMessagingModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+  };
+
+  window.closeAdminMessagingModal = function() {
+    const modal = document.getElementById('adminMessagingModal');
+    if (!modal) return;
+    modal.style.display = 'none';
+    modal.classList.remove('active');
+  };
+
   window.openAdminMessageUserModal = function(userId, userName) {
     messagingMode = 'single';
     targetSingleUser = { id: userId, name: userName };
@@ -929,7 +943,7 @@
     if (badge) badge.innerHTML = `👤 Single User: <strong>${escapeHtml(userName)}</strong> (ID: #${userId})`;
     document.getElementById('adminMsgTitleInput').value = '';
     document.getElementById('adminMsgBodyInput').value = '';
-    document.getElementById('adminMessagingModal').classList.remove('hidden');
+    window.openAdminMessagingModal();
   };
 
   function initAdminMessagingEvents() {
@@ -961,7 +975,7 @@
         if (badge) badge.innerHTML = `👥 <strong>${checked.length} Selected User(s)</strong>`;
         document.getElementById('adminMsgTitleInput').value = '';
         document.getElementById('adminMsgBodyInput').value = '';
-        document.getElementById('adminMessagingModal').classList.remove('hidden');
+        window.openAdminMessagingModal();
       });
     }
 
@@ -973,7 +987,7 @@
         if (badge) badge.innerHTML = `📢 <strong>BROADCAST TO ALL REGISTERED USERS</strong>`;
         document.getElementById('adminMsgTitleInput').value = '';
         document.getElementById('adminMsgBodyInput').value = '';
-        document.getElementById('adminMessagingModal').classList.remove('hidden');
+        window.openAdminMessagingModal();
       });
     }
   }
@@ -1006,7 +1020,7 @@
         body: JSON.stringify(payload)
       });
       showToast(res.message || 'Admin message sent successfully.', 'success');
-      document.getElementById('adminMessagingModal').classList.add('hidden');
+      window.closeAdminMessagingModal();
     } catch (err) {
       showToast('Failed to send message: ' + err.message, 'error');
     } finally {
