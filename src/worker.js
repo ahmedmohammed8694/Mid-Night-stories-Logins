@@ -3633,6 +3633,35 @@ let helpdeskSchemaEnsured = false;
 async function ensureHelpdeskSchema(db) {
   if (helpdeskSchemaEnsured) return;
   try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      reporter_id INTEGER,
+      reported_item_type TEXT DEFAULT 'support',
+      reported_item_id INTEGER DEFAULT 0,
+      reason TEXT,
+      ticket_id TEXT,
+      subject TEXT,
+      category_id INTEGER,
+      subcategory_id INTEGER,
+      priority TEXT DEFAULT 'medium',
+      ticket_status TEXT DEFAULT 'open',
+      assigned_agent_id INTEGER,
+      resolved_at TEXT,
+      reopened_at TEXT,
+      report_description TEXT,
+      attachment_url TEXT,
+      custom_fields_json TEXT,
+      sla_due_at TEXT,
+      frt_due_at TEXT,
+      frt_responded_at TEXT,
+      csat_rating INTEGER,
+      csat_feedback TEXT,
+      can_reopen INTEGER DEFAULT 0,
+      type TEXT DEFAULT 'support_ticket',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`).run().catch(()=>{});
+
     const tableInfo = await db.prepare("PRAGMA table_info(reports)").all().catch(() => ({ results: [] }));
     const existingCols = new Set((tableInfo.results || []).map(c => c.name));
 

@@ -695,17 +695,18 @@
   async function loadTicketMessages(report) {
     try {
       const data = await api(`/api/tickets/${report.id}/messages`);
+      const ticket = data.ticket || report;
       const container = document.getElementById('ticketChatMessages');
       const timeline = document.getElementById('ticketAuditLogTimeline');
       container.innerHTML = '';
       
-      const descHtml = report.report_description ? escapeHtml(report.report_description) : '<i>[No description provided]</i>';
-      const attachHtml = report.attachment_url ? `<div style="margin-top: 0.75rem;"><a href="${report.attachment_url}" target="_blank" style="color: var(--primary); text-decoration: underline;">View File Attachment 📁</a></div>` : '';
+      const descHtml = ticket.report_description ? escapeHtml(ticket.report_description) : (ticket.reason ? escapeHtml(ticket.reason) : '<i>[No description provided]</i>');
+      const attachHtml = ticket.attachment_url ? `<div style="margin-top: 0.75rem;"><a href="${ticket.attachment_url}" target="_blank" style="color: var(--primary); text-decoration: underline;">View File Attachment 📁</a></div>` : '';
       
       container.innerHTML += `
         <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-          <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem;">Original Ticket Submission from User #${report.reporter_id}</div>
-          <div style="font-weight: bold; margin-bottom: 0.4rem;">Subject: ${escapeHtml(report.subject || report.reason)}</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem;">Original Ticket Submission from ${escapeHtml(ticket.user_name || ('User #' + (ticket.reporter_id || ticket.user_id || 'User')))}</div>
+          <div style="font-weight: bold; margin-bottom: 0.4rem;">Subject: ${escapeHtml(ticket.subject || ticket.reason || 'No Subject')}</div>
           <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">${descHtml}${attachHtml}</div>
         </div>
       `;
