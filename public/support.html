@@ -565,19 +565,20 @@
   </style>
 </head>
 <body data-theme="dark">
-  <nav class="navbar">
-    <div class="navbar__inner">
-      <a href="/" class="navbar__logo">Midnight Stories</a>
-      <div class="navbar__links" id="navLinks"></div>
-    </div>
-  </nav>
+  <!-- ── Site Navigation Header ── -->
+  <header class="header" id="header"></header>
 
   <!-- ── Hero Section ── -->
-  <div class="support-hero" style="padding-top: 100px;">
-    <h1>🎫 Support <span>Helpdesk</span></h1>
-    <p>Submit a ticket, track your requests, and get real-time responses from the Midnight Stories team.</p>
+  <div class="support-hero" style="padding-top: 110px;">
+    <div style="display:inline-flex; align-items:center; gap:8px; padding:6px 16px; border-radius:30px; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.25); color:#4ade80; font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:16px;">
+      <span style="width:8px; height:8px; border-radius:50%; background:#4ade80; display:inline-block; box-shadow:0 0 8px #4ade80;"></span>
+      All Support Systems Operational • Average SLA Response: 38 mins
+    </div>
+
+    <h1>🎫 Enterprise <span>Support Center</span></h1>
+    <p>Submit custom requirement tickets, track request resolution progress, and communicate directly with Midnight Support Operations.</p>
     <button class="hero-submit-btn" id="btnOpenCreateTicketModal" onclick="window.openSupportModal()">
-      ➕ Submit Support Ticket
+      🚀 Submit Support Request
     </button>
 
     <div class="sla-cards">
