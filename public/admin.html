@@ -359,37 +359,310 @@
           </div>
         </div>
 
-        <!-- Executive CRM Analytics Panel -->
+        <!-- Executive CRM Analytics Panel — Full Enterprise Dashboard -->
         <div class="admin-panel" id="panel-crm-analytics">
-          <h1 class="admin-page-title">📈 Executive CRM &amp; Helpdesk Analytics</h1>
-          <p class="admin-page-subtitle">Real-time performance metrics, SLA compliance rates, and CSAT scores.</p>
-          
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
-            <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px; text-align: center;">
-              <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Total Tickets</span>
-              <div id="metricTotalTickets" style="font-size: 2.2rem; font-weight: bold; color: var(--primary); margin-top: 4px;">0</div>
+          <!-- Page Header -->
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:28px;">
+            <div>
+              <h1 class="admin-page-title" style="margin-bottom:4px;">📈 Executive CRM &amp; Helpdesk Analytics</h1>
+              <p class="admin-page-subtitle">Real-time ticket metrics, SLA compliance, CSAT scores, and BI integrations.</p>
             </div>
-            <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px; text-align: center;">
-              <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">SLA Compliance Rate</span>
-              <div id="metricSlaCompliance" style="font-size: 2.2rem; font-weight: bold; color: #10b981; margin-top: 4px;">100%</div>
-            </div>
-            <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px; text-align: center;">
-              <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Average CSAT Rating</span>
-              <div id="metricCsatScore" style="font-size: 2.2rem; font-weight: bold; color: #f59e0b; margin-top: 4px;">5.0 ⭐</div>
-            </div>
-            <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px; text-align: center;">
-              <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Active Backlog</span>
-              <div id="metricOpenTickets" style="font-size: 2.2rem; font-weight: bold; color: #ef4444; margin-top: 4px;">0</div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <button onclick="window.downloadCrmCsv()" style="display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:0.85rem;cursor:pointer;box-shadow:0 3px 12px rgba(16,185,129,0.35);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'">
+                ⬇️ Download CSV Report
+              </button>
+              <button onclick="window.downloadCrmJson()" style="display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:0.85rem;cursor:pointer;box-shadow:0 3px 12px rgba(99,102,241,0.35);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'">
+                📄 Export JSON
+              </button>
+              <button onclick="window.loadCrmAnalytics()" style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,0.06);color:var(--text-primary);border:1px solid rgba(255,255,255,0.12);padding:10px 18px;border-radius:8px;font-weight:600;font-size:0.85rem;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">
+                🔄 Refresh Data
+              </button>
             </div>
           </div>
 
-          <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-            <h3 style="margin-top: 0; font-family: 'Fraunces', serif;">🔥 Top Requested Categories</h3>
-            <div id="topCategoriesContainer" style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
-              <p style="color: var(--text-muted);">Loading category breakdown...</p>
+          <!-- ── KPI Metric Cards ── -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; margin-bottom:24px;" id="crmKpiRow">
+            <div class="crm-kpi-card" style="background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.08));border:1px solid rgba(99,102,241,0.3);border-radius:14px;padding:20px;text-align:center;position:relative;overflow:hidden;">
+              <div style="font-size:1.8rem;margin-bottom:6px;">🎫</div>
+              <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">Total Tickets</div>
+              <div id="metricTotalTickets" style="font-size:2.4rem;font-weight:800;color:#818cf8;margin-top:4px;line-height:1;">0</div>
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">All time</div>
+            </div>
+            <div class="crm-kpi-card" style="background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.06));border:1px solid rgba(16,185,129,0.3);border-radius:14px;padding:20px;text-align:center;">
+              <div style="font-size:1.8rem;margin-bottom:6px;">✅</div>
+              <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">SLA Compliance</div>
+              <div id="metricSlaCompliance" style="font-size:2.4rem;font-weight:800;color:#10b981;margin-top:4px;line-height:1;">100%</div>
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">Response rate</div>
+            </div>
+            <div class="crm-kpi-card" style="background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(217,119,6,0.06));border:1px solid rgba(245,158,11,0.3);border-radius:14px;padding:20px;text-align:center;">
+              <div style="font-size:1.8rem;margin-bottom:6px;">⭐</div>
+              <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">Avg CSAT Score</div>
+              <div id="metricCsatScore" style="font-size:2.4rem;font-weight:800;color:#f59e0b;margin-top:4px;line-height:1;">5.0</div>
+              <div id="metricCsatCount" style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">0 reviews</div>
+            </div>
+            <div class="crm-kpi-card" style="background:linear-gradient(135deg,rgba(239,68,68,0.12),rgba(220,38,38,0.06));border:1px solid rgba(239,68,68,0.3);border-radius:14px;padding:20px;text-align:center;">
+              <div style="font-size:1.8rem;margin-bottom:6px;">🔴</div>
+              <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">Active Backlog</div>
+              <div id="metricOpenTickets" style="font-size:2.4rem;font-weight:800;color:#f87171;margin-top:4px;line-height:1;">0</div>
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">Open tickets</div>
+            </div>
+            <div class="crm-kpi-card" style="background:linear-gradient(135deg,rgba(6,182,212,0.12),rgba(8,145,178,0.06));border:1px solid rgba(6,182,212,0.3);border-radius:14px;padding:20px;text-align:center;">
+              <div style="font-size:1.8rem;margin-bottom:6px;">🔵</div>
+              <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;font-weight:700;">Resolved</div>
+              <div id="metricResolvedTickets" style="font-size:2.4rem;font-weight:800;color:#22d3ee;margin-top:4px;line-height:1;">0</div>
+              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">Closed tickets</div>
             </div>
           </div>
+
+          <!-- ── Charts Row ── -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:24px;">
+
+            <!-- Ticket Status Donut Chart -->
+            <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:14px;padding:22px;">
+              <h3 style="font-size:0.9rem;font-weight:700;color:var(--text-primary);margin-bottom:16px;text-transform:uppercase;letter-spacing:0.5px;">🍩 Ticket Status Breakdown</h3>
+              <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+                <!-- Donut (pure CSS SVG) -->
+                <div style="position:relative;flex-shrink:0;">
+                  <svg id="donutChart" viewBox="0 0 120 120" width="140" height="140">
+                    <circle cx="60" cy="60" r="48" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="18"/>
+                    <circle id="donutOpen" cx="60" cy="60" r="48" fill="none" stroke="#4ade80" stroke-width="18" stroke-dasharray="0 302" stroke-dashoffset="0" transform="rotate(-90 60 60)" style="transition:stroke-dasharray 0.8s ease;"/>
+                    <circle id="donutInv" cx="60" cy="60" r="48" fill="none" stroke="#facc15" stroke-width="18" stroke-dasharray="0 302" stroke-dashoffset="0" transform="rotate(-90 60 60)" style="transition:stroke-dasharray 0.8s ease;"/>
+                    <circle id="donutWait" cx="60" cy="60" r="48" fill="none" stroke="#fb923c" stroke-width="18" stroke-dasharray="0 302" stroke-dashoffset="0" transform="rotate(-90 60 60)" style="transition:stroke-dasharray 0.8s ease;"/>
+                    <circle id="donutRes" cx="60" cy="60" r="48" fill="none" stroke="#818cf8" stroke-width="18" stroke-dasharray="0 302" stroke-dashoffset="0" transform="rotate(-90 60 60)" style="transition:stroke-dasharray 0.8s ease;"/>
+                    <text x="60" y="57" text-anchor="middle" fill="white" font-size="16" font-weight="800" id="donutTotalText">0</text>
+                    <text x="60" y="70" text-anchor="middle" fill="#9ca3af" font-size="8">Total</text>
+                  </svg>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:9px;" id="donutLegend">
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:12px;height:12px;border-radius:3px;background:#4ade80;flex-shrink:0;"></span><span style="font-size:0.82rem;color:var(--text-secondary);">Open</span><span id="donutLegOpen" style="margin-left:auto;font-weight:700;color:#4ade80;font-size:0.85rem;">0</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:12px;height:12px;border-radius:3px;background:#facc15;flex-shrink:0;"></span><span style="font-size:0.82rem;color:var(--text-secondary);">Investigating</span><span id="donutLegInv" style="margin-left:auto;font-weight:700;color:#facc15;font-size:0.85rem;">0</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:12px;height:12px;border-radius:3px;background:#fb923c;flex-shrink:0;"></span><span style="font-size:0.82rem;color:var(--text-secondary);">Waiting on User</span><span id="donutLegWait" style="margin-left:auto;font-weight:700;color:#fb923c;font-size:0.85rem;">0</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:12px;height:12px;border-radius:3px;background:#818cf8;flex-shrink:0;"></span><span style="font-size:0.82rem;color:var(--text-secondary);">Resolved</span><span id="donutLegRes" style="margin-left:auto;font-weight:700;color:#818cf8;font-size:0.85rem;">0</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Category Bar Chart -->
+            <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:14px;padding:22px;">
+              <h3 style="font-size:0.9rem;font-weight:700;color:var(--text-primary);margin-bottom:16px;text-transform:uppercase;letter-spacing:0.5px;">📊 Top Categories</h3>
+              <div id="categoryBarChart" style="display:flex;flex-direction:column;gap:10px;">
+                <div style="color:var(--text-muted);font-size:0.85rem;">Loading chart data...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Priority Distribution ── -->
+          <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:14px;padding:22px;margin-bottom:24px;">
+            <h3 style="font-size:0.9rem;font-weight:700;color:var(--text-primary);margin-bottom:16px;text-transform:uppercase;letter-spacing:0.5px;">⚡ Priority Distribution</h3>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;" id="priorityBars">
+              <div style="text-align:center;">
+                <div style="font-size:0.72rem;color:#f87171;font-weight:700;text-transform:uppercase;margin-bottom:6px;">🔴 Urgent</div>
+                <div style="background:rgba(255,255,255,0.06);border-radius:8px;height:90px;position:relative;overflow:hidden;">
+                  <div id="barUrgent" style="position:absolute;bottom:0;width:100%;background:linear-gradient(0deg,#ef4444,#f87171);border-radius:8px;transition:height 0.8s ease;height:0%;"></div>
+                </div>
+                <div id="barUrgentLbl" style="font-size:0.9rem;font-weight:700;color:#f87171;margin-top:6px;">0</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:0.72rem;color:#facc15;font-weight:700;text-transform:uppercase;margin-bottom:6px;">🟡 High</div>
+                <div style="background:rgba(255,255,255,0.06);border-radius:8px;height:90px;position:relative;overflow:hidden;">
+                  <div id="barHigh" style="position:absolute;bottom:0;width:100%;background:linear-gradient(0deg,#d97706,#facc15);border-radius:8px;transition:height 0.8s ease;height:0%;"></div>
+                </div>
+                <div id="barHighLbl" style="font-size:0.9rem;font-weight:700;color:#facc15;margin-top:6px;">0</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:0.72rem;color:#818cf8;font-weight:700;text-transform:uppercase;margin-bottom:6px;">🔵 Medium</div>
+                <div style="background:rgba(255,255,255,0.06);border-radius:8px;height:90px;position:relative;overflow:hidden;">
+                  <div id="barMedium" style="position:absolute;bottom:0;width:100%;background:linear-gradient(0deg,#6366f1,#818cf8);border-radius:8px;transition:height 0.8s ease;height:0%;"></div>
+                </div>
+                <div id="barMediumLbl" style="font-size:0.9rem;font-weight:700;color:#818cf8;margin-top:6px;">0</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:0.72rem;color:#4ade80;font-weight:700;text-transform:uppercase;margin-bottom:6px;">🟢 Low</div>
+                <div style="background:rgba(255,255,255,0.06);border-radius:8px;height:90px;position:relative;overflow:hidden;">
+                  <div id="barLow" style="position:absolute;bottom:0;width:100%;background:linear-gradient(0deg,#059669,#4ade80);border-radius:8px;transition:height 0.8s ease;height:0%;"></div>
+                </div>
+                <div id="barLowLbl" style="font-size:0.9rem;font-weight:700;color:#4ade80;margin-top:6px;">0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Full Tickets Table ── -->
+          <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:14px;overflow:hidden;margin-bottom:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--border-card);flex-wrap:wrap;gap:12px;">
+              <h3 style="font-size:0.9rem;font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.5px;margin:0;">📋 All Support Tickets</h3>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <select id="crmTableStatusFilter" onchange="window.filterCrmTable()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text-primary);padding:6px 12px;border-radius:8px;font-size:0.82rem;">
+                  <option value="">All Status</option>
+                  <option value="open">Open</option>
+                  <option value="investigating">Investigating</option>
+                  <option value="waiting_on_user">Waiting on User</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+                <select id="crmTablePriorityFilter" onchange="window.filterCrmTable()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text-primary);padding:6px 12px;border-radius:8px;font-size:0.82rem;">
+                  <option value="">All Priority</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+                <input type="text" id="crmTableSearch" oninput="window.filterCrmTable()" placeholder="Search tickets..." style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text-primary);padding:6px 12px;border-radius:8px;font-size:0.82rem;width:180px;">
+              </div>
+            </div>
+            <div class="admin-table-wrapper" style="max-height:380px;overflow-y:auto;">
+              <table class="admin-table" id="crmFullTicketsTable">
+                <thead style="position:sticky;top:0;z-index:2;background:var(--bg-secondary);">
+                  <tr>
+                    <th>Ticket ID</th>
+                    <th>Subject</th>
+                    <th>Category</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>User</th>
+                    <th>Created</th>
+                    <th>SLA Due</th>
+                  </tr>
+                </thead>
+                <tbody id="crmTicketsBody">
+                  <tr><td colspan="8" style="text-align:center;opacity:0.5;padding:24px;">Loading tickets...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ── Two Column: Categories Table + CSAT Table ── -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px;">
+
+            <!-- Categories Breakdown Table -->
+            <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:14px;overflow:hidden;">
+              <div style="padding:16px 22px;border-bottom:1px solid var(--border-card);">
+                <h3 style="font-size:0.88rem;font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.5px;margin:0;">🗂️ Category Performance</h3>
+              </div>
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Tickets</th>
+                    <th>Open</th>
+                    <th>Resolved</th>
+                  </tr>
+                </thead>
+                <tbody id="categoryPerformanceBody">
+                  <tr><td colspan="4" style="text-align:center;opacity:0.5;padding:20px;">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Recent CSAT Ratings -->
+            <div style="background:var(--bg-card);border:1px solid var(--border-card);border-radius:14px;overflow:hidden;">
+              <div style="padding:16px 22px;border-bottom:1px solid var(--border-card);">
+                <h3 style="font-size:0.88rem;font-weight:700;color:var(--text-primary);text-transform:uppercase;letter-spacing:0.5px;margin:0;">⭐ CSAT / Satisfaction Ratings</h3>
+              </div>
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Ticket</th>
+                    <th>Rating</th>
+                    <th>Feedback</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="csatRatingsBody">
+                  <tr><td colspan="4" style="text-align:center;opacity:0.5;padding:20px;">No ratings yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ── BI Integration Section ── -->
+          <div style="background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.04));border:1px solid rgba(99,102,241,0.25);border-radius:16px;padding:28px;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+              <div style="background:linear-gradient(135deg,#6366f1,#7c3aed);width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">🔗</div>
+              <div>
+                <h3 style="font-size:1.05rem;font-weight:700;color:var(--text-primary);margin:0;">Business Intelligence Integrations</h3>
+                <p style="font-size:0.82rem;color:var(--text-muted);margin:2px 0 0;">Connect your CRM data to Power BI or Google Looker Studio for advanced reporting dashboards.</p>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px;">
+
+              <!-- Power BI Card -->
+              <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(255,193,7,0.25);border-radius:12px;padding:20px;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/c/cf/New_Power_BI_Logo.svg" alt="Power BI" style="width:36px;height:36px;object-fit:contain;" onerror="this.style.display='none'">
+                  <div>
+                    <div style="font-weight:700;color:var(--text-primary);font-size:0.95rem;">Microsoft Power BI</div>
+                    <div style="font-size:0.75rem;color:#fbbf24;">Enterprise Reporting</div>
+                  </div>
+                </div>
+                <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">Connect your Midnight Stories CRM data to Power BI using the REST API endpoint below. Import and build interactive reports.</p>
+                <div style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;font-family:monospace;font-size:0.75rem;color:#a5b4fc;word-break:break-all;margin-bottom:12px;">
+                  https://midnightstories.dpdns.org/api/admin/analytics
+                </div>
+                <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:12px;">
+                  <strong style="color:var(--text-primary);">Auth Header:</strong> <code style="background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;font-size:0.72rem;">x-admin-token: YOUR_ADMIN_JWT</code>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <button onclick="window.copyBiEndpoint('powerbi')" style="flex:1;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;border:none;padding:8px 12px;border-radius:7px;font-weight:700;font-size:0.78rem;cursor:pointer;">📋 Copy Endpoint</button>
+                  <a href="https://powerbi.microsoft.com/en-us/desktop/" target="_blank" style="flex:1;text-align:center;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text-primary);padding:8px 12px;border-radius:7px;font-weight:600;font-size:0.78rem;text-decoration:none;display:block;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">🔗 Open Power BI</a>
+                </div>
+              </div>
+
+              <!-- Google Looker Studio Card -->
+              <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(52,211,153,0.25);border-radius:12px;padding:20px;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Looker_logo_2023_%282%29.svg/300px-Looker_logo_2023_%282%29.svg.png" alt="Looker Studio" style="width:36px;height:36px;object-fit:contain;" onerror="this.style.display='none'">
+                  <div>
+                    <div style="font-weight:700;color:var(--text-primary);font-size:0.95rem;">Google Looker Studio</div>
+                    <div style="font-size:0.75rem;color:#34d399;">Free BI Platform</div>
+                  </div>
+                </div>
+                <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">Use Looker Studio Community Connector or import JSON/CSV exports to build dynamic charts and share reports publicly.</p>
+                <div style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;font-family:monospace;font-size:0.75rem;color:#6ee7b7;word-break:break-all;margin-bottom:12px;">
+                  https://midnightstories.dpdns.org/api/admin/helpdesk/tickets
+                </div>
+                <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:12px;">
+                  <strong style="color:var(--text-primary);">Method:</strong> <code style="background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;font-size:0.72rem;">GET + x-admin-token header</code>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <button onclick="window.copyBiEndpoint('looker')" style="flex:1;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;padding:8px 12px;border-radius:7px;font-weight:700;font-size:0.78rem;cursor:pointer;">📋 Copy Endpoint</button>
+                  <a href="https://lookerstudio.google.com/" target="_blank" style="flex:1;text-align:center;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text-primary);padding:8px 12px;border-radius:7px;font-weight:600;font-size:0.78rem;text-decoration:none;display:block;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">🔗 Open Looker Studio</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Integration Steps -->
+            <div style="background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:16px;">
+              <div style="font-size:0.8rem;font-weight:700;color:var(--text-primary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">🛠️ Quick Integration Steps</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div>
+                  <div style="font-size:0.8rem;color:#fbbf24;font-weight:700;margin-bottom:6px;">Power BI Steps:</div>
+                  <ol style="font-size:0.78rem;color:var(--text-secondary);margin:0;padding-left:16px;line-height:1.8;">
+                    <li>Open Power BI Desktop → Get Data → Web</li>
+                    <li>Paste the API endpoint URL</li>
+                    <li>In Advanced options, add Header: <code style="font-size:0.72rem;background:rgba(255,255,255,0.08);padding:1px 4px;border-radius:3px;">x-admin-token</code></li>
+                    <li>Transform JSON → Load to Model</li>
+                    <li>Build visuals and publish to Power BI Service</li>
+                  </ol>
+                </div>
+                <div>
+                  <div style="font-size:0.8rem;color:#34d399;font-weight:700;margin-bottom:6px;">Looker Studio Steps:</div>
+                  <ol style="font-size:0.78rem;color:var(--text-secondary);margin:0;padding-left:16px;line-height:1.8;">
+                    <li>Click "Download CSV Report" button above</li>
+                    <li>Open Looker Studio → Create → Report</li>
+                    <li>Add Data → File Upload → Select your CSV</li>
+                    <li>Build charts (Donut, Bar, Line, Table)</li>
+                    <li>Share public link for team access</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
+
+
+
 
         <!-- Categories Panel -->
         <div class="admin-panel" id="panel-categories">

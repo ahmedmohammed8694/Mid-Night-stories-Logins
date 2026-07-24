@@ -181,41 +181,235 @@
     }
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // ██  EXECUTIVE CRM ANALYTICS DASHBOARD
+  // ═══════════════════════════════════════════════════════════
+  let crmRawTickets = []; // cached for filtering & downloads
+
   async function loadCrmAnalytics() {
     try {
+      // ── 1. Fetch summary analytics ──
       const data = await api('/api/admin/analytics');
       const summary = data.summary || {};
-      
-      const elTotal = document.getElementById('metricTotalTickets');
-      if (elTotal) elTotal.textContent = summary.total_tickets || 0;
-      
-      const elSla = document.getElementById('metricSlaCompliance');
-      if (elSla) elSla.textContent = `${summary.sla_compliance_pct || 100}%`;
 
-      const elCsat = document.getElementById('metricCsatScore');
-      if (elCsat) elCsat.textContent = `${summary.csat_score || 5.0} ⭐ (${summary.csat_count || 0} reviews)`;
+      // KPI Cards
+      const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      set('metricTotalTickets', summary.total_tickets || 0);
+      set('metricSlaCompliance', `${summary.sla_compliance_pct ?? 100}%`);
+      set('metricCsatScore', summary.csat_score || '5.0');
+      set('metricCsatCount', `${summary.csat_count || 0} reviews`);
+      set('metricOpenTickets', summary.open_tickets || 0);
+      set('metricResolvedTickets', summary.resolved_tickets || 0);
 
-      const elOpen = document.getElementById('metricOpenTickets');
-      if (elOpen) elOpen.textContent = summary.open_tickets || 0;
-
-      const topContainer = document.getElementById('topCategoriesContainer');
-      if (topContainer) {
-        const topCats = data.topCategories || [];
+      // ── 2. Category Bar Chart ──
+      const topCats = data.topCategories || [];
+      const barContainer = document.getElementById('categoryBarChart');
+      if (barContainer) {
         if (topCats.length === 0) {
-          topContainer.innerHTML = '<p style="color: var(--text-muted);">No categories recorded yet.</p>';
+          barContainer.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">No ticket categories recorded yet.</p>';
         } else {
-          topContainer.innerHTML = topCats.map(c => `
-            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-card);">
-              <span style="font-weight: 600; color: var(--text-primary);">${escapeHtml(c.category_name || 'General Inquiries')}</span>
-              <span class="status-badge" style="background: var(--primary); color: white;">${c.ticket_count} Tickets</span>
-            </div>
-          `).join('');
+          const maxCat = Math.max(...topCats.map(c => c.ticket_count), 1);
+          const catColors = ['#818cf8','#4ade80','#f59e0b','#f87171','#22d3ee','#fb923c'];
+          barContainer.innerHTML = topCats.map((c, i) => {
+            const pct = Math.round((c.ticket_count / maxCat) * 100);
+            return `
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:140px;font-size:0.78rem;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;" title="${escapeHtml(c.category_name || 'General')}">${escapeHtml((c.category_name || 'General').replace(/^[^\s]+\s/, ''))}</div>
+                <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:6px;height:20px;overflow:hidden;">
+                  <div style="height:100%;width:${pct}%;background:${catColors[i % catColors.length]};border-radius:6px;transition:width 0.8s ease;"></div>
+                </div>
+                <div style="width:28px;font-size:0.8rem;font-weight:700;color:${catColors[i % catColors.length]};text-align:right;">${c.ticket_count}</div>
+              </div>`;
+          }).join('');
         }
       }
+
+      // ── 3. Fetch all tickets for full table + charts ──
+      const allTickets = await api('/api/admin/helpdesk/tickets');
+      crmRawTickets = allTickets || [];
+
+      // ── 4. Donut Chart (SVG) ──
+      const statusCounts = { open: 0, investigating: 0, waiting_on_user: 0, resolved: 0, closed: 0 };
+      const priorityCounts = { urgent: 0, high: 0, medium: 0, low: 0 };
+      const categoryCounts = {};
+
+      crmRawTickets.forEach(t => {
+        const s = t.ticket_status || 'open';
+        if (statusCounts[s] !== undefined) statusCounts[s]++; else statusCounts.open++;
+        const p = t.priority || 'medium';
+        if (priorityCounts[p] !== undefined) priorityCounts[p]++;
+        const cn = t.category_name || 'General Inquiries';
+        categoryCounts[cn] = (categoryCounts[cn] || { total: 0, open: 0, resolved: 0 });
+        categoryCounts[cn].total++;
+        if (s === 'open' || s === 'investigating' || s === 'waiting_on_user') categoryCounts[cn].open++;
+        if (s === 'resolved' || s === 'closed') categoryCounts[cn].resolved++;
+      });
+
+      const total = crmRawTickets.length || 1;
+      const circumference = 2 * Math.PI * 48; // ~302
+      let offset = 0;
+
+      function setDonut(id, count, circumference, currentOffset) {
+        const el = document.getElementById(id);
+        if (!el) return currentOffset;
+        const arc = (count / total) * circumference;
+        el.setAttribute('stroke-dasharray', `${arc} ${circumference - arc}`);
+        el.setAttribute('stroke-dashoffset', -currentOffset);
+        return currentOffset + arc;
+      }
+
+      offset = setDonut('donutOpen', statusCounts.open, circumference, offset);
+      offset = setDonut('donutInv', statusCounts.investigating, circumference, offset);
+      offset = setDonut('donutWait', statusCounts.waiting_on_user, circumference, offset);
+      setDonut('donutRes', (statusCounts.resolved + statusCounts.closed), circumference, offset);
+
+      set('donutTotalText', crmRawTickets.length);
+      set('donutLegOpen', statusCounts.open);
+      set('donutLegInv', statusCounts.investigating);
+      set('donutLegWait', statusCounts.waiting_on_user);
+      set('donutLegRes', statusCounts.resolved + statusCounts.closed);
+
+      // ── 5. Priority Bar Chart ──
+      const maxP = Math.max(...Object.values(priorityCounts), 1);
+      [['urgent','barUrgent','barUrgentLbl'],['high','barHigh','barHighLbl'],['medium','barMedium','barMediumLbl'],['low','barLow','barLowLbl']].forEach(([key, barId, lblId]) => {
+        const bar = document.getElementById(barId);
+        const lbl = document.getElementById(lblId);
+        const pct = Math.round((priorityCounts[key] / maxP) * 100);
+        if (bar) bar.style.height = `${pct}%`;
+        if (lbl) lbl.textContent = priorityCounts[key];
+      });
+
+      // ── 6. Full Tickets Table ──
+      renderCrmTicketsTable(crmRawTickets);
+
+      // ── 7. Category Performance Table ──
+      const catBody = document.getElementById('categoryPerformanceBody');
+      if (catBody) {
+        const catEntries = Object.entries(categoryCounts).sort((a, b) => b[1].total - a[1].total);
+        if (catEntries.length === 0) {
+          catBody.innerHTML = '<tr><td colspan="4" style="text-align:center;opacity:0.5;padding:16px;">No data yet.</td></tr>';
+        } else {
+          catBody.innerHTML = catEntries.map(([name, counts]) => `
+            <tr>
+              <td style="font-size:0.82rem;font-weight:600;">${escapeHtml(name)}</td>
+              <td><span style="font-weight:700;color:#818cf8;">${counts.total}</span></td>
+              <td><span style="font-weight:700;color:#4ade80;">${counts.open}</span></td>
+              <td><span style="font-weight:700;color:#22d3ee;">${counts.resolved}</span></td>
+            </tr>`).join('');
+        }
+      }
+
+      // ── 8. CSAT Ratings Table ──
+      const csatBody = document.getElementById('csatRatingsBody');
+      if (csatBody) {
+        const rated = crmRawTickets.filter(t => t.csat_rating);
+        if (rated.length === 0) {
+          csatBody.innerHTML = '<tr><td colspan="4" style="text-align:center;opacity:0.5;padding:16px;">No ratings submitted yet.</td></tr>';
+        } else {
+          csatBody.innerHTML = rated.slice(0, 20).map(t => {
+            const stars = '⭐'.repeat(t.csat_rating) + '☆'.repeat(5 - t.csat_rating);
+            return `<tr>
+              <td style="font-family:monospace;font-size:0.78rem;color:#818cf8;">${escapeHtml(t.ticket_id || 'TKT-' + t.id)}</td>
+              <td style="font-size:0.9rem;" title="${t.csat_rating}/5">${stars}</td>
+              <td style="font-size:0.8rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(t.csat_feedback || '—')}</td>
+              <td style="font-size:0.75rem;color:var(--text-muted);">${t.resolved_at ? new Date(t.resolved_at).toLocaleDateString() : '—'}</td>
+            </tr>`;
+          }).join('');
+        }
+      }
+
     } catch (err) {
       showToast('Failed to load CRM Analytics: ' + err.message, 'error');
     }
   }
+
+  function renderCrmTicketsTable(tickets) {
+    const statusFilter = (document.getElementById('crmTableStatusFilter') || {}).value || '';
+    const priorityFilter = (document.getElementById('crmTablePriorityFilter') || {}).value || '';
+    const searchVal = ((document.getElementById('crmTableSearch') || {}).value || '').toLowerCase();
+
+    let filtered = tickets.filter(t => {
+      if (statusFilter && (t.ticket_status || 'open') !== statusFilter) return false;
+      if (priorityFilter && (t.priority || 'medium') !== priorityFilter) return false;
+      if (searchVal) {
+        const haystack = `${t.ticket_id} ${t.subject} ${t.category_name} ${t.user_name} ${t.user_email}`.toLowerCase();
+        if (!haystack.includes(searchVal)) return false;
+      }
+      return true;
+    });
+
+    const tbody = document.getElementById('crmTicketsBody');
+    if (!tbody) return;
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;opacity:0.5;padding:24px;">No tickets match the current filters.</td></tr>';
+      return;
+    }
+
+    const statusColors = { open: '#4ade80', investigating: '#facc15', waiting_on_user: '#fb923c', resolved: '#818cf8', closed: '#9ca3af' };
+    const priorityColors = { urgent: '#f87171', high: '#facc15', medium: '#818cf8', low: '#4ade80' };
+
+    tbody.innerHTML = filtered.map(t => {
+      const status = t.ticket_status || 'open';
+      const priority = t.priority || 'medium';
+      const slaDate = t.sla_due_at ? new Date(t.sla_due_at) : null;
+      const slaOverdue = slaDate && slaDate < new Date() && status !== 'resolved' && status !== 'closed';
+      const slaStr = slaDate ? `<span style="color:${slaOverdue ? '#f87171' : 'var(--text-muted)'};font-size:0.75rem;">${slaDate.toLocaleDateString()}${slaOverdue ? ' ⚠️' : ''}</span>` : '—';
+
+      return `<tr>
+        <td style="font-family:monospace;font-size:0.78rem;color:#818cf8;font-weight:700;">${escapeHtml(t.ticket_id || 'TKT-' + t.id)}</td>
+        <td style="font-size:0.82rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(t.subject || '')}">${escapeHtml(t.subject || t.reason || 'Support Request')}</td>
+        <td style="font-size:0.78rem;color:var(--text-muted);">${escapeHtml(t.category_name || 'General')}</td>
+        <td><span style="display:inline-block;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:700;background:${priorityColors[priority]}22;color:${priorityColors[priority]};border:1px solid ${priorityColors[priority]}44;">${priority}</span></td>
+        <td><span style="display:inline-block;padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:700;background:${statusColors[status]}22;color:${statusColors[status]};border:1px solid ${statusColors[status]}44;">${status.replace(/_/g, ' ')}</span></td>
+        <td style="font-size:0.78rem;">${escapeHtml(t.user_name || '—')}</td>
+        <td style="font-size:0.75rem;color:var(--text-muted);">${t.created_at ? new Date(t.created_at).toLocaleDateString() : '—'}</td>
+        <td>${slaStr}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  window.filterCrmTable = () => renderCrmTicketsTable(crmRawTickets);
+  window.loadCrmAnalytics = loadCrmAnalytics;
+
+  window.downloadCrmCsv = () => {
+    if (!crmRawTickets.length) return showToast('No ticket data to export. Load the dashboard first.', 'warning');
+    const headers = ['Ticket ID','Subject','Category','Priority','Status','User Name','User Email','Created At','SLA Due At','CSAT Rating'];
+    const rows = crmRawTickets.map(t => [
+      t.ticket_id || ('TKT-' + t.id), t.subject || t.reason || '', t.category_name || '', t.priority || 'medium',
+      t.ticket_status || 'open', t.user_name || '', t.user_email || '',
+      t.created_at || '', t.sla_due_at || '', t.csat_rating || ''
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = `crm_report_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    showToast('CSV report downloaded!', 'success');
+  };
+
+  window.downloadCrmJson = () => {
+    if (!crmRawTickets.length) return showToast('No ticket data to export. Load the dashboard first.', 'warning');
+    const blob = new Blob([JSON.stringify({ exported_at: new Date().toISOString(), total: crmRawTickets.length, tickets: crmRawTickets }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = `crm_export_${new Date().toISOString().slice(0,10)}.json`; a.click();
+    URL.revokeObjectURL(url);
+    showToast('JSON export downloaded!', 'success');
+  };
+
+  window.copyBiEndpoint = (type) => {
+    const endpoints = {
+      powerbi: 'https://midnightstories.dpdns.org/api/admin/analytics',
+      looker: 'https://midnightstories.dpdns.org/api/admin/helpdesk/tickets'
+    };
+    navigator.clipboard.writeText(endpoints[type] || '').then(() => {
+      showToast(`✅ ${type === 'powerbi' ? 'Power BI' : 'Looker Studio'} endpoint copied to clipboard!`, 'success');
+    }).catch(() => showToast('Copy failed — please copy the URL manually.', 'error'));
+  };
+
+
 
   // ── Stories Queue ──
   let currentStoryQueueStatus = 'pending';
