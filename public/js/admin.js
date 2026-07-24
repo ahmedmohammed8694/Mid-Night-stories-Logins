@@ -436,16 +436,21 @@
 
       data.messages.forEach(msg => {
         const isUser = msg.sender_role === 'user';
-        const color = isUser ? 'rgba(255,255,255,0.05)' : 'rgba(92, 106, 196, 0.15)';
-        const align = isUser ? 'flex-start' : 'flex-end';
+        const isAdmin = msg.sender_role === 'admin' || msg.sender_role === 'system';
+        const color = isAdmin ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.06)';
+        const borderColor = isAdmin ? '#818cf8' : 'rgba(255,255,255,0.12)';
+        const align = isAdmin ? 'flex-end' : 'flex-start';
         
         container.innerHTML += `
-          <div style="align-self: ${align}; max-width: 80%; background: ${color}; padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; display: flex; justify-content: space-between; gap: 1rem;">
-              <strong>${isUser ? 'User' : 'Admin (You)'}</strong>
+          <div style="align-self: ${align}; max-width: 85%; background: ${color}; padding: 12px 16px; border-radius: 12px; border: 1px solid ${borderColor}; margin-bottom: 8px;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between; gap: 12px; align-items: center;">
+              ${isAdmin ? 
+                `<span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 0.7rem;">🛡️ Admin (You)</span>` : 
+                `<strong style="color: var(--text-primary);">👤 User</strong>`
+              }
               <span>${new Date(msg.created_at).toLocaleString()}</span>
             </div>
-            <div style="font-size: 0.9rem;">${escapeHtml(msg.message_body)}</div>
+            <div style="font-size: 0.92rem; color: var(--text-primary); line-height: 1.5; white-space: pre-wrap;">${escapeHtml(msg.message_body)}</div>
           </div>
         `;
       });
@@ -1005,6 +1010,60 @@
         }
       });
     }
+
+    // Bulk Status Change operations
+    const btnBulkStatus = document.getElementById('btnBulkStatus');
+    if (btnBulkStatus) {
+      btnBulkStatus.addEventListener('click', () => {
+        const select = document.getElementById('bulkStatusSelect');
+        const targetStatus = select.value;
+        if (!targetStatus) {
+          showToast('Please select a target status.', 'warning');
+          return;
+        }
+        const statusLabel = select.options[select.selectedIndex].textContent;
+        const count = document.querySelectorAll('.book-select-checkbox:checked').length;
+        if (count === 0) {
+          showToast('Please select at least one book.', 'warning');
+          return;
+        }
+        document.getElementById('bulkStatusConfirmMessage').innerHTML = `Are you sure you want to update status for <strong>${count}</strong> selected book(s) to <strong>${escapeHtml(statusLabel)}</strong>?`;
+        document.getElementById('bulkStatusConfirmModal').classList.remove('hidden');
+      });
+    }
+
+    const btnBulkStatusCancel = document.getElementById('btnBulkStatusCancel');
+    if (btnBulkStatusCancel) {
+      btnBulkStatusCancel.addEventListener('click', () => {
+        document.getElementById('bulkStatusConfirmModal').classList.add('hidden');
+      });
+    }
+
+    const btnBulkStatusConfirm = document.getElementById('btnBulkStatusConfirm');
+    if (btnBulkStatusConfirm) {
+      btnBulkStatusConfirm.addEventListener('click', async () => {
+        btnBulkStatusConfirm.disabled = true;
+        btnBulkStatusConfirm.textContent = 'Updating...';
+        const select = document.getElementById('bulkStatusSelect');
+        const targetStatus = select.value;
+        const bookIds = Array.from(document.querySelectorAll('.book-select-checkbox:checked')).map(cb => cb.dataset.bookId);
+
+        try {
+          const res = await api('/api/admin/books/bulk-update-status', {
+            method: 'PATCH',
+            body: JSON.stringify({ book_ids: bookIds, status: targetStatus })
+          });
+          showToast(res.message || 'Book statuses updated successfully.', 'success');
+          document.getElementById('bulkStatusConfirmModal').classList.add('hidden');
+          loadBooks();
+        } catch (err) {
+          showToast('Bulk status update failed: ' + err.message, 'error');
+        } finally {
+          btnBulkStatusConfirm.disabled = false;
+          btnBulkStatusConfirm.textContent = 'Confirm & Update Status';
+        }
+      });
+    }
   }
 
   if (document.readyState === 'loading') {
@@ -1263,6 +1322,30 @@
     const statusSelect = document.getElementById('adminModalStatusSelect');
     statusSelect.value = book.status || 'pending';
 
+    // Populate Edit Form inputs
+    const editTitle = document.getElementById('modalEditTitle');
+    if (editTitle) editTitle.value = book.title || '';
+    const editAuthor = document.getElementById('modalEditAuthor');
+    if (editAuthor) editAuthor.value = book.author || '';
+    const editChannel = document.getElementById('modalEditChannel');
+    if (editChannel) editChannel.value = book.channel_type || 'education';
+    const editPublisher = document.getElementById('modalEditPublisher');
+    if (editPublisher) editPublisher.value = book.publisher || '';
+    const editDesc = document.getElementById('modalEditDescription');
+    if (editDesc) editDesc.value = book.description || '';
+    const editLang = document.getElementById('modalEditLanguage');
+    if (editLang) editLang.value = book.language || 'en';
+    const editIsbn = document.getElementById('modalEditIsbn');
+    if (editIsbn) editIsbn.value = book.isbn || '';
+    const editPages = document.getElementById('modalEditPageCount');
+    if (editPages) editPages.value = book.page_count || 100;
+    const editMins = document.getElementById('modalEditReadMinutes');
+    if (editMins) editMins.value = book.est_read_minutes || 25;
+    const editVis = document.getElementById('modalEditVisibility');
+    if (editVis) editVis.value = book.visibility || 'public';
+    const editStat = document.getElementById('modalEditStatus');
+    if (editStat) editStat.value = book.status || 'published';
+
     // Links
     const readerLink = document.getElementById('adminModalReaderLink');
     readerLink.href = `/reader.html?bookId=${book.id}`;
@@ -1284,6 +1367,51 @@
     modal.style.display = 'flex';
     modal.classList.add('active');
   }
+
+  window.saveAdminEditBook = async function(e) {
+    if (e) e.preventDefault();
+    if (!activeReviewBookId) return;
+
+    const btn = document.getElementById('btnSaveAdminEditBook');
+    btn.disabled = true;
+    btn.textContent = 'Saving Changes...';
+
+    const payload = {
+      title: document.getElementById('modalEditTitle').value.trim(),
+      author: document.getElementById('modalEditAuthor').value.trim(),
+      channel_type: document.getElementById('modalEditChannel').value,
+      publisher: document.getElementById('modalEditPublisher').value.trim(),
+      description: document.getElementById('modalEditDescription').value.trim(),
+      language: document.getElementById('modalEditLanguage').value,
+      isbn: document.getElementById('modalEditIsbn').value.trim(),
+      page_count: parseInt(document.getElementById('modalEditPageCount').value) || 100,
+      est_read_minutes: parseInt(document.getElementById('modalEditReadMinutes').value) || 25,
+      visibility: document.getElementById('modalEditVisibility').value,
+      status: document.getElementById('modalEditStatus').value
+    };
+
+    try {
+      const res = await api(`/api/admin/books/${activeReviewBookId}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+      });
+
+      showToast(res.message || 'Book details updated successfully!', 'success');
+
+      const modal = document.getElementById('adminBookReviewModal');
+      if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+      }
+
+      loadBooks();
+    } catch (err) {
+      showToast('Failed to update book: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '💾 Save & Update Book Details';
+    }
+  };
 
   async function updateAdminBookStatus(bookId, newStatus) {
     try {
@@ -2298,6 +2426,53 @@
     if (dupEl) dupEl.textContent = res.duplicateCount || 0;
     document.getElementById('summaryFailedCount').textContent = res.failedCount || 0;
 
+    // Render Complete Itemized Per-Book Status Log Table
+    const itemizedBody = document.getElementById('summaryItemizedBody');
+    if (itemizedBody) {
+      itemizedBody.innerHTML = '';
+      const savedTitlesMap = new Map();
+      if (res.savedBooks) {
+        res.savedBooks.forEach(b => savedTitlesMap.set(b.title ? b.title.toLowerCase().trim() : '', b.bookId));
+      }
+      const failedMap = new Map();
+      if (res.failedBooks) {
+        res.failedBooks.forEach(f => failedMap.set(f.filename, f.error));
+      }
+
+      bulkExtractedItems.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        let statusHtml = '';
+        let remarks = '';
+
+        const normTitle = (item.title || '').toLowerCase().trim();
+        const isFailed = failedMap.has(item.filename);
+
+        if (isFailed) {
+          statusHtml = '<span class="filter-chip" style="background: rgba(231, 76, 60, 0.15); color: #e74c3c; font-size: 0.75rem; border: 1px solid rgba(231, 76, 60, 0.3);">❌ Failed</span>';
+          remarks = failedMap.get(item.filename) || 'Upload processing error';
+        } else if (item.isDuplicateInDb) {
+          statusHtml = '<span class="filter-chip" style="background: rgba(243, 156, 18, 0.15); color: #f39c12; font-size: 0.75rem; border: 1px solid rgba(243, 156, 18, 0.3);">⚠️ Already Uploaded</span>';
+          remarks = `Already exists in database library catalog (Book ID: ${item.matchedDbBook ? item.matchedDbBook.id : 'N/A'}). Skipped.`;
+        } else if (item.isDuplicateInBatch) {
+          statusHtml = '<span class="filter-chip" style="background: rgba(230, 126, 34, 0.15); color: #e67e22; font-size: 0.75rem; border: 1px solid rgba(230, 126, 34, 0.3);">⚠️ Batch Duplicate</span>';
+          remarks = 'Duplicate entry in uploaded batch folder. Skipped.';
+        } else {
+          const bookId = savedTitlesMap.get(normTitle);
+          statusHtml = '<span class="filter-chip" style="background: rgba(46, 204, 113, 0.15); color: #2ecc71; font-size: 0.75rem; border: 1px solid rgba(46, 204, 113, 0.3);">✅ Newly Uploaded</span>';
+          remarks = bookId ? `Saved into database catalog (Book ID: ${bookId})` : 'Saved into database catalog successfully';
+        }
+
+        tr.innerHTML = `
+          <td style="font-weight: bold; font-family: monospace;">${index + 1}</td>
+          <td style="font-size: 0.85rem; color: var(--text-secondary); word-break: break-all;">${escapeHtml(item.filename)}</td>
+          <td style="font-weight: 500;">${escapeHtml(item.title)} <br><small style="color: var(--text-muted);">by ${escapeHtml(item.author)}</small></td>
+          <td>${statusHtml}</td>
+          <td style="font-size: 0.85rem; color: var(--text-secondary);">${escapeHtml(remarks)}</td>
+        `;
+        itemizedBody.appendChild(tr);
+      });
+    }
+
     const failedWrapper = document.getElementById('summaryFailedListWrapper');
     const failedBody = document.getElementById('summaryFailedBody');
     failedBody.innerHTML = '';
@@ -2318,7 +2493,7 @@
     }
 
     document.getElementById('bulkSummaryReport').classList.remove('hidden');
-    showToast(`Bulk upload complete! ${res.successCount} books saved.`, 'success');
+    showToast(`Bulk upload complete! ${res.successCount} newly saved, ${res.duplicateCount || 0} skipped.`, 'success');
   }
 })();
 

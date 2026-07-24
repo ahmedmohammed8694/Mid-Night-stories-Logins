@@ -1984,6 +1984,17 @@ app.post('/api/tickets/:id/reply', async (c) => {
 
   if (sender_role === 'admin') {
     await db.prepare('UPDATE reports SET ticket_status = ? WHERE id = ?').bind('waiting_on_user', id).run();
+    try {
+      const reportRow = await db.prepare('SELECT reporter_id, ticket_id FROM reports WHERE id = ?').bind(id).first();
+      if (reportRow && reportRow.reporter_id) {
+        await db.prepare(`
+          INSERT INTO notifications (user_id, type, source_id, read)
+          VALUES (?, 'ticket_reply', ?, 0)
+        `).bind(reportRow.reporter_id, id).run();
+      }
+    } catch (e) {
+      console.warn('Failed to insert admin reply notification:', e);
+    }
   } else {
     await db.prepare('UPDATE reports SET ticket_status = ? WHERE id = ?').bind('investigating', id).run();
   }
@@ -2734,6 +2745,74 @@ app.post('/api/admin/books/:id/approve', requireAdmin, async (c) => {
   return c.json({ success: true, message: 'Book approved and published.' });
 });
 
+// ── PUT /api/admin/books/:id ──
+app.put('/api/admin/books/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const bookId = parseInt(c.req.param('id'));
+  const body = await c.req.json();
+
+  const {
+    title,
+    author,
+    channel_type,
+    description,
+    publisher,
+    language,
+    isbn,
+    page_count,
+    est_read_minutes,
+    visibility,
+    status
+  } = body;
+
+  if (!title || !author) {
+    return c.json({ error: 'Title and Author are required.' }, 400);
+  }
+
+  const existing = await db.prepare('SELECT id FROM books WHERE id = ?').bind(bookId).first();
+  if (!existing) return c.json({ error: 'Book not found.' }, 404);
+
+  try {
+    await db.prepare(`
+      UPDATE books SET
+        title = ?,
+        author = ?,
+        channel_type = ?,
+        description = ?,
+        publisher = ?,
+        language = ?,
+        isbn = ?,
+        page_count = ?,
+        est_read_minutes = ?,
+        visibility = ?,
+        status = ?,
+        updated_at = datetime("now")
+      WHERE id = ?
+    `).bind(
+      title,
+      author,
+      channel_type || 'education',
+      description || null,
+      publisher || null,
+      language || 'en',
+      isbn || null,
+      page_count ? parseInt(page_count) : 100,
+      est_read_minutes ? parseInt(est_read_minutes) : 25,
+      visibility || 'public',
+      status || 'published',
+      bookId
+    ).run();
+
+    return c.json({
+      success: true,
+      message: `Book '${title}' updated successfully.`
+    });
+  } catch (err) {
+    console.error('Update book error:', err);
+    return c.json({ error: 'Failed to update book: ' + err.message }, 500);
+  }
+});
+
 // ── GET /api/books ──
 app.get('/api/books', optionalUser, async (c) => {
   const db = c.env.DB;
@@ -3165,6 +3244,50 @@ app.patch('/api/admin/books/bulk-update-category', requireAdmin, async (c) => {
   } catch (err) {
     console.error('Bulk update failed:', err);
     return c.json({ error: 'Database update failed.' }, 500);
+  }
+});
+
+// ── PATCH /api/admin/books/bulk-update-status ──
+app.patch('/api/admin/books/bulk-update-status', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { book_ids, status } = await c.req.json();
+
+  if (!book_ids || !Array.isArray(book_ids) || book_ids.length === 0) {
+    return c.json({ error: 'book_ids must be a non-empty array.' }, 400);
+  }
+
+  const allowedStatuses = ['published', 'pending', 'under_review', 'temp_stopped', 'suspended', 'draft', 'archived'];
+  if (!status || !allowedStatuses.includes(status)) {
+    return c.json({ error: 'Invalid status.' }, 400);
+  }
+
+  const parsedBookIds = book_ids.map(id => {
+    if (typeof id === 'string') {
+      const num = id.replace(/[^0-9]/g, '');
+      return parseInt(num);
+    }
+    return parseInt(id);
+  }).filter(id => !isNaN(id));
+
+  if (parsedBookIds.length === 0) {
+    return c.json({ error: 'Invalid book_ids format.' }, 400);
+  }
+
+  try {
+    const statements = [];
+    for (const bookId of parsedBookIds) {
+      statements.push(db.prepare('UPDATE books SET status = ?, updated_at = datetime("now") WHERE id = ?').bind(status, bookId));
+    }
+    await db.batch(statements);
+
+    return c.json({
+      success: true,
+      updated_count: parsedBookIds.length,
+      message: `${parsedBookIds.length} books successfully updated to status '${status}'.`
+    });
+  } catch (err) {
+    console.error('Bulk status update failed:', err);
+    return c.json({ error: 'Database status update failed.' }, 500);
   }
 });
 

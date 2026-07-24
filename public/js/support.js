@@ -102,16 +102,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       messages.forEach(msg => {
         const bubble = document.createElement('div');
-        bubble.className = `message-bubble ${msg.sender_role === 'admin' ? 'msg-admin' : 'msg-user'}`;
+        const isAdmin = msg.sender_role === 'admin' || msg.sender_role === 'system';
+        bubble.className = `message-bubble ${isAdmin ? 'msg-admin' : 'msg-user'}`;
         
-        const author = msg.sender_role === 'admin' ? 'Admin Team' : 'You';
+        const authorHtml = isAdmin 
+          ? `<span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #ffffff; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 0.75rem;">🛡️ Midnight Support Team (Admin)</span>`
+          : `<span class="msg-author" style="color: var(--text-primary);">👤 You</span>`;
         
         bubble.innerHTML = `
-          <div class="msg-meta">
-            <span class="msg-author">${author}</span>
-            <span>${new Date(msg.created_at).toLocaleString()}</span>
+          <div class="msg-meta" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            ${authorHtml}
+            <span style="font-size: 0.75rem; color: var(--text-muted);">${new Date(msg.created_at).toLocaleString()}</span>
           </div>
-          <div class="msg-body">${escapeHtml(msg.message_body)}</div>
+          <div class="msg-body" style="font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(msg.message_body)}</div>
         `;
         ticketMessagesEl.appendChild(bubble);
       });
