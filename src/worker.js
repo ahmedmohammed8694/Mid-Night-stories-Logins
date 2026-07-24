@@ -2411,55 +2411,18 @@ app.post('/api/admin/users/:id/force-unfollow', requireAdmin, async (c) => {
   const { following_id } = await c.req.json();
   
   await db.prepare('DELETE FROM follows WHERE follower_id = ? AND following_id = ?').bind(followerId, following_id).run();
-  return c.json({ message: 'Force unfollow successful.' });
-});
-
-app.post('/api/admin/users/:id/force-unblock', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const blockerId = parseInt(c.req.param('id'));
-  const { blocked_id } = await c.req.json();
-  
-  await db.prepare('DELETE FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(blockerId, blocked_id).run();
-  return c.json({ message: 'Force unblock successful.' });
-});
-
-app.post('/api/admin/users/:id/reset-connections', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const userId = parseInt(c.req.param('id'));
-  
-  await db.prepare('DELETE FROM follows WHERE follower_id = ? OR following_id = ?').bind(userId, userId).run();
-  await db.prepare('DELETE FROM blocks WHERE blocker_id = ? OR blocked_id = ?').bind(userId, userId).run();
-  
-  return c.json({ message: 'All connections reset.' });
-});
-
-app.put('/api/admin/users/:id/dm-permission', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const userId = parseInt(c.req.param('id'));
-  const { dm_permission } = await c.req.json();
-  
-  await db.prepare('UPDATE users SET dm_permission = ? WHERE id = ?').bind(dm_permission, userId).run();
-  return c.json({ message: `DM permission updated to ${dm_permission}.` });
-});
-
-app.post('/api/admin/users/:id/warn', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const adminPayload = c.get('admin');
-  const userId = parseInt(c.req.param('id'));
-  const { level, template, reason, rule_broken, penalties } = await c.req.json();
-  
-  await db.prepare(`
+  return c.json({ message: 'Force un  await db.prepare(`
     INSERT INTO user_warnings (user_id, admin_id, level, template, reason, rule_broken, penalties) 
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `).bind(userId, adminPayload.adminId, level, template, reason, rule_broken || null, penalties || null).run();
   
-  // Create a notification for the user
-  await db.prepare(`
-    INSERT INTO notifications (user_id, type, content) 
-    VALUES (?, 'chat_message', ?)
-  `).bind(userId, `SYSTEM WARNING: You have received a ${level}. Reason: ${reason}`).run();
+  const warnTitle = `⚠️ OFFICIAL SYSTEM WARNING: ${level.replace(/_/g, ' ').toUpperCase()}`;
+  const warnBody = `Reason for warning: ${reason}${rule_broken ? '\nRule broken: ' + rule_broken : ''}`;
+
+  await db.prepare('INSERT INTO admin_messages (user_id, admin_id, title, body) VALUES (?, ?, ?, ?)').bind(userId, adminPayload.adminId, warnTitle, warnBody).run();
+  await sendAdminChatMessage(db, adminPayload.adminId, userId, warnTitle, warnBody);
   
-  return c.json({ message: 'Warning issued.' });
+  return c.json({ message: 'Warning issued and sent to user Chat.' });
 });
 
 app.get('/api/admin/users/:id/warnings', requireAdmin, async (c) => {
@@ -2478,8 +2441,55 @@ app.get('/api/admin/users/:id/warnings', requireAdmin, async (c) => {
 
 
 // ---------------------------------------------------------
-// ��  ADVANCED MODERATION & AUDITING API
+// 🛡️  ADVANCED MODERATION & AUDITING API
 // ---------------------------------------------------------
+
+async function getOrCreateAdminSupportUser(db) {
+  let adminUser = await db.prepare("SELECT id FROM users WHERE user_id = 'USER_ADMIN_SUPPORT' OR email = 'support@midnightstories.com'").first();
+  if (!adminUser) {
+    const res = await db.prepare(`
+      INSERT INTO users (user_id, full_name, email, bio, profile_pic, account_status)
+      VALUES ('USER_ADMIN_SUPPORT', '🛡️ Midnight Support (Admin)', 'support@midnightstories.com', 'Official Midnight Support & System Administration Team', '/images/default-avatar.svg', 'active')
+    `).run();
+    return res.meta.last_row_id;
+  }
+  return adminUser.id;
+}
+
+async function sendAdminChatMessage(db, adminId, targetUserId, title, body) {
+  const adminSysUserId = await getOrCreateAdminSupportUser(db);
+  
+  let conv = await db.prepare(`
+    SELECT id FROM conversations 
+    WHERE (user_one_id = ? AND user_two_id = ?) OR (user_one_id = ? AND user_two_id = ?)
+  `).bind(adminSysUserId, targetUserId, targetUserId, adminSysUserId).first();
+
+  let convId;
+  if (!conv) {
+    const res = await db.prepare(`
+      INSERT INTO conversations (user_one_id, user_two_id, initiated_by_id, status, last_message_at)
+      VALUES (?, ?, ?, 'accepted', datetime('now'))
+    `).bind(adminSysUserId, targetUserId, adminSysUserId).run();
+    convId = res.meta.last_row_id;
+  } else {
+    convId = conv.id;
+    await db.prepare("UPDATE conversations SET status = 'accepted', last_message_at = datetime('now') WHERE id = ?").bind(convId).run();
+  }
+
+  const messageText = title ? `📌 ${title}\n\n${body}` : body;
+
+  await db.prepare(`
+    INSERT INTO messages (conversation_id, sender_id, body, created_at)
+    VALUES (?, ?, ?, datetime('now'))
+  `).bind(convId, adminSysUserId, messageText).run();
+
+  await db.prepare(`
+    INSERT INTO notifications (user_id, type, source_id, read, created_at)
+    VALUES (?, 'chat_message', ?, 0, datetime('now'))
+  `).bind(targetUserId, convId).run();
+
+  return convId;
+}
 
 app.get('/api/admin/users/:id/audit', requireAdmin, async (c) => {
   const db = c.env.DB;
@@ -2577,6 +2587,37 @@ app.post('/api/admin/messages/send', requireAdmin, async (c) => {
 
   if (recipient_type === 'single') {
     if (!user_id) return c.json({ error: 'user_id is required for single message mode.' }, 400);
+    targetUserIds = [parseInt(user_id)];
+  } else if (recipient_type === 'bulk_selected') {
+    if (!user_ids || !Array.isArray(user_ids) || user_ids.length === 0) {
+      return c.json({ error: 'user_ids must be a non-empty array for bulk selected mode.' }, 400);
+    }
+    targetUserIds = user_ids.map(id => parseInt(id)).filter(id => !isNaN(id));
+  } else if (recipient_type === 'all_users') {
+    const { results } = await db.prepare("SELECT id FROM users WHERE account_status != 'banned'").all();
+    targetUserIds = results.map(u => u.id);
+  }
+
+  if (targetUserIds.length === 0) {
+    return c.json({ error: 'No valid recipient users found.' }, 400);
+  }
+
+  try {
+    for (const uid of targetUserIds) {
+      await db.prepare('INSERT INTO admin_messages (user_id, admin_id, title, body) VALUES (?, ?, ?, ?)').bind(uid, adminPayload.adminId, title, body).run();
+      await sendAdminChatMessage(db, adminPayload.adminId, uid, title, body);
+    }
+
+    return c.json({
+      success: true,
+      recipientCount: targetUserIds.length,
+      message: `Official Admin Message sent to ${targetUserIds.length} user(s) directly into Chat.`
+    });
+  } catch (err) {
+    console.error('Send admin message error:', err);
+    return c.json({ error: 'Failed to send message: ' + err.message }, 500);
+  }
+});n({ error: 'user_id is required for single message mode.' }, 400);
     targetUserIds = [parseInt(user_id)];
   } else if (recipient_type === 'bulk_selected') {
     if (!user_ids || !Array.isArray(user_ids) || user_ids.length === 0) {

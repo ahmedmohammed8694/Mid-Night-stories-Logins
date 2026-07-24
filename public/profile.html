@@ -521,7 +521,7 @@
             <div class="tab" data-tab="following" id="tabFollowing">Following</div>
             <div class="tab" data-tab="followers" id="tabFollowers">Followers</div>
             <div class="tab" data-tab="blocked" id="tabBlocked" style="display: none;">Blocked Users</div>
-            <div class="tab" data-tab="support" id="tabSupport" style="display: none; position: relative;">Support Inbox <span id="supportBadge" style="display:none; position:absolute; top:-5px; right:-10px; background:var(--danger); color:white; border-radius:50%; width:16px; height:16px; font-size:10px; text-align:center; line-height:16px;">!</span></div>
+            <div class="tab" data-tab="support" id="tabSupport" style="display: none; position: relative;">My Support Tickets 🎫 <span id="supportBadge" style="display:none; position:absolute; top:-5px; right:-10px; background:var(--danger); color:white; border-radius:50%; width:16px; height:16px; font-size:10px; text-align:center; line-height:16px;">!</span></div>
           </div>
         </div>
 
@@ -1190,56 +1190,45 @@
 
     async function loadSupportInbox() {
       const container = document.getElementById('supportContainer');
-      container.innerHTML = '<p>Loading support inbox...</p>';
+      container.innerHTML = '<p>Loading your support tickets...</p>';
       
       try {
-        const res = await fetch('/api/users/me/support-inbox', {
+        const res = await fetch('/api/user/tickets', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!res.ok) throw new Error('Failed to load support inbox');
+        const tickets = await res.json();
         
-        const data = await res.json();
-        const { messages = [], reports = [] } = data;
+        let html = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h3 style="margin: 0; font-family: 'Fraunces', serif;">🎫 Your Support &amp; Helpdesk Tickets</h3>
+            <a href="/support" class="btn btn--primary btn--sm">➕ Open Support Center</a>
+          </div>
+        `;
         
-        if (messages.length === 0 && reports.length === 0) {
-          container.innerHTML = '<p style="padding: 1rem;">Inbox is empty.</p>';
-          return;
-        }
-        
-        let html = '';
-        
-        if (messages.length > 0) {
-          html += '<h3 style="margin: 1rem 0 0.5rem;">Official System Messages</h3>';
-          messages.forEach(msg => {
-            const isUnread = !msg.is_read;
-            const bg = isUnread ? 'rgba(229, 62, 62, 0.1)' : 'var(--bg-secondary)';
-            const border = isUnread ? '2px solid var(--danger)' : '1px solid var(--border)';
+        if (!Array.isArray(tickets) || tickets.length === 0) {
+          html += `
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-card); border-radius: var(--radius-md); padding: 28px; text-align: center;">
+              <p style="color: var(--text-secondary); margin-bottom: 12px;">You currently have no open or past support tickets.</p>
+              <a href="/support" class="btn btn--secondary btn--sm">Visit Support Center</a>
+            </div>
+          `;
+        } else {
+          tickets.forEach(t => {
+            const statusClass = (t.ticket_status || 'open').replace(/_/g, '-');
+            const statusText = (t.ticket_status || 'open').replace(/_/g, ' ').toUpperCase();
             html += `
-              <div style="background: ${bg}; border: ${border}; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                  <strong style="color: var(--danger);">${escapeHtml(msg.title || 'System Message')}</strong>
-                  <span style="font-size: 0.8rem; opacity: 0.7;">${new Date(msg.created_at).toLocaleDateString()}</span>
+              <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                  <div>
+                    <span style="font-family: monospace; font-weight: bold; color: var(--primary); margin-right: 8px;">${t.ticket_id || 'TKT-#' + t.id}</span>
+                    <span style="font-size: 0.8rem; background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 10px;">${escapeHtml(t.category_name || 'General')}</span>
+                  </div>
+                  <span class="status-badge status-badge--${statusClass}">${statusText}</span>
                 </div>
-                <div style="font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(msg.body)}</div>
-                ${isUnread ? `<button class="btn btn--sm btn--secondary" style="margin-top: 1rem;" onclick="markAdminMessageRead(${msg.id}, this)">Mark as Read</button>` : ''}
-              </div>
-            `;
-          });
-        }
-        
-        if (reports.length > 0) {
-          html += '<h3 style="margin: 1rem 0 0.5rem;">Resolved Reports</h3>';
-          reports.forEach(report => {
-            html += `
-              <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                  <strong>Report #${report.id} - ${escapeHtml(report.target_type)}</strong>
-                  <span style="font-size: 0.8rem; opacity: 0.7;">Resolved on ${new Date(report.resolved_at).toLocaleDateString()}</span>
-                </div>
-                <div style="font-size: 0.9rem; margin-bottom: 0.5rem;"><strong>You reported:</strong> ${escapeHtml(report.reason)}</div>
-                <div style="background: var(--bg-main); padding: 0.75rem; border-radius: 4px; border-left: 3px solid var(--accent-emerald);">
-                  <strong style="display: block; margin-bottom: 0.25rem; color: var(--accent-emerald);">Admin Resolution Reply:</strong>
-                  <span style="font-size: 0.95rem; white-space: pre-wrap;">${escapeHtml(report.admin_reply)}</span>
+                <h4 style="margin: 0 0 6px 0; font-size: 1rem; color: var(--text-primary);">${escapeHtml(t.subject || t.reason)}</h4>
+                <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                  <span>Submitted: ${new Date(t.created_at).toLocaleDateString()}</span>
+                  <a href="/support" class="btn btn--secondary btn--sm" style="padding: 3px 10px; font-size: 0.8rem;">View Ticket Details &amp; Reply ↗</a>
                 </div>
               </div>
             `;
@@ -1248,7 +1237,7 @@
         
         container.innerHTML = html;
       } catch (err) {
-        container.innerHTML = '<p>Failed to load support inbox.</p>';
+        container.innerHTML = '<p>Failed to load support tickets.</p>';
       }
     }
     
