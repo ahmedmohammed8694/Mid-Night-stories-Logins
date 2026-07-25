@@ -1,146 +1,163 @@
+// support.js — Redesigned Support & Helpdesk UI Controller
+
 window.openSupportModal = function() {
   const m = document.getElementById('newTicketModal');
   if (m) {
     m.classList.add('open');
     m.style.display = 'flex';
   }
-  const token = localStorage.getItem('token');
-  const guestBox = document.getElementById('guestEmailContainer');
-  if (guestBox) guestBox.style.display = (!token) ? 'block' : 'none';
+};
+
+window.closeSupportModal = function() {
+  const m = document.getElementById('newTicketModal');
+  if (m) {
+    m.classList.remove('open');
+    m.style.display = 'none';
+  }
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // ── Auth Check ──
   const token = localStorage.getItem('token');
   const isGuest = !token;
 
-  // ── DOM References ──
+  // DOM References
   const ticketListScroll = document.getElementById('ticketListScroll');
   const ticketCountBadge = document.getElementById('ticketCountBadge');
   const ticketDetailEmpty = document.getElementById('ticketDetailEmpty');
   const ticketDetailContent = document.getElementById('ticketDetailContent');
-  
+  const supportSplit = document.getElementById('supportSplit');
+
   const viewTicketId = document.getElementById('viewTicketId');
+  const viewRefNumber = document.getElementById('viewRefNumber');
   const viewTicketSubject = document.getElementById('viewTicketSubject');
   const viewTicketCategory = document.getElementById('viewTicketCategory');
+  const viewTicketCreated = document.getElementById('viewTicketCreated');
   const viewTicketPriority = document.getElementById('viewTicketPriority');
   const viewTicketStatus = document.getElementById('viewTicketStatus');
-  const viewSlaTimer = document.getElementById('viewSlaTimer');
+  const btnCloseTicketBtn = document.getElementById('btnCloseTicketBtn');
+  
   const ticketMessages = document.getElementById('ticketMessages');
   const ticketReplyArea = document.getElementById('ticketReplyArea');
-  const resolvedNotice = document.getElementById('resolvedNotice');
-  const reopenBanner = document.getElementById('reopenBanner');
-  const reopenTicketBtn = document.getElementById('reopenTicketBtn');
   const replyText = document.getElementById('replyText');
   const replyBtn = document.getElementById('replyBtn');
+  const replyFileChips = document.getElementById('replyFileChips');
+  
   const csatRatingContainer = document.getElementById('csatRatingContainer');
+  const reopenBanner = document.getElementById('reopenBanner');
+  const resolvedNotice = document.getElementById('resolvedNotice');
+  const formErrorAlert = document.getElementById('formErrorAlert');
 
   let activeTicketId = null;
-  let currentUserFilter = 'all';
-  let allRawTickets = [];
-  let formConfig = { categories: [], subcategories: [], customFields: [], slaRules: [] };
+  let currentStatusFilter = 'all';
+  let currentSort = 'recently_updated';
+  let currentSearch = '';
+  let currentPage = 1;
+  let totalPages = 1;
+  let allTickets = [];
+
+  let modalSelectedFiles = [];
+  let replySelectedFiles = [];
   let selectedCsatStars = 5;
 
-  // ── Modal Logic ──
-  const modal = document.getElementById('newTicketModal');
+  // ── Modal Handlers ──
   const btnOpen = document.getElementById('btnOpenCreateTicketModal');
   const btnClose = document.getElementById('btnCloseModal');
   const btnCancel = document.getElementById('btnCancelModal');
-
-  window.openSupportModal = function() { 
-    const m = document.getElementById('newTicketModal');
-    if (m) {
-      m.classList.add('open');
-      m.style.display = 'flex';
-    }
-    const token = localStorage.getItem('token');
-    const guestBox = document.getElementById('guestEmailContainer');
-    if (guestBox) guestBox.style.display = (!token) ? 'block' : 'none';
-  };
-  function closeModal() {
-    const m = document.getElementById('newTicketModal');
-    if (m) {
-      m.classList.remove('open');
-      m.style.display = 'none';
-    }
-  }
+  const modal = document.getElementById('newTicketModal');
 
   if (btnOpen) btnOpen.addEventListener('click', window.openSupportModal);
-  if (btnClose) btnClose.addEventListener('click', closeModal);
-  if (btnCancel) btnCancel.addEventListener('click', closeModal);
-  if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+  if (btnClose) btnClose.addEventListener('click', window.closeSupportModal);
+  if (btnCancel) btnCancel.addEventListener('click', window.closeSupportModal);
+  if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) window.closeSupportModal(); });
 
-  // ── Category Card Selection ──
-  window.selectCategoryCard = function(catId) {
-    document.querySelectorAll('.cat-card').forEach(c => {
-      c.style.background = 'rgba(255,255,255,0.03)';
-      c.style.borderColor = 'rgba(255,255,255,0.08)';
-      c.classList.remove('active');
-    });
-    const card = document.querySelector(`.cat-card[data-cat-id="${catId}"]`);
-    if (card) {
-      card.style.background = 'rgba(124,58,237,0.15)';
-      card.style.borderColor = 'rgba(124,58,237,0.4)';
-      card.classList.add('active');
-    }
-    const select = document.getElementById('ticketCategorySelect');
-    if (select) {
-      select.value = catId;
-      select.dispatchEvent(new Event('change'));
-    }
-  };
-
-  // ── SLA Preview Live Update ──
-  window.updateSlaPreview = function(priority) {
-    const titleEl = document.getElementById('slaPreviewTitle');
-    const descEl = document.getElementById('slaPreviewDesc');
-    const slaDetails = {
-      urgent: { title: '🔴 Urgent Priority Guarantee (1h SLA)', desc: 'Guaranteed first agent response within 1 hour. Immediate escalation for system outages & DMCA notices.' },
-      high: { title: '🟡 High Priority Guarantee (4h SLA)', desc: 'Guaranteed first agent response within 4 hours. Priority routing for billing & core features.' },
-      medium: { title: '🔵 Medium Priority Guarantee (12h SLA)', desc: 'Guaranteed first agent response within 12 hours. Standard helpdesk SLA for inquiries & requests.' },
-      low: { title: '🟢 Low Priority Guarantee (24h SLA)', desc: 'Guaranteed first agent response within 24 hours. Recommended for general feedback & feature ideas.' },
-    };
-    const info = slaDetails[priority] || slaDetails.medium;
-    if (titleEl) titleEl.textContent = info.title;
-    if (descEl) descEl.textContent = info.desc;
-  };
-
-  // ── File Drag and Drop & Upload Controls ──
-  window.handleFileDrop = function(e) {
+  // ── Modal Attachment Chips Handler ──
+  window.handleModalFileDrop = function(e) {
     e.preventDefault();
     const dropzone = document.getElementById('fileDropzone');
     if (dropzone) dropzone.style.background = 'rgba(124,58,237,0.03)';
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const fileInput = document.getElementById('ticketFileInput');
-      if (fileInput) {
-        fileInput.files = e.dataTransfer.files;
-        window.handleFileSelect(fileInput);
+      addModalFiles(Array.from(e.dataTransfer.files));
+    }
+  };
+
+  window.handleModalFileSelect = function(input) {
+    if (input.files && input.files.length > 0) {
+      addModalFiles(Array.from(input.files));
+    }
+  };
+
+  function addModalFiles(files) {
+    files.forEach(f => {
+      if (f.size > 10 * 1024 * 1024) {
+        showToast(`File "${f.name}" exceeds 10MB limit.`, 'warning');
+        return;
       }
+      if (!modalSelectedFiles.some(existing => existing.name === f.name && existing.size === f.size)) {
+        modalSelectedFiles.push(f);
+      }
+    });
+    renderModalFileChips();
+  }
+
+  function renderModalFileChips() {
+    const container = document.getElementById('modalFileChips');
+    if (!container) return;
+    container.innerHTML = '';
+    modalSelectedFiles.forEach((file, idx) => {
+      const chip = document.createElement('div');
+      chip.className = 'file-chip';
+      chip.innerHTML = `
+        <span>📄</span>
+        <span>${escapeHtml(file.name)}</span>
+        <span style="opacity:0.6; font-size:0.75rem;">(${(file.size / (1024*1024)).toFixed(2)} MB)</span>
+        <button type="button" class="file-chip-remove" onclick="window.removeModalFile(${idx})">✕</button>
+      `;
+      container.appendChild(chip);
+    });
+  }
+
+  window.removeModalFile = function(idx) {
+    modalSelectedFiles.splice(idx, 1);
+    renderModalFileChips();
+  };
+
+  // ── Reply Attachments Handler ──
+  window.handleReplyFileSelect = function(input) {
+    if (input.files && input.files.length > 0) {
+      Array.from(input.files).forEach(f => {
+        if (f.size > 10 * 1024 * 1024) {
+          showToast(`File "${f.name}" exceeds 10MB limit.`, 'warning');
+          return;
+        }
+        if (!replySelectedFiles.some(e => e.name === f.name && e.size === f.size)) {
+          replySelectedFiles.push(f);
+        }
+      });
+      renderReplyFileChips();
     }
   };
 
-  window.handleFileSelect = function(input) {
-    const preview = document.getElementById('filePreviewBadge');
-    const nameEl = document.getElementById('filePreviewName');
-    const sizeEl = document.getElementById('filePreviewSize');
-    if (input.files && input.files[0]) {
-      const f = input.files[0];
-      if (nameEl) nameEl.textContent = f.name;
-      if (sizeEl) sizeEl.textContent = `(${(f.size / (1024 * 1024)).toFixed(2)} MB)`;
-      if (preview) preview.style.display = 'flex';
-    } else {
-      if (preview) preview.style.display = 'none';
-    }
+  function renderReplyFileChips() {
+    if (!replyFileChips) return;
+    replyFileChips.innerHTML = '';
+    replySelectedFiles.forEach((file, idx) => {
+      const chip = document.createElement('div');
+      chip.className = 'file-chip';
+      chip.innerHTML = `
+        <span>📄</span>
+        <span>${escapeHtml(file.name)}</span>
+        <button type="button" class="file-chip-remove" onclick="window.removeReplyFile(${idx})">✕</button>
+      `;
+      replyFileChips.appendChild(chip);
+    });
+  }
+
+  window.removeReplyFile = function(idx) {
+    replySelectedFiles.splice(idx, 1);
+    renderReplyFileChips();
   };
 
-  window.removeSelectedFile = function() {
-    const input = document.getElementById('ticketFileInput');
-    if (input) input.value = '';
-    const preview = document.getElementById('filePreviewBadge');
-    if (preview) preview.style.display = 'none';
-  };
-
-  // ── CSAT Rating Star Handlers ──
+  // ── CSAT Star Handler ──
   window.setCsatRating = function(rating) {
     selectedCsatStars = rating;
     document.querySelectorAll('.csat-star').forEach((star, idx) => {
@@ -162,107 +179,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         method: 'POST',
         body: JSON.stringify({ rating: selectedCsatStars, feedback })
       });
-      showToast('Thank you for rating your support experience! ⭐', 'success');
+      showToast('Thank you for your rating! ⭐', 'success');
       if (csatRatingContainer) csatRatingContainer.style.display = 'none';
     } catch (err) {
       showToast(err.message, 'error');
     }
   };
 
-  // ── Load Ticket Form Config ──
-  async function loadTicketFormConfig() {
-    try {
-      const config = await api('/api/user/ticket-form-config');
-      formConfig = config;
-      // Default to category 1
-      window.selectCategoryCard(1);
-    } catch (e) {
-      console.error('Error loading ticket form config:', e);
-      window.selectCategoryCard(1);
-    }
-  }
-
-  // ── Category Change Listener ──
-  const categorySelect = document.getElementById('ticketCategorySelect');
-  if (categorySelect) {
-    categorySelect.addEventListener('change', (e) => {
-      const catId = parseInt(e.target.value);
-      const subSelect = document.getElementById('ticketSubcategorySelect');
-      const customContainer = document.getElementById('dynamicCustomFieldsContainer');
-
-      if (!catId) {
-        if (subSelect) subSelect.innerHTML = '<option value="">Select Category First</option>';
-        if (customContainer) customContainer.innerHTML = '';
-        return;
-      }
-
-      // Populate subcategories
-      const subs = (formConfig.subcategories || []).filter(s => s.category_id === catId);
-      if (subs.length > 0) {
-        subSelect.innerHTML = '<option value="">— Select Sub-Category —</option>';
-        subs.forEach(s => {
-          const opt = document.createElement('option');
-          opt.value = s.id;
-          opt.textContent = s.name;
-          subSelect.appendChild(opt);
-        });
-      } else {
-        const fallbackSubs = {
-          1: ['Copyright / DMCA Takedown', 'Plagiarism Report', 'Story Spam / Inappropriate Content', 'Comment Harassment'],
-          2: ['EPUB/PDF Not Loading', 'Corrupted File Download', 'Book Upload Failed', 'Reader Mode Bug'],
-          3: ['Forgot Password / Reset', 'Account Suspended Appeal', 'Profile Not Updating', 'Login Issues'],
-          4: ['Payment Failed', 'Refund Request', 'Subscription Not Activating', 'Invoice / Receipt Request'],
-          5: ['App Crash / 500 Error', 'Slow Performance', 'UI Layout Bug', 'Mobile Device Issue'],
-          6: ['New Feature Idea', 'Author Dashboard Request', 'Analytics Request', 'API Access Request'],
-        };
-        const options = fallbackSubs[catId] || [];
-        subSelect.innerHTML = '<option value="">— Select Sub-Category —</option>';
-        options.forEach((name, i) => {
-          const opt = document.createElement('option');
-          opt.value = `${catId}${i + 1}`;
-          opt.textContent = name;
-          subSelect.appendChild(opt);
-        });
-      }
-
-      // Contextual Field Rendering
-      if (!customContainer) return;
-      if (catId === 1) {
-        customContainer.innerHTML = `
-          <label class="form-label">Infringing Story URL / Chapter *</label>
-          <input type="text" class="form-input-field" id="customStoryUrl" placeholder="e.g. https://midnightstories.dpdns.org/story/dark-chapter">
-        `;
-      } else if (catId === 2) {
-        customContainer.innerHTML = `
-          <label class="form-label">Book Title / Format *</label>
-          <input type="text" class="form-input-field" id="customBookTitle" placeholder="e.g. Midnight Tales Vol 1 (.epub)">
-        `;
-      } else if (catId === 4) {
-        customContainer.innerHTML = `
-          <label class="form-label">Transaction / Invoice ID *</label>
-          <input type="text" class="form-input-field" id="customOrderId" placeholder="e.g. INV-2026-8842">
-        `;
-      } else if (catId === 5) {
-        customContainer.innerHTML = `
-          <label class="form-label">Device &amp; Operating System *</label>
-          <input type="text" class="form-input-field" id="customDevice" placeholder="e.g. Windows 11 / Chrome v122 or iOS 17">
-        `;
-      } else {
-        customContainer.innerHTML = '';
-      }
-    });
-  }
-
-  // ── Load Tickets List ──
+  // ── Load User Tickets ──
   async function loadTickets() {
     if (isGuest) {
       if (ticketListScroll) {
         ticketListScroll.innerHTML = `
-          <div class="empty-tickets" style="padding:24px 16px; text-align:center;">
-            <span class="empty-icon">🔒</span>
-            <p style="font-weight:600; font-size:0.9rem; color:var(--text-primary);">Guest Mode Active</p>
-            <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:12px; line-height:1.4;">Log in or create an account to view ticket status history & track SLA updates.</p>
-            <a href="/login.html" class="btn-send" style="display:inline-block; text-decoration:none; padding:8px 18px; font-size:0.82rem;">🔐 Log In / Register</a>
+          <div class="empty-state">
+            <span class="icon">🔒</span>
+            <p style="font-weight:600; color:var(--text-primary);">Guest Mode Active</p>
+            <p style="font-size:0.8rem;">Log in to track status and reply to support agents.</p>
+            <a href="/login.html" class="btn-send" style="display:inline-block; text-decoration:none; margin-top:6px; padding:6px 16px; font-size:0.82rem;">🔐 Log In</a>
           </div>
         `;
       }
@@ -270,141 +203,139 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (ticketListScroll) {
-      ticketListScroll.innerHTML = `<div class="empty-tickets"><span class="empty-icon">⏳</span><p>Loading your tickets...</p></div>`;
+      ticketListScroll.innerHTML = `<div class="empty-state"><span class="icon">⏳</span><p>Loading tickets...</p></div>`;
     }
 
     try {
-      const tickets = await api('/api/user/tickets');
-      allRawTickets = tickets || [];
-
-      // Update Filter Counter Badges
-      const counts = { all: allRawTickets.length, open: 0, investigating: 0, waiting_on_user: 0, resolved: 0 };
-      allRawTickets.forEach(t => {
-        const st = t.ticket_status || 'open';
-        if (counts[st] !== undefined) counts[st]++;
+      const query = new URLSearchParams({
+        status: currentStatusFilter,
+        sort: currentSort,
+        page: currentPage,
+        limit: 30
       });
-      const updateCnt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = `(${val})`; };
-      updateCnt('cntAll', counts.all);
-      updateCnt('cntOpen', counts.open);
-      updateCnt('cntInv', counts.investigating);
-      updateCnt('cntWait', counts.waiting_on_user);
-      updateCnt('cntRes', counts.resolved);
+      if (currentSearch) query.append('search', currentSearch);
+
+      const res = await api(`/api/user/tickets?${query.toString()}`);
+      allTickets = res.tickets || [];
+      totalPages = res.totalPages || 1;
+
+      // Update Filter counts if returned
+      updateFilterCounters();
 
       renderTicketsList();
     } catch (err) {
       if (ticketListScroll) {
-        ticketListScroll.innerHTML = `<div class="empty-tickets"><span class="empty-icon">⚠️</span><p>${escapeHtml(err.message)}</p></div>`;
+        ticketListScroll.innerHTML = `<div class="empty-state"><span class="icon">⚠️</span><p>${escapeHtml(err.message)}</p></div>`;
       }
       showToast('Failed to load tickets: ' + err.message, 'error');
     }
   }
 
+  function updateFilterCounters() {
+    const counts = { all: allTickets.length, open: 0, investigating: 0, waiting_on_user: 0, resolved: 0 };
+    allTickets.forEach(t => {
+      const st = t.ticket_status || 'open';
+      if (counts[st] !== undefined) counts[st]++;
+    });
+    const setCnt = (id, c) => { const el = document.getElementById(id); if (el) el.textContent = `(${c})`; };
+    setCnt('cntAll', counts.all);
+    setCnt('cntOpen', counts.open);
+    setCnt('cntInv', counts.investigating);
+    setCnt('cntWait', counts.waiting_on_user);
+    setCnt('cntRes', counts.resolved);
+  }
+
   function renderTicketsList() {
     if (!ticketListScroll) return;
 
-    const searchTerm = (document.getElementById('userTicketSearch') ? document.getElementById('userTicketSearch').value : '').toLowerCase().trim();
-
-    let filtered = allRawTickets.filter(t => {
-      const matchFilter = currentUserFilter === 'all' || (t.ticket_status || 'open') === currentUserFilter;
-      if (!matchFilter) return false;
-      if (!searchTerm) return true;
-      const tId = (t.ticket_id || ('TKT-' + t.id)).toLowerCase();
-      const subj = (t.subject || t.reason || '').toLowerCase();
-      const cat = (t.category_name || '').toLowerCase();
-      return tId.includes(searchTerm) || subj.includes(searchTerm) || cat.includes(searchTerm);
-    });
-
     if (ticketCountBadge) {
-      ticketCountBadge.textContent = `${filtered.length} ticket${filtered.length !== 1 ? 's' : ''}`;
+      ticketCountBadge.textContent = `${allTickets.length} ticket${allTickets.length !== 1 ? 's' : ''}`;
     }
 
-    if (filtered.length === 0) {
+    if (allTickets.length === 0) {
       ticketListScroll.innerHTML = `
-        <div class="empty-tickets">
-          <span class="empty-icon">📭</span>
+        <div class="empty-state">
+          <span class="icon">📭</span>
           <p>No tickets found.</p>
-          <p style="font-size:0.78rem; opacity:0.6;">Create a new ticket to get help!</p>
+          <button class="action-btn-sm" onclick="window.openSupportModal()" style="margin-top:6px;">➕ Submit Ticket</button>
         </div>
       `;
       return;
     }
 
     ticketListScroll.innerHTML = '';
-    filtered.forEach(ticket => {
+    allTickets.forEach(t => {
       const card = document.createElement('div');
-      card.className = `ticket-card ${activeTicketId === ticket.id ? 'active' : ''}`;
-      card.dataset.id = ticket.id;
+      card.className = `ticket-card ${activeTicketId === t.id ? 'active' : ''}`;
+      card.dataset.id = t.id;
 
-      const dateStr = ticket.created_at
-        ? new Date(ticket.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      const dateStr = t.last_activity_at || t.created_at
+        ? new Date(t.last_activity_at || t.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         : '';
-      const titleDisplay = ticket.subject || ticket.reason || 'Support Request';
-      const statusClass = `badge-${ticket.ticket_status || 'open'}`;
-      const priorityClass = `badge-priority-${ticket.priority || 'medium'}`;
+      const titleDisplay = t.subject || t.reason || 'Support Request';
+      const statusClass = `badge-${t.ticket_status || 'open'}`;
+      const priorityClass = `badge-priority-${t.priority || 'medium'}`;
+      const hasUnread = t.user_unread_count > 0;
 
       card.innerHTML = `
-        <div class="ticket-card-id">${escapeHtml(ticket.ticket_id || ('TKT-' + ticket.id))}</div>
-        <div class="ticket-card-title">${escapeHtml(titleDisplay)}</div>
-        <div class="ticket-card-meta">
-          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-            <span class="badge-status ${statusClass}">${(ticket.ticket_status || 'open').replace(/_/g, ' ')}</span>
-            <span class="badge-status ${priorityClass}">${ticket.priority || 'medium'}</span>
-          </div>
+        <div class="ticket-card-header">
+          <span class="ticket-card-id">${escapeHtml(t.ticket_id || ('TKT-' + t.id))}</span>
+          ${hasUnread ? '<span class="ticket-card-unread-dot" title="Unread updates"></span>' : ''}
         </div>
-        <div class="ticket-card-meta" style="margin-top:6px;">
-          <span class="ticket-card-cat">${escapeHtml(ticket.category_name || 'General')}</span>
-          <span class="ticket-card-date">${dateStr}</span>
+        <div class="ticket-card-title">${escapeHtml(titleDisplay)}</div>
+        <div class="ticket-card-preview">${escapeHtml(t.latest_message_preview || t.report_description || '')}</div>
+        <div class="ticket-card-footer">
+          <span class="badge-status ${statusClass}">${(t.ticket_status || 'open').replace(/_/g, ' ')}</span>
+          <span class="badge-status ${priorityClass}">${t.priority || 'medium'}</span>
+          <span style="font-size:0.72rem; color:var(--text-muted); margin-left:auto;">${dateStr}</span>
         </div>
       `;
 
       card.addEventListener('click', () => {
         document.querySelectorAll('.ticket-card').forEach(el => el.classList.remove('active'));
         card.classList.add('active');
-        loadTicketDetail(ticket.id);
+        // Clear unread dot immediately in UI
+        const dot = card.querySelector('.ticket-card-unread-dot');
+        if (dot) dot.remove();
+        loadTicketDetail(t.id);
       });
 
       ticketListScroll.appendChild(card);
     });
   }
 
-  // Live search listener
-  const searchInput = document.getElementById('userTicketSearch');
-  if (searchInput) {
-    searchInput.addEventListener('input', () => renderTicketsList());
-  }
-
-  // Filter chips listener
-  document.querySelectorAll('.chip[data-user-filter]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.chip[data-user-filter]').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentUserFilter = btn.dataset.userFilter;
-      renderTicketsList();
-    });
-  });
-
   // ── Load Ticket Detail Workspace ──
   async function loadTicketDetail(id) {
     activeTicketId = id;
 
+    // Mobile layout toggle
+    if (supportSplit) supportSplit.classList.add('show-detail');
+
     if (ticketDetailEmpty) ticketDetailEmpty.style.display = 'none';
-    if (ticketDetailContent) {
-      ticketDetailContent.style.display = 'flex';
-      ticketDetailContent.style.flexDirection = 'column';
-      ticketDetailContent.style.height = '100%';
-    }
+    if (ticketDetailContent) ticketDetailContent.style.display = 'flex';
+
     if (ticketMessages) {
-      ticketMessages.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);">⏳ Loading ticket messages...</div>`;
+      ticketMessages.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);">⏳ Loading conversation thread...</div>`;
     }
 
     try {
-      const data = await api(`/api/tickets/${id}/messages`);
+      const data = await api(`/api/user/tickets/${id}`);
       const ticket = data.ticket;
       const messages = data.messages || [];
+      const attachments = data.attachments || [];
 
       if (viewTicketId) viewTicketId.textContent = ticket.ticket_id || `TKT-${ticket.id}`;
+      if (viewRefNumber) {
+        if (ticket.reference_number) {
+          viewRefNumber.textContent = `Ref: ${ticket.reference_number}`;
+          viewRefNumber.style.display = 'inline-block';
+        } else {
+          viewRefNumber.style.display = 'none';
+        }
+      }
       if (viewTicketSubject) viewTicketSubject.textContent = ticket.subject || ticket.reason || 'Support Request';
       if (viewTicketCategory) viewTicketCategory.textContent = ticket.category_name ? `📂 ${ticket.category_name}` : '📂 General Inquiry';
+      if (viewTicketCreated) viewTicketCreated.textContent = ticket.created_at ? `Created: ${new Date(ticket.created_at).toLocaleString()}` : '';
 
       if (viewTicketPriority) {
         const p = ticket.priority || 'medium';
@@ -418,71 +349,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         viewTicketStatus.className = `badge-status badge-${s}`;
       }
 
-      // Render SLA Badge
-      if (viewSlaTimer) {
-        if (ticket.sla_due_at) {
-          const due = new Date(ticket.sla_due_at);
-          const now = new Date();
-          if (due < now && ticket.ticket_status !== 'resolved' && ticket.ticket_status !== 'closed') {
-            viewSlaTimer.textContent = '⚠️ SLA Overdue';
-            viewSlaTimer.style.background = 'rgba(239,68,68,0.15)';
-            viewSlaTimer.style.color = '#f87171';
-            viewSlaTimer.style.borderColor = 'rgba(239,68,68,0.3)';
-          } else {
-            viewSlaTimer.textContent = `⏱️ SLA Target: ${due.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}`;
-            viewSlaTimer.style.background = 'rgba(124,58,237,0.15)';
-            viewSlaTimer.style.color = 'var(--support-accent)';
-            viewSlaTimer.style.borderColor = 'rgba(124,58,237,0.3)';
-          }
-          viewSlaTimer.style.display = 'inline-block';
-        } else {
-          viewSlaTimer.style.display = 'none';
-        }
+      const isResolvedOrClosed = ticket.ticket_status === 'resolved' || ticket.ticket_status === 'closed';
+      if (btnCloseTicketBtn) {
+        btnCloseTicketBtn.style.display = !isResolvedOrClosed ? 'inline-block' : 'none';
       }
 
-      // Render Messages
-      ticketMessages.innerHTML = '';
-      const allMsgs = [...messages];
+      // Render Messages Thread
+      renderThreadMessages(messages, attachments, ticket);
 
-      if (allMsgs.length === 0 && ticket.report_description) {
-        const initBubble = document.createElement('div');
-        initBubble.className = 'msg-bubble from-user';
-        initBubble.innerHTML = `
-          <div class="msg-sender user-sender">👤 You (Initial Report)</div>
-          <div class="msg-body-text">${escapeHtml(ticket.report_description)}</div>
-          <div class="msg-time">${ticket.created_at ? new Date(ticket.created_at).toLocaleString() : ''}</div>
-        `;
-        ticketMessages.appendChild(initBubble);
-      } else {
-        allMsgs.forEach(msg => {
-          const isAdmin = msg.sender_role === 'admin' || msg.sender_role === 'system';
-          const bubble = document.createElement('div');
-          bubble.className = `msg-bubble ${isAdmin ? 'from-admin' : 'from-user'}`;
-
-          if (isAdmin) {
-            bubble.innerHTML = `
-              <div class="msg-sender admin-sender">
-                <span style="background:linear-gradient(135deg,#7c3aed,#6366f1); color:#fff; padding:2px 8px; border-radius:10px; font-size:0.7rem;">🛡️ Midnight Support Team</span>
-              </div>
-              <div class="msg-body-text">${escapeHtml(msg.message_body)}</div>
-              <div class="msg-time">${msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}</div>
-            `;
-          } else {
-            bubble.innerHTML = `
-              <div class="msg-sender user-sender">👤 You</div>
-              <div class="msg-body-text">${escapeHtml(msg.message_body)}</div>
-              <div class="msg-time">${msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}</div>
-            `;
-          }
-          ticketMessages.appendChild(bubble);
-        });
-      }
-
-      ticketMessages.scrollTop = ticketMessages.scrollHeight;
-
-      // Handle UI States & CSAT
-      const isResolved = ticket.ticket_status === 'resolved' || ticket.ticket_status === 'closed';
-      if (isResolved) {
+      // Handle Resolution / Reopen Banner
+      if (isResolvedOrClosed) {
         if (ticketReplyArea) ticketReplyArea.style.display = 'none';
         if (ticket.can_reopen) {
           if (reopenBanner) reopenBanner.style.display = 'flex';
@@ -492,7 +368,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (resolvedNotice) resolvedNotice.style.display = 'block';
         }
 
-        // Show CSAT card if not rated yet
         if (csatRatingContainer) {
           if (ticket.csat_rating) {
             csatRatingContainer.style.display = 'none';
@@ -516,43 +391,123 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // ── Create Ticket Form Submission ──
+  function renderThreadMessages(messages, attachments, ticket) {
+    if (!ticketMessages) return;
+    ticketMessages.innerHTML = '';
+
+    const allMsgs = [...messages];
+
+    // Fallback initial description bubble if thread is empty
+    if (allMsgs.length === 0 && ticket.report_description) {
+      allMsgs.push({
+        sender_role: 'user',
+        message_body: ticket.report_description,
+        created_at: ticket.created_at
+      });
+    }
+
+    allMsgs.forEach((msg, index) => {
+      const isAdmin = msg.sender_role === 'admin' || msg.sender_role === 'system';
+      const msgCard = document.createElement('div');
+      msgCard.className = `msg-card ${isAdmin ? 'from-admin' : 'from-user'}`;
+
+      const avatarInitials = isAdmin ? '🛡️' : '👤';
+      const senderTitle = isAdmin ? 'Support Team' : 'You';
+      const roleTag = isAdmin ? '<span class="msg-role-badge">Support Agent</span>' : '';
+
+      // Match attachments for this message or initial ticket attachments
+      const msgAttachments = attachments.filter(a => a.message_id === msg.id || (index === 0 && !a.message_id));
+      let attHtml = '';
+      if (msgAttachments.length > 0) {
+        attHtml = `
+          <div class="msg-attachments">
+            ${msgAttachments.map(a => `
+              <a href="${a.download_url}" target="_blank" class="attachment-chip" download="${escapeHtml(a.file_name)}">
+                📎 ${escapeHtml(a.file_name)} <span style="opacity:0.7; font-size:0.72rem;">(${(a.file_size / (1024*1024)).toFixed(2)} MB)</span>
+              </a>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      msgCard.innerHTML = `
+        <div class="msg-avatar">${avatarInitials}</div>
+        <div class="msg-content">
+          <div class="msg-header">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="msg-sender-name">${senderTitle}</span>
+              ${roleTag}
+            </div>
+            <span class="msg-time">${msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}</span>
+          </div>
+          <div class="msg-text">${escapeHtml(msg.message_body)}</div>
+          ${attHtml}
+        </div>
+      `;
+
+      ticketMessages.appendChild(msgCard);
+    });
+
+    ticketMessages.scrollTop = ticketMessages.scrollHeight;
+  }
+
+  // ── Mobile Back Button ──
+  window.backToTicketList = function() {
+    if (supportSplit) supportSplit.classList.remove('show-detail');
+  };
+
+  // ── Close Ticket ──
+  window.closeActiveTicket = async function() {
+    if (!activeTicketId) return;
+    if (!confirm('Are you sure you want to mark this ticket as resolved and closed?')) return;
+    try {
+      await api(`/api/user/tickets/${activeTicketId}/close`, { method: 'POST' });
+      showToast('✅ Ticket closed.', 'success');
+      await loadTickets();
+      await loadTicketDetail(activeTicketId);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  // ── Reopen Ticket ──
+  window.reopenActiveTicket = async function() {
+    if (!activeTicketId) return;
+    try {
+      await api(`/api/user/tickets/${activeTicketId}/reopen`, { method: 'POST' });
+      showToast('✅ Ticket reopened!', 'success');
+      await loadTickets();
+      await loadTicketDetail(activeTicketId);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  // ── Submit New Ticket Form ──
   const createTicketForm = document.getElementById('createTicketForm');
   if (createTicketForm) {
     createTicketForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (formErrorAlert) formErrorAlert.style.display = 'none';
 
       const subject = document.getElementById('ticketSubjectInput').value.trim();
       const category_id = document.getElementById('ticketCategorySelect').value;
-      const subcategory_id = document.getElementById('ticketSubcategorySelect').value;
       const priority = document.getElementById('ticketPrioritySelect').value;
+      const reference_number = document.getElementById('ticketReferenceInput') ? document.getElementById('ticketReferenceInput').value.trim() : '';
       const details = document.getElementById('ticketDetailsInput').value.trim();
 
-      if (!subject || !details) {
-        return showToast('Please enter both a Subject and Detailed Description.', 'warning');
+      if (!subject || subject.length < 3) {
+        showFormError('Please enter a valid Subject (min 3 characters).');
+        return;
       }
       if (!category_id) {
-        return showToast('Please select a Category.', 'warning');
+        showFormError('Please select a Category.');
+        return;
       }
-
-      const customFields = {};
-      if (isGuest) {
-        const gEmail = document.getElementById('guestEmailInput') ? document.getElementById('guestEmailInput').value.trim() : '';
-        if (!gEmail || !gEmail.includes('@')) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = '🚀 Submit Support Request';
-          return showToast('Please enter a valid email address so we can reply to your request.', 'warning');
-        }
-        customFields.guest_email = gEmail;
+      if (!details || details.length < 10) {
+        showFormError('Please provide a Detailed Description (min 10 characters).');
+        return;
       }
-      const storyUrl = document.getElementById('customStoryUrl');
-      if (storyUrl && storyUrl.value.trim()) customFields.story_url = storyUrl.value.trim();
-      const bookTitle = document.getElementById('customBookTitle');
-      if (bookTitle && bookTitle.value.trim()) customFields.book_title = bookTitle.value.trim();
-      const orderId = document.getElementById('customOrderId');
-      if (orderId && orderId.value.trim()) customFields.order_id = orderId.value.trim();
-      const device = document.getElementById('customDevice');
-      if (device && device.value.trim()) customFields.device = device.value.trim();
 
       const submitBtn = document.getElementById('btnSubmitNewTicket');
       submitBtn.disabled = true;
@@ -562,71 +517,106 @@ document.addEventListener('DOMContentLoaded', async () => {
         const formData = new FormData();
         formData.append('subject', subject);
         formData.append('category_id', category_id);
-        formData.append('subcategory_id', subcategory_id || '');
         formData.append('priority', priority);
         formData.append('details', details);
-        formData.append('custom_fields_json', JSON.stringify(customFields));
+        if (reference_number) formData.append('reference_number', reference_number);
 
-        const fi = document.getElementById('ticketFileInput');
-        if (fi && fi.files.length > 0) {
-          const file = fi.files[0];
-          if (file.size > 10 * 1024 * 1024) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = '🚀 Submit Support Request';
-            return showToast('Attachment exceeds 10MB limit.', 'warning');
-          }
+        modalSelectedFiles.forEach(file => {
           formData.append('file', file);
-        }
+        });
 
-        const res = await api('/api/user/tickets/create', {
+        const res = await api('/api/user/tickets', {
           method: 'POST',
           body: formData
         });
 
-        showToast(`✅ Support Ticket Created! Tracking ID: ${res.ticket_id || 'TKT-' + res.id}`, 'success');
+        showToast(`✅ Ticket Created! ID: ${res.ticket_id || 'TKT-' + res.id}`, 'success');
         createTicketForm.reset();
-        window.removeSelectedFile();
-        closeModal();
+        modalSelectedFiles = [];
+        renderModalFileChips();
+        window.closeSupportModal();
+
         await loadTickets();
         if (res.id) {
           setTimeout(() => {
             const card = document.querySelector(`.ticket-card[data-id="${res.id}"]`);
             if (card) card.click();
-          }, 300);
+          }, 250);
         }
       } catch (err) {
-        showToast('Failed to create ticket: ' + err.message, 'error');
+        showFormError('Failed to create ticket: ' + err.message);
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = '🚀 Submit Support Request';
+        submitBtn.textContent = '🚀 Submit Ticket';
       }
     });
   }
 
-  // ── Reply Button & Keyboard Shortcut ──
+  function showFormError(msg) {
+    if (formErrorAlert) {
+      formErrorAlert.textContent = msg;
+      formErrorAlert.style.display = 'block';
+    } else {
+      showToast(msg, 'warning');
+    }
+  }
+
+  // ── Reply Handler with Optimistic UI & Retry ──
   if (replyBtn) {
     const doReply = async () => {
       if (!activeTicketId) return;
       const body = replyText.value.trim();
-      if (!body) return showToast('Please enter a message.', 'warning');
+      if (!body && replySelectedFiles.length === 0) {
+        return showToast('Please enter a reply message.', 'warning');
+      }
 
-      replyBtn.textContent = '⏳ Sending...';
       replyBtn.disabled = true;
+      replyBtn.textContent = '⏳ Sending...';
+
+      // Optimistic message card insertion
+      const optMsgId = `opt_${Date.now()}`;
+      const optCard = document.createElement('div');
+      optCard.className = 'msg-card from-user';
+      optCard.id = optMsgId;
+      optCard.innerHTML = `
+        <div class="msg-avatar">👤</div>
+        <div class="msg-content" style="opacity:0.7;">
+          <div class="msg-header">
+            <span class="msg-sender-name">You</span>
+            <span class="msg-time">Sending...</span>
+          </div>
+          <div class="msg-text">${escapeHtml(body)}</div>
+        </div>
+      `;
+      if (ticketMessages) {
+        ticketMessages.appendChild(optCard);
+        ticketMessages.scrollTop = ticketMessages.scrollHeight;
+      }
 
       try {
-        await api(`/api/tickets/${activeTicketId}/reply`, {
+        const formData = new FormData();
+        formData.append('message_body', body);
+        replySelectedFiles.forEach(f => formData.append('file', f));
+
+        await api(`/api/user/tickets/${activeTicketId}/messages`, {
           method: 'POST',
-          body: JSON.stringify({ message_body: body })
+          body: formData
         });
+
         replyText.value = '';
-        showToast('✅ Reply sent to support operations!', 'success');
+        replySelectedFiles = [];
+        renderReplyFileChips();
+
+        showToast('✅ Reply sent!', 'success');
         await loadTicketDetail(activeTicketId);
         await loadTickets();
       } catch (err) {
-        showToast('Failed to send: ' + err.message, 'error');
+        const optEl = document.getElementById(optMsgId);
+        if (optEl) optEl.remove();
+        showToast('Failed to send reply: ' + err.message, 'error');
       } finally {
-        replyBtn.textContent = '📤 Send Update';
         replyBtn.disabled = false;
+        replyBtn.textContent = '📤 Send Reply';
       }
     };
 
@@ -642,30 +632,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // ── Reopen Ticket ──
-  if (reopenTicketBtn) {
-    reopenTicketBtn.addEventListener('click', async () => {
-      if (!activeTicketId) return;
-      if (!confirm('Reopen this ticket for additional support?')) return;
+  // ── Filters & Search Controls ──
+  document.querySelectorAll('.chip[data-user-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.chip[data-user-filter]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentStatusFilter = btn.dataset.userFilter;
+      currentPage = 1;
+      loadTickets();
+    });
+  });
 
-      reopenTicketBtn.disabled = true;
-      reopenTicketBtn.textContent = '⏳ Reopening...';
+  const searchInput = document.getElementById('userTicketSearch');
+  if (searchInput) {
+    let timer;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        currentSearch = e.target.value.trim();
+        currentPage = 1;
+        loadTickets();
+      }, 300);
+    });
+  }
 
-      try {
-        await api(`/api/user/tickets/${activeTicketId}/reopen`, { method: 'POST' });
-        showToast('✅ Ticket reopened!', 'success');
-        await loadTickets();
-        await loadTicketDetail(activeTicketId);
-      } catch (err) {
-        showToast(err.message, 'error');
-      } finally {
-        reopenTicketBtn.disabled = false;
-        reopenTicketBtn.textContent = '🔄 Reopen Ticket';
-      }
+  const sortSelect = document.getElementById('ticketSortSelect');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', (e) => {
+      currentSort = e.target.value;
+      currentPage = 1;
+      loadTickets();
     });
   }
 
   // Initial Load
-  await loadTicketFormConfig();
   await loadTickets();
 });

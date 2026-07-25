@@ -113,42 +113,53 @@ CREATE TABLE likes (
 
 CREATE TABLE reports (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  reporter_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   ticket_id TEXT UNIQUE,
   subject TEXT,
   category_id INTEGER REFERENCES ticket_categories(id) ON DELETE SET NULL,
+  subcategory_id INTEGER REFERENCES ticket_subcategories(id) ON DELETE SET NULL,
   reported_item_type TEXT DEFAULT 'support' CHECK(reported_item_type IN ('story','comment','user','support','billing','technical','account','feature_request')),
   reported_item_id INTEGER DEFAULT 0,
-  reason TEXT NOT NULL,
+  reason TEXT,
   report_description TEXT,
   attachment_url TEXT,
   priority TEXT DEFAULT 'medium' CHECK(priority IN ('low', 'medium', 'high', 'urgent')),
   ticket_status TEXT DEFAULT 'open' CHECK(ticket_status IN ('open', 'investigating', 'waiting_on_user', 'resolved', 'closed')),
-  reporter_ip_hash TEXT,
-  reporter_id INTEGER REFERENCES users(id),
   assigned_agent_id INTEGER REFERENCES admin_users(id) ON DELETE SET NULL,
   resolved_by INTEGER REFERENCES admin_users(id),
   resolved_at DATETIME,
   reopened_at DATETIME,
   enforcement_action TEXT,
+  reference_number TEXT,
+  custom_fields_json TEXT,
+  sla_due_at TEXT,
+  frt_due_at TEXT,
+  can_reopen INTEGER DEFAULT 1,
+  type TEXT DEFAULT 'support_ticket',
+  last_activity_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  user_unread_count INTEGER DEFAULT 0,
+  agent_unread_count INTEGER DEFAULT 0,
+  latest_message_preview TEXT,
+  reporter_ip_hash TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE ticket_conversation_threads (
+CREATE TABLE ticket_messages (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  report_id INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
-  sender_id INTEGER NOT NULL,
-  sender_role TEXT NOT NULL CHECK(sender_role IN ('admin', 'user')),
-  is_internal_note INTEGER DEFAULT 0 CHECK(is_internal_note IN (0, 1)),
+  ticket_id INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+  sender_id INTEGER,
+  sender_role TEXT DEFAULT 'user' CHECK(sender_role IN ('user', 'admin', 'system')),
+  is_internal INTEGER DEFAULT 0,
   message_body TEXT NOT NULL,
-  attachment_url TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE ticket_attachments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  message_id INTEGER REFERENCES ticket_conversation_threads(id) ON DELETE CASCADE,
   ticket_id INTEGER NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
+  message_id INTEGER REFERENCES ticket_messages(id) ON DELETE CASCADE,
   file_name TEXT NOT NULL,
   file_path TEXT NOT NULL,
   file_size INTEGER NOT NULL,

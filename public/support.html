@@ -3,154 +3,150 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Support Center | Midnight Stories</title>
-  <meta name="description" content="Submit and track your support tickets with the Midnight Stories Helpdesk. Get help with your account, stories, billing, and more.">
+  <title>Support & Helpdesk | Midnight Stories</title>
+  <meta name="description" content="Submit and track your support tickets with Midnight Stories. Get prompt assistance for account, content, technical, and billing inquiries.">
   <link rel="canonical" href="https://midnightstories.dpdns.org/support">
   <meta name="robots" content="index, follow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    /* ── Premium Support Center Design ── */
+    /* ── Modern Support Center & Helpdesk Design System ── */
     :root {
       --support-primary: #7c3aed;
       --support-accent: #a78bfa;
       --support-glow: rgba(124, 58, 237, 0.25);
-      --card-blur: blur(12px);
     }
 
     .support-hero {
-      background: linear-gradient(135deg, rgba(124,58,237,0.15) 0%, rgba(99,102,241,0.08) 50%, transparent 100%);
-      border-bottom: 1px solid rgba(124,58,237,0.2);
-      padding: 48px 24px 36px;
+      background: linear-gradient(135deg, rgba(124,58,237,0.12) 0%, rgba(99,102,241,0.06) 50%, transparent 100%);
+      border-bottom: 1px solid rgba(124,58,237,0.15);
+      padding: 40px 24px 28px;
       text-align: center;
       position: relative;
       overflow: hidden;
     }
-    .support-hero::before {
-      content: '';
-      position: absolute;
-      top: -60px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%);
-      pointer-events: none;
-    }
     .support-hero h1 {
       font-family: 'Fraunces', serif;
-      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-size: clamp(1.8rem, 3.5vw, 2.5rem);
       font-weight: 700;
       color: var(--text-primary);
-      margin-bottom: 10px;
-      position: relative;
+      margin-bottom: 8px;
     }
     .support-hero h1 span { color: var(--support-accent); }
-    .support-hero p { color: var(--text-muted); font-size: 1.05rem; max-width: 550px; margin: 0 auto 24px; position: relative; }
+    .support-hero p { color: var(--text-muted); font-size: 1rem; max-width: 580px; margin: 0 auto 20px; }
     
     .hero-submit-btn {
       background: linear-gradient(135deg, #7c3aed, #6366f1);
       color: white;
       border: none;
-      padding: 14px 32px;
+      padding: 12px 28px;
       border-radius: 50px;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 20px rgba(124,58,237,0.4);
-      position: relative;
-      letter-spacing: 0.3px;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 18px rgba(124,58,237,0.35);
     }
     .hero-submit-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(124,58,237,0.5);
+      box-shadow: 0 6px 24px rgba(124,58,237,0.5);
     }
-    .hero-submit-btn:active { transform: translateY(0); }
 
-    /* ── Status Cards Row ── */
-    .sla-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px;
-      max-width: 720px;
-      margin: 24px auto 0;
-    }
-    .sla-card {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 12px;
-      padding: 14px 12px;
-      text-align: center;
-      transition: all 0.2s;
-    }
-    .sla-card:hover { background: rgba(255,255,255,0.06); transform: translateY(-2px); }
-    .sla-card .sla-icon { font-size: 1.5rem; display: block; margin-bottom: 6px; }
-    .sla-card .sla-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; display: block; }
-    .sla-card .sla-val { font-size: 0.92rem; font-weight: 700; color: var(--text-primary); display: block; margin-top: 2px; }
-
-    /* ── Main Support Layout ── */
+    /* ── Main Layout ── */
     .support-main {
-      max-width: 1200px;
+      max-width: 1240px;
       margin: 0 auto;
       padding: 24px 16px 40px;
     }
 
-    /* ── Filter Bar ── */
-    .filter-bar {
+    /* ── Toolbar (Search, Filters, Sort) ── */
+    .support-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 20px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 12px 16px;
+      border-radius: 14px;
+    }
+    .filter-group {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
       align-items: center;
-      margin-bottom: 20px;
-    }
-    .filter-bar-label {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.7px;
-      margin-right: 4px;
-      font-weight: 600;
     }
     .chip {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
       padding: 6px 14px;
       border-radius: 20px;
-      border: 1px solid rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.1);
       background: rgba(255,255,255,0.04);
       color: var(--text-muted);
       font-size: 0.82rem;
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s;
-      user-select: none;
     }
     .chip:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
     .chip.active { background: rgba(124,58,237,0.2); border-color: rgba(124,58,237,0.5); color: var(--support-accent); font-weight: 700; }
 
+    .search-input-wrap {
+      position: relative;
+      flex: 1;
+      max-width: 260px;
+      min-width: 180px;
+    }
+    .search-input-wrap input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      color: var(--text-primary);
+      padding: 7px 14px 7px 32px;
+      font-size: 0.84rem;
+      outline: none;
+    }
+    .search-input-wrap input:focus { border-color: var(--support-primary); }
+    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: 0.5; font-size: 0.85rem; }
+
+    .sort-select {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      color: var(--text-primary);
+      padding: 6px 12px;
+      font-size: 0.82rem;
+      outline: none;
+      cursor: pointer;
+    }
+    .sort-select option { background: #1a1a2e; }
+
     /* ── Split Layout ── */
     .support-split {
       display: grid;
-      grid-template-columns: 340px 1fr;
+      grid-template-columns: 360px 1fr;
       gap: 20px;
       align-items: start;
     }
 
-    /* ── Ticket Sidebar ── */
+    /* ── Sidebar Ticket List ── */
     .ticket-sidebar {
       background: rgba(255,255,255,0.02);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 16px;
       overflow: hidden;
-      max-height: 74vh;
+      height: 75vh;
       display: flex;
       flex-direction: column;
     }
     .ticket-sidebar-header {
-      padding: 16px 18px;
+      padding: 14px 18px;
       border-bottom: 1px solid rgba(255,255,255,0.06);
       background: rgba(255,255,255,0.03);
       display: flex;
@@ -173,7 +169,7 @@
     .ticket-list-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
     
     .ticket-card {
-      padding: 14px 18px;
+      padding: 14px 16px;
       border-bottom: 1px solid rgba(255,255,255,0.04);
       cursor: pointer;
       transition: all 0.2s;
@@ -181,35 +177,53 @@
     }
     .ticket-card:hover { background: rgba(255,255,255,0.04); }
     .ticket-card.active {
-      background: rgba(124,58,237,0.1);
+      background: rgba(124,58,237,0.12);
       border-left: 3px solid var(--support-primary);
+    }
+    .ticket-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
     }
     .ticket-card-id {
       font-family: 'Courier New', monospace;
       font-size: 0.78rem;
       color: var(--support-accent);
       font-weight: 700;
-      margin-bottom: 4px;
+    }
+    .ticket-card-unread-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
     }
     .ticket-card-title {
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       font-weight: 600;
       color: var(--text-primary);
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .ticket-card-meta {
+    .ticket-card-preview {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 8px;
+    }
+    .ticket-card-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 6px;
     }
-    .ticket-card-cat { font-size: 0.72rem; color: var(--text-muted); }
-    .ticket-card-date { font-size: 0.72rem; color: var(--text-muted); }
 
-    /* ── Ticket Status Badges ── */
+    /* ── Status & Priority Badges ── */
     .badge-status {
       display: inline-flex;
       align-items: center;
@@ -227,13 +241,10 @@
     .badge-resolved { background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); }
     .badge-closed { background: rgba(156,163,175,0.1); color: #9ca3af; border: 1px solid rgba(156,163,175,0.2); }
 
-    .badge-priority-low { background: rgba(34,197,94,0.1); color: #4ade80; border: 1px solid rgba(34,197,94,0.2); }
-    .badge-priority-medium { background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); }
-    .badge-priority-high { background: rgba(234,179,8,0.15); color: #facc15; border: 1px solid rgba(234,179,8,0.3); }
-    .badge-priority-urgent { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); animation: urgentPulse 2s infinite; }
-
-    @keyframes urgentPulse { 0%,100% { box-shadow: none; } 50% { box-shadow: 0 0 8px rgba(239,68,68,0.4); } }
-    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
+    .badge-priority-low { background: rgba(34,197,94,0.1); color: #4ade80; }
+    .badge-priority-medium { background: rgba(99,102,241,0.15); color: #818cf8; }
+    .badge-priority-high { background: rgba(234,179,8,0.15); color: #facc15; }
+    .badge-priority-urgent { background: rgba(239,68,68,0.15); color: #f87171; }
 
     /* ── Ticket Detail View ── */
     .ticket-detail {
@@ -242,25 +253,29 @@
       border-radius: 16px;
       display: flex;
       flex-direction: column;
-      height: 74vh;
+      height: 75vh;
       overflow: hidden;
+      position: relative;
     }
-    .ticket-detail-empty {
-      display: flex;
-      flex-direction: column;
+    .mobile-back-btn {
+      display: none;
       align-items: center;
-      justify-content: center;
-      height: 100%;
-      gap: 16px;
-      color: var(--text-muted);
+      gap: 6px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-primary);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
     }
-    .ticket-detail-empty .empty-icon { font-size: 3.5rem; opacity: 0.4; }
-    .ticket-detail-empty p { font-size: 0.95rem; }
 
     .ticket-detail-header {
-      padding: 18px 24px;
+      padding: 16px 20px;
       border-bottom: 1px solid rgba(255,255,255,0.06);
-      background: rgba(124,58,237,0.05);
+      background: rgba(124,58,237,0.04);
     }
     .ticket-detail-title-row {
       display: flex;
@@ -274,63 +289,133 @@
       font-size: 0.85rem;
       color: var(--support-accent);
       font-weight: 700;
-      margin-bottom: 4px;
     }
     .ticket-detail-subject {
       font-size: 1.15rem;
       font-weight: 700;
       color: var(--text-primary);
-      margin-bottom: 4px;
+      margin: 4px 0;
     }
-    .ticket-detail-cat { font-size: 0.82rem; color: var(--text-muted); }
+    .ticket-detail-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
 
-    /* ── Message Thread ── */
+    .action-btn-sm {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text-primary);
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .action-btn-sm:hover { background: rgba(255,255,255,0.12); }
+    .action-btn-danger { color: #f87171; border-color: rgba(239,68,68,0.3); }
+    .action-btn-danger:hover { background: rgba(239,68,68,0.15); }
+
+    /* ── Conversation Thread ── */
     .ticket-thread {
       flex: 1;
       overflow-y: auto;
-      padding: 20px 24px;
+      padding: 18px 20px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
     }
     .ticket-thread::-webkit-scrollbar { width: 4px; }
     .ticket-thread::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 
-    .msg-bubble {
-      max-width: 78%;
+    .msg-card {
+      display: flex;
+      gap: 12px;
+      max-width: 85%;
+    }
+    .msg-card.from-user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    .msg-card.from-admin {
+      align-self: flex-start;
+    }
+
+    .msg-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #6366f1);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .from-user .msg-avatar {
+      background: rgba(255,255,255,0.12);
+      color: var(--text-primary);
+    }
+
+    .msg-content {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
       border-radius: 14px;
       padding: 12px 16px;
       position: relative;
     }
-    .msg-bubble.from-admin {
-      background: rgba(124,58,237,0.12);
-      border: 1px solid rgba(124,58,237,0.25);
-      align-self: flex-start;
+    .from-admin .msg-content {
+      background: rgba(124,58,237,0.1);
+      border-color: rgba(124,58,237,0.22);
       border-top-left-radius: 4px;
     }
-    .msg-bubble.from-user {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      align-self: flex-end;
+    .from-user .msg-content {
       border-top-right-radius: 4px;
     }
-    .msg-sender {
-      font-size: 0.72rem;
-      font-weight: 700;
-      margin-bottom: 6px;
+
+    .msg-header {
       display: flex;
       align-items: center;
-      gap: 6px;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
     }
-    .msg-sender.admin-sender { color: var(--support-accent); }
-    .msg-sender.user-sender { color: var(--text-muted); justify-content: flex-end; }
-    .msg-body-text { font-size: 0.92rem; color: var(--text-secondary); line-height: 1.55; white-space: pre-wrap; }
-    .msg-time { font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; }
-    .from-user .msg-time { text-align: right; }
+    .msg-sender-name { font-size: 0.78rem; font-weight: 700; color: var(--text-primary); }
+    .msg-role-badge { font-size: 0.68rem; padding: 2px 6px; border-radius: 6px; background: rgba(124,58,237,0.2); color: var(--support-accent); }
+    .msg-time { font-size: 0.7rem; color: var(--text-muted); }
+    .msg-text { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
 
-    /* ── Reply Box ── */
-    .ticket-reply-area {
-      padding: 16px 24px;
+    .msg-attachments {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .attachment-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      color: var(--support-accent);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .attachment-chip:hover { background: rgba(124,58,237,0.2); border-color: rgba(124,58,237,0.4); }
+
+    /* ── Reply Composer ── */
+    .reply-composer {
+      padding: 14px 20px;
       border-top: 1px solid rgba(255,255,255,0.06);
       background: rgba(0,0,0,0.15);
     }
@@ -340,72 +425,49 @@
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 10px;
       color: var(--text-primary);
-      padding: 12px 14px;
-      font-size: 0.92rem;
+      padding: 10px 14px;
+      font-size: 0.9rem;
       resize: vertical;
-      min-height: 80px;
-      transition: border-color 0.2s;
+      min-height: 70px;
       outline: none;
       font-family: inherit;
     }
-    .reply-textarea:focus { border-color: var(--support-primary); background: rgba(124,58,237,0.05); }
+    .reply-textarea:focus { border-color: var(--support-primary); }
+    
     .reply-actions {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 10px;
+      margin-top: 8px;
       gap: 10px;
     }
-    .reply-hint { font-size: 0.75rem; color: var(--text-muted); }
+    .reply-attach-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .reply-attach-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+
     .btn-send {
       background: linear-gradient(135deg, #7c3aed, #6366f1);
       color: white;
       border: none;
-      padding: 10px 24px;
+      padding: 8px 22px;
       border-radius: 8px;
       font-size: 0.88rem;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s;
     }
-    .btn-send:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(124,58,237,0.4); }
-    .btn-send:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-    /* ── Reopen banner ── */
-    .reopen-banner {
-      display: none;
-      background: rgba(99,102,241,0.1);
-      border: 1px solid rgba(99,102,241,0.3);
-      border-radius: 10px;
-      padding: 12px 16px;
-      margin: 12px 24px;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .reopen-banner p { font-size: 0.84rem; color: var(--text-secondary); margin: 2px 0 0; }
-    .btn-reopen {
-      background: rgba(99,102,241,0.2);
-      border: 1px solid rgba(99,102,241,0.4);
-      color: #818cf8;
-      padding: 7px 16px;
-      border-radius: 8px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s;
-    }
-    .btn-reopen:hover { background: rgba(99,102,241,0.35); }
-    .resolved-notice {
-      display: none;
-      text-align: center;
-      padding: 12px;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      border-top: 1px solid rgba(255,255,255,0.06);
-    }
+    .btn-send:hover { transform: translateY(-1px); }
+    .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* ── Create Ticket Modal ── */
     .modal-overlay {
@@ -424,30 +486,22 @@
       background: var(--bg-card, #1a1a2e);
       border: 1px solid rgba(124,58,237,0.3);
       border-radius: 20px;
-      padding: 28px;
-      max-width: 660px;
+      padding: 24px;
+      max-width: 650px;
       width: 100%;
       max-height: 90vh;
       overflow-y: auto;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(124,58,237,0.1);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     }
-    .modal-box::-webkit-scrollbar { width: 4px; }
-    .modal-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
     .modal-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 16px;
+      margin-bottom: 18px;
+      padding-bottom: 12px;
       border-bottom: 1px solid rgba(255,255,255,0.08);
     }
-    .modal-head h2 {
-      font-family: 'Fraunces', serif;
-      font-size: 1.25rem;
-      color: var(--text-primary);
-      margin: 0;
-    }
-    .modal-head span { font-size: 0.8rem; color: var(--text-muted); display: block; margin-top: 2px; }
+    .modal-head h2 { font-size: 1.2rem; color: var(--text-primary); margin: 0; }
     .modal-close {
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.1);
@@ -460,21 +514,18 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
-      flex-shrink: 0;
     }
-    .modal-close:hover { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); }
 
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
-    .form-group { margin-bottom: 16px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { margin-bottom: 14px; }
     .form-label {
       display: block;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 700;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.6px;
-      margin-bottom: 7px;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
     }
     .form-select, .form-input-field, .form-textarea-field {
       width: 100%;
@@ -482,384 +533,329 @@
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 10px;
       color: var(--text-primary);
-      padding: 11px 14px;
-      font-size: 0.9rem;
-      transition: border-color 0.2s, background 0.2s;
+      padding: 10px 12px;
+      font-size: 0.88rem;
       outline: none;
       font-family: inherit;
     }
-    .form-select:focus, .form-input-field:focus, .form-textarea-field:focus {
-      border-color: var(--support-primary);
-      background: rgba(124,58,237,0.06);
-    }
+    .form-select:focus, .form-input-field:focus, .form-textarea-field:focus { border-color: var(--support-primary); }
     .form-select option { background: #1a1a2e; }
-    .form-textarea-field { resize: vertical; min-height: 100px; }
-    .form-file-label {
-      display: block;
-      border: 2px dashed rgba(255,255,255,0.1);
-      border-radius: 10px;
-      padding: 20px;
+
+    /* Dropzone & File Chips */
+    .dropzone {
+      border: 2px dashed rgba(124,58,237,0.3);
+      border-radius: 12px;
+      padding: 18px;
       text-align: center;
-      color: var(--text-muted);
+      background: rgba(124,58,237,0.03);
       cursor: pointer;
       transition: all 0.2s;
     }
-    .form-file-label:hover { border-color: var(--support-primary); background: rgba(124,58,237,0.05); color: var(--support-accent); }
-    .form-file-input { display: none; }
+    .dropzone:hover { border-color: var(--support-primary); background: rgba(124,58,237,0.08); }
+    
+    .file-chips-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .file-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: var(--text-primary);
+    }
+    .file-chip-remove {
+      background: none;
+      border: none;
+      color: #f87171;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: 4px;
+    }
+
+    .form-alert {
+      display: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      margin-bottom: 14px;
+      background: rgba(239,68,68,0.15);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: #f87171;
+    }
+
     .modal-footer {
       display: flex;
       justify-content: flex-end;
       gap: 10px;
-      padding-top: 16px;
+      padding-top: 14px;
       border-top: 1px solid rgba(255,255,255,0.08);
-      margin-top: 4px;
     }
-    .btn-cancel {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      color: var(--text-muted);
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-cancel:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
-    .btn-create {
-      background: linear-gradient(135deg, #7c3aed, #6366f1);
-      color: white;
-      border: none;
-      padding: 10px 28px;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-create:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(124,58,237,0.4); }
-    .btn-create:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-    .custom-field-wrapper { margin-bottom: 0; }
-
-    /* ── Empty / Loading States ── */
-    .empty-tickets {
+    /* ── Empty & Loading States ── */
+    .empty-state {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 48px 24px;
-      gap: 12px;
+      padding: 40px 20px;
+      gap: 10px;
       color: var(--text-muted);
+      text-align: center;
     }
-    .empty-tickets .empty-icon { font-size: 3rem; opacity: 0.35; }
-    .empty-tickets p { font-size: 0.88rem; }
+    .empty-state .icon { font-size: 2.8rem; opacity: 0.4; }
 
-    /* ── Responsive ── */
+    /* ── Responsive Mobile ── */
     @media (max-width: 768px) {
       .support-split { grid-template-columns: 1fr; }
-      .ticket-sidebar { max-height: 280px; }
-      .ticket-detail { height: 65vh; }
-      .form-row { grid-template-columns: 1fr; }
+      .support-split.show-detail .ticket-sidebar { display: none; }
+      .support-split.show-detail .ticket-detail { display: flex; }
+      .support-split:not(.show-detail) .ticket-detail { display: none; }
+      .mobile-back-btn { display: inline-flex; }
+      .ticket-sidebar { height: auto; max-height: 70vh; }
+      .ticket-detail { height: 75vh; }
+      .form-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body data-theme="dark">
-  <!-- ── Site Navigation Header ── -->
+  <!-- Site Header -->
   <header class="header" id="header"></header>
 
-  <!-- ── Hero Section ── -->
-  <div class="support-hero" style="padding-top: 110px;">
-    <div style="display:inline-flex; align-items:center; gap:8px; padding:6px 16px; border-radius:30px; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.25); color:#4ade80; font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:16px;">
-      <span style="width:8px; height:8px; border-radius:50%; background:#4ade80; display:inline-block; box-shadow:0 0 8px #4ade80;"></span>
-      All Support Systems Operational • Average SLA Response: 38 mins
-    </div>
-
-    <h1>🎫 Enterprise <span>Support Center</span></h1>
-    <p>Submit custom requirement tickets, track request resolution progress, and communicate directly with Midnight Support Operations.</p>
+  <!-- Hero Header -->
+  <div class="support-hero" style="padding-top: 100px;">
+    <h1>🎫 Support &amp; <span>Helpdesk</span> Center</h1>
+    <p>Submit request tickets, track inquiry progress, and communicate directly with Midnight Support Operations.</p>
     <button class="hero-submit-btn" id="btnOpenCreateTicketModal" onclick="window.openSupportModal()">
-      🚀 Submit Support Request
+      ➕ Submit Support Ticket
     </button>
-
-    <div class="sla-cards">
-      <div class="sla-card">
-        <span class="sla-icon">🔥</span>
-        <span class="sla-label">Urgent SLA</span>
-        <span class="sla-val">1h Response</span>
-      </div>
-      <div class="sla-card">
-        <span class="sla-icon">⚡</span>
-        <span class="sla-label">High Priority</span>
-        <span class="sla-val">4h Response</span>
-      </div>
-      <div class="sla-card">
-        <span class="sla-icon">📋</span>
-        <span class="sla-label">Standard</span>
-        <span class="sla-val">12h Response</span>
-      </div>
-      <div class="sla-card">
-        <span class="sla-icon">📩</span>
-        <span class="sla-label">General</span>
-        <span class="sla-val">24h Response</span>
-      </div>
-      <div class="sla-card">
-        <span class="sla-icon">💬</span>
-        <span class="sla-label">Reopen Window</span>
-        <span class="sla-val">7 Days</span>
-      </div>
-    </div>
   </div>
 
-  <!-- ── Main Content ── -->
+  <!-- Main Workspace -->
   <main class="support-main">
 
-    <!-- Filter & Search Bar -->
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:20px;">
-      <div class="filter-bar" style="margin-bottom:0;">
-        <span class="filter-bar-label">Filter:</span>
-        <button class="chip active" data-user-filter="all">All Tickets <span id="cntAll" class="chip-count">(0)</span></button>
-        <button class="chip" data-user-filter="open">🟢 Open <span id="cntOpen" class="chip-count">(0)</span></button>
-        <button class="chip" data-user-filter="investigating">🟡 Investigating <span id="cntInv" class="chip-count">(0)</span></button>
-        <button class="chip" data-user-filter="waiting_on_user">🟠 Waiting on Me <span id="cntWait" class="chip-count">(0)</span></button>
-        <button class="chip" data-user-filter="resolved">🔵 Resolved <span id="cntRes" class="chip-count">(0)</span></button>
+    <!-- Search & Filter Toolbar -->
+    <div class="support-toolbar">
+      <div class="filter-group">
+        <span style="font-size:0.78rem; color:var(--text-muted); text-transform:uppercase; font-weight:700; margin-right:4px;">Status:</span>
+        <button class="chip active" data-user-filter="all">All <span id="cntAll">(0)</span></button>
+        <button class="chip" data-user-filter="open">🟢 Open <span id="cntOpen">(0)</span></button>
+        <button class="chip" data-user-filter="investigating">🟡 Investigating <span id="cntInv">(0)</span></button>
+        <button class="chip" data-user-filter="waiting_on_user">🟠 Waiting on Me <span id="cntWait">(0)</span></button>
+        <button class="chip" data-user-filter="resolved">🔵 Resolved <span id="cntRes">(0)</span></button>
       </div>
 
-      <!-- Quick Ticket Search -->
-      <div style="position:relative; width:100%; max-width:280px;">
-        <input type="text" id="userTicketSearch" placeholder="🔍 Search ticket ID or subject..." style="width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); border-radius:20px; color:var(--text-primary); padding:7px 16px 7px 34px; font-size:0.84rem; outline:none;">
-        <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); opacity:0.5; font-size:0.85rem;">🔍</span>
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-left:auto;">
+        <div class="search-input-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="userTicketSearch" placeholder="Search ticket ID or subject...">
+        </div>
+
+        <select id="ticketSortSelect" class="sort-select">
+          <option value="recently_updated" selected>Sort: Last Activity</option>
+          <option value="newest">Sort: Newest First</option>
+          <option value="oldest">Sort: Oldest First</option>
+        </select>
       </div>
     </div>
 
-    <!-- Split Layout -->
-    <div class="support-split">
+    <!-- Split View: Ticket List & Conversation Workspace -->
+    <div class="support-split" id="supportSplit">
 
-      <!-- ── Sidebar: Ticket List ── -->
+      <!-- Sidebar: My Tickets List -->
       <aside class="ticket-sidebar">
         <div class="ticket-sidebar-header">
           <h3>📋 My Support Tickets</h3>
-          <span id="ticketCountBadge" style="font-size:0.75rem; color: var(--text-muted);"></span>
+          <span id="ticketCountBadge" style="font-size:0.78rem; color:var(--text-muted);"></span>
         </div>
         <div class="ticket-list-scroll" id="ticketListScroll">
-          <div class="empty-tickets">
-            <span class="empty-icon">⏳</span>
-            <p>Loading your tickets...</p>
+          <div class="empty-state">
+            <span class="icon">⏳</span>
+            <p>Loading support tickets...</p>
           </div>
         </div>
       </aside>
 
-      <!-- ── Main: Ticket Detail Workspace ── -->
+      <!-- Main: Ticket Detail Workspace -->
       <section class="ticket-detail" id="ticketDetailSection">
-        <div class="ticket-detail-empty" id="ticketDetailEmpty">
-          <span class="empty-icon">🎫</span>
-          <p style="font-weight:600; font-size:1.1rem; color:var(--text-primary);">Select a ticket to view conversation history</p>
-          <p style="font-size:0.84rem; opacity:0.7; max-width:400px; text-align:center;">Or click below to create a new enterprise support ticket</p>
-          <button class="hero-submit-btn" onclick="window.openSupportModal()" style="margin-top:8px; padding:10px 24px; font-size:0.9rem;">➕ New Support Request</button>
+        <!-- Mobile Back Button -->
+        <button class="mobile-back-btn" id="mobileBackBtn" onclick="window.backToTicketList()">
+          ← Back to Ticket List
+        </button>
+
+        <!-- Empty State (No selection) -->
+        <div class="empty-state" id="ticketDetailEmpty" style="height:100%; justify-content:center;">
+          <span class="icon">🎫</span>
+          <p style="font-weight:700; font-size:1.1rem; color:var(--text-primary);">Select a ticket to view conversation</p>
+          <p style="font-size:0.85rem; opacity:0.7; max-width:380px;">Track updates, download attachments, or reply to support agents</p>
+          <button class="hero-submit-btn" onclick="window.openSupportModal()" style="margin-top:10px; padding:9px 22px; font-size:0.88rem;">➕ Create New Ticket</button>
         </div>
 
-        <!-- Ticket Header (hidden until ticket selected) -->
-        <div id="ticketDetailContent" style="display:none; display:flex; flex-direction:column; height:100%;">
+        <!-- Detail Workspace (Shown when ticket selected) -->
+        <div id="ticketDetailContent" style="display:none; flex-direction:column; height:100%;">
+          
+          <!-- Header Bar -->
           <div class="ticket-detail-header">
             <div class="ticket-detail-title-row">
               <div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                  <div class="ticket-detail-id" id="viewTicketId">TKT-2026-XXXXX</div>
-                  <span id="viewSlaTimer" style="font-size:0.72rem; padding:2px 8px; border-radius:10px; background:rgba(124,58,237,0.15); color:var(--support-accent); border:1px solid rgba(124,58,237,0.3); display:none;">⏱️ SLA On Track</span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="ticket-detail-id" id="viewTicketId">TKT-2026-XXXXX</span>
+                  <span id="viewRefNumber" style="font-size:0.75rem; color:var(--text-muted); display:none;"></span>
                 </div>
                 <div class="ticket-detail-subject" id="viewTicketSubject">Ticket Subject</div>
-                <div class="ticket-detail-cat" id="viewTicketCategory">Category</div>
+                <div class="ticket-detail-meta">
+                  <span id="viewTicketCategory">📂 Category</span>
+                  <span>•</span>
+                  <span id="viewTicketCreated">Created: --</span>
+                </div>
               </div>
+
               <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                 <span id="viewTicketPriority" class="badge-status">Medium</span>
                 <span id="viewTicketStatus" class="badge-status badge-open">Open</span>
+                <button class="action-btn-sm action-btn-danger" id="btnCloseTicketBtn" onclick="window.closeActiveTicket()" style="display:none;">Close Ticket</button>
               </div>
             </div>
           </div>
 
-          <!-- Message Thread -->
+          <!-- Chronological Messages Thread -->
           <div class="ticket-thread" id="ticketMessages"></div>
 
           <!-- CSAT Rating Card for Resolved Tickets -->
-          <div id="csatRatingContainer" style="display:none; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:12px; margin:12px 24px; padding:16px; text-align:center;">
-            <div style="font-size:0.9rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">⭐ How was your support experience?</div>
-            <p style="font-size:0.78rem; color:var(--text-muted); margin:0 0 12px;">Please rate our support agent's resolution speed and helpfulness.</p>
-            <div id="csatStarRow" style="display:flex; justify-content:center; gap:8px; font-size:1.8rem; cursor:pointer; margin-bottom:10px;">
+          <div id="csatRatingContainer" style="display:none; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:12px; margin:12px 20px; padding:14px; text-align:center;">
+            <div style="font-size:0.88rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">⭐ How was your support experience?</div>
+            <p style="font-size:0.78rem; color:var(--text-muted); margin:0 0 10px;">Rate our team's resolution speed and helpfulness.</p>
+            <div id="csatStarRow" style="display:flex; justify-content:center; gap:8px; font-size:1.6rem; cursor:pointer; margin-bottom:10px;">
               <span class="csat-star" data-star="1" onclick="window.setCsatRating(1)">☆</span>
               <span class="csat-star" data-star="2" onclick="window.setCsatRating(2)">☆</span>
               <span class="csat-star" data-star="3" onclick="window.setCsatRating(3)">☆</span>
               <span class="csat-star" data-star="4" onclick="window.setCsatRating(4)">☆</span>
               <span class="csat-star" data-star="5" onclick="window.setCsatRating(5)">☆</span>
             </div>
-            <input type="text" id="csatFeedbackInput" placeholder="Optional feedback or comments..." style="width:100%; max-width:400px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:8px 12px; color:var(--text-primary); font-size:0.82rem; margin-bottom:10px;">
+            <input type="text" id="csatFeedbackInput" placeholder="Optional feedback..." style="width:100%; max-width:380px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:7px 12px; color:var(--text-primary); font-size:0.82rem; margin-bottom:8px;">
             <div>
-              <button onclick="window.submitCsatRating()" style="background:linear-gradient(135deg,#f59e0b,#d97706); color:#000; border:none; padding:8px 20px; border-radius:8px; font-weight:700; font-size:0.82rem; cursor:pointer;">Submit CSAT Rating</button>
+              <button onclick="window.submitCsatRating()" style="background:linear-gradient(135deg,#f59e0b,#d97706); color:#000; border:none; padding:7px 18px; border-radius:8px; font-weight:700; font-size:0.82rem; cursor:pointer;">Submit CSAT Rating</button>
             </div>
           </div>
 
           <!-- Reopen Banner -->
-          <div class="reopen-banner" id="reopenBanner">
+          <div id="reopenBanner" style="display:none; background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.3); border-radius:10px; padding:12px 16px; margin:12px 20px; align-items:center; justify-content:space-between; gap:10px;">
             <div>
-              <strong style="color:var(--text-primary); font-size:0.9rem;">Still need assistance?</strong>
-              <p>This ticket was marked as resolved. You can reopen it within 7 days.</p>
+              <strong style="color:var(--text-primary); font-size:0.88rem;">Need to follow up?</strong>
+              <p style="font-size:0.78rem; color:var(--text-muted); margin:2px 0 0;">This ticket is resolved. You can reopen it within 7 days.</p>
             </div>
-            <button class="btn-reopen" id="reopenTicketBtn">🔄 Reopen Ticket</button>
+            <button class="action-btn-sm" id="reopenTicketBtn" onclick="window.reopenActiveTicket()" style="color:#818cf8; border-color:rgba(99,102,241,0.4); background:rgba(99,102,241,0.2);">🔄 Reopen Ticket</button>
           </div>
-          <div class="resolved-notice" id="resolvedNotice">
+          <div id="resolvedNotice" style="display:none; text-align:center; padding:10px; font-size:0.82rem; color:var(--text-muted); border-top:1px solid rgba(255,255,255,0.06);">
             ✅ This ticket has been resolved and closed.
           </div>
 
-          <!-- Reply Box -->
-          <div class="ticket-reply-area" id="ticketReplyArea">
-            <textarea class="reply-textarea" id="replyText" placeholder="Add more details or follow-up information for the support team... (Ctrl + Enter to send)" rows="3"></textarea>
+          <!-- Reply Composer -->
+          <div class="reply-composer" id="ticketReplyArea">
+            <textarea class="reply-textarea" id="replyText" placeholder="Write your reply or follow-up message... (Ctrl + Enter to send)" rows="3"></textarea>
+            
+            <!-- Reply File Chips Preview -->
+            <div class="file-chips-wrap" id="replyFileChips"></div>
+
             <div class="reply-actions">
-              <span class="reply-hint">💡 Official replies are monitored by Support Operations</span>
-              <button class="btn-send" id="replyBtn">📤 Send Update</button>
+              <label class="reply-attach-btn">
+                📎 Attach File
+                <input type="file" id="replyFileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,.doc,.docx,text/plain" multiple style="display:none;" onchange="window.handleReplyFileSelect(this)">
+              </label>
+
+              <button class="btn-send" id="replyBtn">📤 Send Reply</button>
             </div>
           </div>
+
         </div>
       </section>
 
     </div>
   </main>
 
-  <!-- ── Enterprise Create Ticket Modal ── -->
+  <!-- Create Ticket Modal -->
   <div class="modal-overlay" id="newTicketModal">
-    <div class="modal-box" style="max-width:720px;">
+    <div class="modal-box">
       <div class="modal-head">
         <div>
-          <h2>🎫 Enterprise Support Portal</h2>
-          <span>Submit your request — mapped directly to specialized support agents</span>
+          <h2>➕ Create Support Ticket</h2>
+          <span style="font-size:0.8rem; color:var(--text-muted);">Fill in details to submit a request to our support team</span>
         </div>
         <button class="modal-close" id="btnCloseModal">✕</button>
       </div>
 
+      <div class="form-alert" id="formErrorAlert"></div>
+
       <form id="createTicketForm">
-        <!-- Visual Category Grid -->
         <div class="form-group">
-          <label class="form-label">Select Requirement Category *</label>
-          <div id="categoryCardsGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; margin-bottom:12px;">
-            <div class="cat-card active" data-cat-id="1" onclick="window.selectCategoryCard(1)" style="background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.4); border-radius:10px; padding:12px; cursor:pointer; transition:all 0.2s;">
-              <div style="font-size:1.4rem;">📖</div>
-              <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary); margin-top:4px;">Story Moderation</div>
-              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">DMCA, copyright, spam, harassment</div>
-            </div>
-            <div class="cat-card" data-cat-id="2" onclick="window.selectCategoryCard(2)" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; cursor:pointer; transition:all 0.2s;">
-              <div style="font-size:1.4rem;">📚</div>
-              <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary); margin-top:4px;">Library & Reader</div>
-              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">EPUB/PDF bugs, corrupted uploads</div>
-            </div>
-            <div class="cat-card" data-cat-id="3" onclick="window.selectCategoryCard(3)" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; cursor:pointer; transition:all 0.2s;">
-              <div style="font-size:1.4rem;">👤</div>
-              <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary); margin-top:4px;">Account & Access</div>
-              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Password reset, suspension appeals</div>
-            </div>
-            <div class="cat-card" data-cat-id="4" onclick="window.selectCategoryCard(4)" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; cursor:pointer; transition:all 0.2s;">
-              <div style="font-size:1.4rem;">💳</div>
-              <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary); margin-top:4px;">Billing & Payments</div>
-              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Refunds, failed payments, invoices</div>
-            </div>
-            <div class="cat-card" data-cat-id="5" onclick="window.selectCategoryCard(5)" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; cursor:pointer; transition:all 0.2s;">
-              <div style="font-size:1.4rem;">🛠️</div>
-              <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary); margin-top:4px;">Technical Bugs</div>
-              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">App crashes, UI glitches, 500 errors</div>
-            </div>
-            <div class="cat-card" data-cat-id="6" onclick="window.selectCategoryCard(6)" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; cursor:pointer; transition:all 0.2s;">
-              <div style="font-size:1.4rem;">💡</div>
-              <div style="font-weight:700; font-size:0.85rem; color:var(--text-primary); margin-top:4px;">Feature Requests</div>
-              <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Author tools, API access, ideas</div>
-            </div>
-          </div>
-
-          <!-- Hidden select synced with cards for backend compatibility -->
-          <select id="ticketCategorySelect" class="form-select" style="display:none;">
-            <option value="1" selected>Story Moderation</option>
-            <option value="2">Library & Reader</option>
-            <option value="3">Account & Access</option>
-            <option value="4">Billing & Payments</option>
-            <option value="5">Technical Bugs</option>
-            <option value="6">Feature Requests</option>
-          </select>
+          <label class="form-label">Subject / Short Summary *</label>
+          <input type="text" class="form-input-field" id="ticketSubjectInput" placeholder="Brief description of the issue" required>
         </div>
 
-        <div class="form-row">
-          <div>
-            <label class="form-label">Sub-Category *</label>
-            <select id="ticketSubcategorySelect" class="form-select" required>
-              <option value="">Select Sub-Category</option>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Category *</label>
+            <select id="ticketCategorySelect" class="form-select" required>
+              <option value="">Select Category</option>
+              <option value="1">📖 Story &amp; Content Moderation</option>
+              <option value="2">📚 Book Library &amp; Reader</option>
+              <option value="3">👤 Account &amp; Access</option>
+              <option value="4">💳 Billing &amp; Subscriptions</option>
+              <option value="5">🛠️ Platform &amp; Technical Bugs</option>
+              <option value="6">💡 Feature Requests &amp; Feedback</option>
             </select>
           </div>
-          <div>
-            <label class="form-label">Priority Level (SLA Guarantee) *</label>
-            <select id="ticketPrioritySelect" class="form-select" onchange="window.updateSlaPreview(this.value)" required>
-              <option value="low">🟢 Low — General Inquiry (24h SLA)</option>
-              <option value="medium" selected>🔵 Medium — Standard Request (12h SLA)</option>
-              <option value="high">🟡 High — Billing / Major Issue (4h SLA)</option>
-              <option value="urgent">🔴 Urgent — App Crash / DMCA (1h SLA)</option>
+
+          <div class="form-group">
+            <label class="form-label">Priority *</label>
+            <select id="ticketPrioritySelect" class="form-select" required>
+              <option value="low">🟢 Low (General inquiry)</option>
+              <option value="medium" selected>🔵 Medium (Standard request)</option>
+              <option value="high">🟡 High (Major issue / billing)</option>
+              <option value="urgent">🔴 Urgent (Critical bug / outage)</option>
             </select>
           </div>
         </div>
 
-        <!-- SLA Live Preview Indicator -->
-        <div id="slaPreviewCard" style="background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.25); border-radius:10px; padding:10px 14px; margin-bottom:16px; display:flex; align-items:center; gap:10px;">
-          <div style="font-size:1.3rem;">⏱️</div>
-          <div>
-            <div style="font-size:0.8rem; font-weight:700; color:var(--support-accent);" id="slaPreviewTitle">Medium Priority Guarantee</div>
-            <div style="font-size:0.75rem; color:var(--text-muted);" id="slaPreviewDesc">Guaranteed first agent response within 12 hours.</div>
-          </div>
-        </div>
-
-        <!-- Optional Guest Contact Email Field -->
-        <div id="guestEmailContainer" style="display:none; margin-bottom:16px;">
-          <label class="form-label">Contact Email Address * <span style="color:var(--text-muted); font-weight:400; text-transform:none; letter-spacing:0;">(For ticket status updates &amp; resolutions)</span></label>
-          <input type="email" class="form-input-field" id="guestEmailInput" placeholder="name@example.com">
-        </div>
-
-        <!-- Dynamic Contextual Fields -->
-        <div class="custom-field-wrapper" id="dynamicCustomFieldsContainer" style="margin-bottom:16px;">
-          <!-- Dynamically populated per category -->
+        <div class="form-group">
+          <label class="form-label">Optional Reference Number</label>
+          <input type="text" class="form-input-field" id="ticketReferenceInput" placeholder="e.g. Order ID, Book ISBN, or Story URL">
         </div>
 
         <div class="form-group">
-          <label class="form-label">Subject / Issue Summary *</label>
-          <input type="text" class="form-input-field" id="ticketSubjectInput" placeholder="Brief summary of your issue or request" required>
+          <label class="form-label">Detailed Description *</label>
+          <textarea class="form-textarea-field" id="ticketDetailsInput" placeholder="Please describe the issue in detail, including error messages, steps to reproduce, or relevant links..." rows="4" required></textarea>
         </div>
 
+        <!-- File Upload Dropzone -->
         <div class="form-group">
-          <label class="form-label">Detailed Description &amp; Steps to Reproduce *</label>
-          <textarea class="form-textarea-field" id="ticketDetailsInput" placeholder="Please describe your issue in detail. Include any error codes, URLs, timestamps, or steps you performed..." rows="4" required></textarea>
-        </div>
-
-        <!-- Drag and Drop File Zone -->
-        <div class="form-group">
-          <label class="form-label">Attachment <span style="color:var(--text-muted); font-weight:400; text-transform:none; letter-spacing:0;">(Optional, Max 10MB)</span></label>
-          <div id="fileDropzone" style="border:2px dashed rgba(124,58,237,0.3); border-radius:12px; padding:22px; text-align:center; background:rgba(124,58,237,0.03); cursor:pointer; transition:all 0.2s;" ondragover="event.preventDefault(); this.style.background='rgba(124,58,237,0.1)'" ondragleave="this.style.background='rgba(124,58,237,0.03)'" ondrop="window.handleFileDrop(event)">
-            <div style="font-size:1.6rem; margin-bottom:4px;">📎</div>
-            <div style="font-size:0.88rem; font-weight:600; color:var(--text-primary);">Drag and drop file here, or <span style="color:var(--support-accent); text-decoration:underline;">browse files</span></div>
-            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Supports PNG, JPG, WEBP, PDF, DOCX (Max 10MB)</div>
+          <label class="form-label">Attachments <span style="font-weight:400; text-transform:none; color:var(--text-muted);">(Optional, Max 10MB per file)</span></label>
+          <div class="dropzone" id="fileDropzone" ondragover="event.preventDefault(); this.style.background='rgba(124,58,237,0.1)'" ondragleave="this.style.background='rgba(124,58,237,0.03)'" ondrop="window.handleModalFileDrop(event)" onclick="document.getElementById('ticketFileInput').click()">
+            <div style="font-size:1.5rem; margin-bottom:4px;">📎</div>
+            <div style="font-size:0.86rem; font-weight:600; color:var(--text-primary);">Drag and drop files here, or <span style="color:var(--support-accent); text-decoration:underline;">browse</span></div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">PNG, JPG, WEBP, PDF, DOCX, TXT</div>
           </div>
-          <input type="file" class="form-file-input" id="ticketFileInput" accept="image/png,image/jpeg,image/webp,application/pdf,.doc,.docx" onchange="window.handleFileSelect(this)">
-          <div id="filePreviewBadge" style="display:none; align-items:center; gap:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); padding:8px 14px; border-radius:8px; margin-top:8px; font-size:0.82rem; color:var(--text-primary);">
-            <span>📄</span> <span id="filePreviewName">file.png</span> <span id="filePreviewSize" style="color:var(--text-muted); font-size:0.75rem;">(1.2 MB)</span>
-            <button type="button" onclick="window.removeSelectedFile()" style="margin-left:auto; background:none; border:none; color:#f87171; font-weight:bold; cursor:pointer;">✕ Remove</button>
-          </div>
+          <input type="file" class="form-file-input" id="ticketFileInput" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,.doc,.docx,text/plain" multiple style="display:none;" onchange="window.handleModalFileSelect(this)">
+          
+          <div class="file-chips-wrap" id="modalFileChips"></div>
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn-cancel" id="btnCancelModal">Cancel</button>
-          <button type="submit" class="btn-create" id="btnSubmitNewTicket">🚀 Submit Support Request</button>
+          <button type="button" class="action-btn-sm" id="btnCancelModal">Cancel</button>
+          <button type="submit" class="btn-send" id="btnSubmitNewTicket">🚀 Submit Ticket</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- ── Floating Create Ticket Action Button ── -->
-  <button onclick="window.openSupportModal()" style="position:fixed; bottom:28px; right:28px; z-index:2000; background:linear-gradient(135deg,#7c3aed,#6366f1); color:#fff; border:none; padding:14px 24px; border-radius:50px; font-weight:700; font-size:0.95rem; cursor:pointer; box-shadow:0 8px 30px rgba(124,58,237,0.5); display:flex; align-items:center; gap:8px; transition:all 0.3s ease; letter-spacing:0.3px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-    <span>➕</span> <span>New Support Request</span>
-  </button>
-
   <div class="toast-container" id="toastContainer"></div>
-  <script src="/js/app.js?v=3.0"></script>
-  <script src="/js/support.js?v=3.0"></script>
+  <script src="/js/app.js?v=3.1"></script>
+  <script src="/js/support.js?v=3.1"></script>
 </body>
 </html>
-
