@@ -342,7 +342,7 @@
     if (!tbody) return;
 
     if (filtered.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;opacity:0.5;padding:24px;">No tickets match the current filters.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;opacity:0.5;padding:24px;">No tickets match the current filters.</td></tr>';
       return;
     }
 
@@ -365,9 +365,19 @@
         <td style="font-size:0.78rem;">${escapeHtml(t.user_name || '—')}</td>
         <td style="font-size:0.75rem;color:var(--text-muted);">${t.created_at ? new Date(t.created_at).toLocaleDateString() : '—'}</td>
         <td>${slaStr}</td>
+        <td>
+          <button class="btn btn--primary btn--sm" onclick="window.openTicketFromCrm(${t.id})" style="padding:4px 8px;font-size:0.78rem;">Review</button>
+        </td>
       </tr>`;
     }).join('');
   }
+
+  window.openTicketFromCrm = (id) => {
+    const t = crmRawTickets.find(x => x.id === id);
+    if (t) {
+      window.openTicketModal(t);
+    }
+  };
 
   window.filterCrmTable = () => renderCrmTicketsTable(crmRawTickets);
   window.loadCrmAnalytics = loadCrmAnalytics;

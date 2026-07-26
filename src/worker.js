@@ -350,7 +350,8 @@ const requireUser = async (c, next) => {
     const payload = await verifyJWT(token, getUserJwtSecret(c));
     const db = c.env.DB;
     const userRow = await db.prepare('SELECT interaction_permissions FROM users WHERE id = ?').bind(payload.id).first();
-    const permissions = userRow && userRow.interaction_permissions ? JSON.parse(userRow.interaction_permissions) : {};
+    if (!userRow) return c.json({ error: 'Unauthorized. User does not exist.' }, 401);
+    const permissions = userRow.interaction_permissions ? JSON.parse(userRow.interaction_permissions) : {};
     c.set('user', { ...payload, permissions });
     await next();
   } catch (err) {
@@ -366,8 +367,10 @@ const optionalUser = async (c, next) => {
       const payload = await verifyJWT(token, getUserJwtSecret(c));
       const db = c.env.DB;
       const userRow = await db.prepare('SELECT interaction_permissions FROM users WHERE id = ?').bind(payload.id).first();
-      const permissions = userRow && userRow.interaction_permissions ? JSON.parse(userRow.interaction_permissions) : {};
-      c.set('user', { ...payload, permissions });
+      if (userRow) {
+        const permissions = userRow.interaction_permissions ? JSON.parse(userRow.interaction_permissions) : {};
+        c.set('user', { ...payload, permissions });
+      }
     } catch (err) {}
   }
   await next();
@@ -3660,9 +3663,13 @@ const requireUserOrAdmin = async (c, next) => {
   if (adminToken) {
     try {
       const payload = await verifyJWT(adminToken, getAdminJwtSecret(c));
-      c.set('admin', payload);
-      c.set('user', { id: payload.adminId || 0, full_name: 'Admin', role: 'admin' });
-      return await next();
+      const db = c.env.DB;
+      const adminRow = await db.prepare('SELECT id FROM admin_users WHERE id = ?').bind(payload.adminId).first().catch(() => null);
+      if (adminRow) {
+        c.set('admin', payload);
+        c.set('user', { id: payload.adminId || 0, full_name: 'Admin', role: 'admin' });
+        return await next();
+      }
     } catch (e) {}
   }
   const authHeader = c.req.header('Authorization');
@@ -3672,9 +3679,11 @@ const requireUserOrAdmin = async (c, next) => {
       const payload = await verifyJWT(token, getUserJwtSecret(c));
       const db = c.env.DB;
       const userRow = await db.prepare('SELECT interaction_permissions FROM users WHERE id = ?').bind(payload.id).first().catch(() => null);
-      const permissions = userRow && userRow.interaction_permissions ? JSON.parse(userRow.interaction_permissions) : {};
-      c.set('user', { ...payload, permissions });
-      return await next();
+      if (userRow) {
+        const permissions = userRow.interaction_permissions ? JSON.parse(userRow.interaction_permissions) : {};
+        c.set('user', { ...payload, permissions });
+        return await next();
+      }
     } catch (e) {}
   }
   return c.json({ error: 'Unauthorized. Session expired or invalid.' }, 401);
@@ -3689,9 +3698,11 @@ const requireUserOrGuest = async (c, next) => {
       const payload = await verifyJWT(token, getUserJwtSecret(c));
       const db = c.env.DB;
       const userRow = await db.prepare('SELECT interaction_permissions FROM users WHERE id = ?').bind(payload.id).first().catch(() => null);
-      const permissions = userRow && userRow.interaction_permissions ? JSON.parse(userRow.interaction_permissions) : {};
-      c.set('user', { ...payload, permissions });
-      return await next();
+      if (userRow) {
+        const permissions = userRow.interaction_permissions ? JSON.parse(userRow.interaction_permissions) : {};
+        c.set('user', { ...payload, permissions });
+        return await next();
+      }
     } catch (e) {}
   }
   c.set('user', { id: 0, full_name: 'Guest User', role: 'guest' });
