@@ -3,9 +3,14 @@ PRAGMA foreign_keys = OFF;
 
 -- Drop existing tables if they exist
 DROP TABLE IF EXISTS ticket_attachments;
+DROP TABLE IF EXISTS ticket_messages;
+DROP TABLE IF EXISTS ticket_subcategories;
+DROP TABLE IF EXISTS ticket_custom_fields;
+DROP TABLE IF EXISTS ticket_ratings;
 DROP TABLE IF EXISTS ticket_audit_logs;
 DROP TABLE IF EXISTS canned_responses;
 DROP TABLE IF EXISTS ticket_categories;
+DROP TABLE IF EXISTS sla_rules;
 DROP TABLE IF EXISTS admin_messages;
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS chat_messages;

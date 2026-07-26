@@ -4,6 +4,7 @@ window.openSupportModal = function() {
   const m = document.getElementById('newTicketModal');
   if (m) {
     m.classList.add('open');
+    m.classList.add('active');
     m.style.display = 'flex';
   }
 };
@@ -12,6 +13,7 @@ window.closeSupportModal = function() {
   const m = document.getElementById('newTicketModal');
   if (m) {
     m.classList.remove('open');
+    m.classList.remove('active');
     m.style.display = 'none';
   }
 };

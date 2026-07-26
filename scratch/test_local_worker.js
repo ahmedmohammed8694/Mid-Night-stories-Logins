@@ -136,6 +136,21 @@ async function runTests() {
   const ticketDbId = data.id;
   if (data.success && ticketDbId) console.log('  ✅ Ticket creation passed. Ticket ID:', data.ticket_id);
 
+  console.log('\n--- 2b. Testing Guest Ticket Creation (Unauthenticated) ---');
+  res = await app.request('/api/user/tickets', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, // No auth header
+    body: JSON.stringify({
+      subject: 'Guest Ticket report on rendering',
+      category_id: 2,
+      priority: 'low',
+      details: 'This is a description from an unauthenticated guest user.'
+    })
+  }, mockEnv);
+  data = await res.json();
+  console.log('Guest Create Ticket Status:', res.status, data);
+  if (data.success) console.log('  ✅ Guest ticket creation passed.');
+
   console.log('\n--- 3. Testing User Tickets List API with Filters ---');
   res = await app.request('/api/user/tickets?status=open&search=EPUB', {
     headers: { 'Authorization': `Bearer ${userAToken}` }
