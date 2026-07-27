@@ -38,7 +38,7 @@ async function runTests() {
 
     // 3. Category Seeding Verification
     console.log('3️⃣  Verifying seeded book categories...');
-    const categories = db.prepare("SELECT * FROM categories WHERE slug IN ('fiction', 'non-fiction', 'sci-fi', 'biography', 'computer-science', 'naval-history')").all();
+    const categories = db.prepare("SELECT * FROM categories WHERE slug IN ('fiction', 'non-fiction', 'sci-fi', 'biography', 'computer-science', 'navel-history')").all();
     if (categories.length > 0) {
       console.log(`   - Found ${categories.length} seeded genres:`, categories.map(c => c.name).join(', '));
     } else {
@@ -115,7 +115,7 @@ async function runTests() {
     const submissionRes = db.prepare(`
       INSERT INTO user_book_submissions (user_id, title, author, channel_type, category_id, description, cover_image_url, book_file_url)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(999, 'User Submitted Book', 'Community Author', 'naval', catId, 'A book submitted by community user.', '/uploads/sub_cover.png', '/uploads/sub_book.pdf');
+    `).run(999, 'User Submitted Book', 'Community Author', 'navel', catId, 'A book submitted by community user.', '/uploads/sub_cover.png', '/uploads/sub_book.pdf');
     const submissionId = submissionRes.lastInsertRowid;
     console.log(`   - Inserted user book submission with ID: ${submissionId}`);
 
@@ -149,7 +149,7 @@ async function runTests() {
     console.log(`   - Approved submission, created live book ID: ${approvedBookId}`);
 
     const liveBook = db.prepare('SELECT * FROM books WHERE id = ?').get(approvedBookId);
-    if (liveBook && liveBook.channel_type === 'naval' && liveBook.is_user_submission === 1) {
+    if (liveBook && liveBook.channel_type === 'navel' && liveBook.is_user_submission === 1) {
       console.log(`   - Verified live book channel matches [${liveBook.channel_type}] and user submission flag is [${liveBook.is_user_submission}]`);
     } else {
       throw new Error('Approved book verification failed.');

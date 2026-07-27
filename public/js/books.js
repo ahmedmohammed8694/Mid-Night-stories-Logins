@@ -10,9 +10,9 @@
   let channel = urlParams.get('channel') || '';
   const presetCategory = urlParams.get('category') || 'all';
 
-  // Support legacy routing format `/books?category=education` and `/books?category=naval`
-  if (presetCategory === 'education' || presetCategory === 'naval') {
-    channel = presetCategory;
+  // Support legacy routing format `/books?category=education` and `/books?category=navel`
+  if (presetCategory === 'education' || presetCategory === 'naval' || presetCategory === 'navel') {
+    channel = presetCategory === 'naval' ? 'navel' : presetCategory;
   }
 
   // Highlight active menu in header

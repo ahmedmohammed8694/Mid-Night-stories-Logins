@@ -16,8 +16,8 @@
     if (channel === 'education') {
       const edEl = document.getElementById('navEdBooks');
       if (edEl) edEl.classList.add('active');
-    } else if (channel === 'naval') {
-      const navEl = document.getElementById('navNavalBooks');
+    } else if (channel === 'navel') {
+      const navEl = document.getElementById('navNavelBooks');
       if (navEl) navEl.classList.add('active');
     }
   }
@@ -27,9 +27,9 @@
     const heroTitle = document.querySelector('.hero__title');
     const heroSubtitle = document.querySelector('.hero__subtitle');
     if (heroTitle && heroSubtitle) {
-      if (channel === 'naval') {
-        heroTitle.textContent = 'Naval Library';
-        heroSubtitle.textContent = 'Explore naval history, maritime tactics, nautical studies, and ship design.';
+      if (channel === 'navel') {
+        heroTitle.textContent = 'Navel Library';
+        heroSubtitle.textContent = 'Explore navel history, maritime tactics, nautical studies, and ship design.';
       } else {
         heroTitle.textContent = 'Educational Library';
         heroSubtitle.textContent = 'Find reference books, research papers, computer science materials, and study guides.';

@@ -2739,7 +2739,7 @@
         <td>
           <select class="form-input ${isMissingChannel ? 'invalid-cell' : ''}" style="height: 32px; padding: 0 6px; font-size: 0.85rem; ${isMissingChannel ? 'border: 2px solid #ef4444;' : ''}" onchange="updateBulkItem('${item.id}', 'channel_type', this.value)">
             <option value="education" ${item.channel_type === 'education' ? 'selected' : ''}>Educational</option>
-            <option value="naval" ${item.channel_type === 'naval' ? 'selected' : ''}>Naval</option>
+            <option value="navel" ${item.channel_type === 'navel' ? 'selected' : ''}>Navel</option>
           </select>
         </td>
         <td>

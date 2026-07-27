@@ -840,7 +840,7 @@ app.post('/api/admin/categories', requireAdmin, (req, res) => {
   const db = getDb();
   const { name, channel_type = 'education' } = req.body;
   if (!name) return res.status(400).json({ error: 'Name is required.' });
-  if (channel_type !== 'education' && channel_type !== 'naval') {
+  if (channel_type !== 'education' && channel_type !== 'navel') {
     return res.status(400).json({ error: 'Invalid channel type.' });
   }
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -1389,7 +1389,7 @@ app.post('/api/user/books/upload', requireUser, uploadBook.fields([{ name: 'book
     return res.status(400).json({ error: 'Title, author, channel type, and category ID are required.' });
   }
 
-  if (channel_type !== 'education' && channel_type !== 'naval') {
+  if (channel_type !== 'education' && channel_type !== 'navel') {
     return res.status(400).json({ error: 'Invalid channel type.' });
   }
 

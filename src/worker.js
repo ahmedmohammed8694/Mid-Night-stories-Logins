@@ -183,7 +183,8 @@ app.get('/robots.txt', (c) => {
   });
 });
 
-app.get('/naval-books', (c) => c.redirect('/books?category=naval', 301));
+app.get('/naval-books', (c) => c.redirect('/books?category=navel', 301));
+app.get('/navel-books', (c) => c.redirect('/books?category=navel', 301));
 app.get('/library', async (c) => {
   if (c.env.ASSETS) {
     const url = new URL(c.req.url);
@@ -2805,7 +2806,7 @@ app.post('/api/admin/books/bulk-upload', requireAdmin, async (c) => {
       try {
         const title = (item.title || '').trim();
         const author = (item.author || '').trim();
-        const channelType = ['education', 'naval'].includes(item.channel_type) ? item.channel_type : 'education';
+        const channelType = ['education', 'navel'].includes(item.channel_type) ? item.channel_type : 'education';
 
         if (!title || !author) {
           failedBooks.push({ filename: item.filename || title || 'Unknown', error: 'Missing Title or Author' });
@@ -3384,7 +3385,7 @@ app.post('/api/admin/categories', requireAdmin, async (c) => {
   const db = c.env.DB;
   const { name, channel_type = 'education' } = await c.req.json();
   if (!name) return c.json({ error: 'Name is required.' }, 400);
-  if (channel_type !== 'education' && channel_type !== 'naval') {
+  if (channel_type !== 'education' && channel_type !== 'navel') {
     return c.json({ error: 'Invalid channel type.' }, 400);
   }
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -3533,7 +3534,7 @@ app.post('/api/user/books/upload', requireUser, async (c) => {
     return c.json({ error: 'Title, author, channel type, and category ID are required.' }, 400);
   }
 
-  if (channel_type !== 'education' && channel_type !== 'naval') {
+  if (channel_type !== 'education' && channel_type !== 'navel') {
     return c.json({ error: 'Invalid channel type.' }, 400);
   }
 
