@@ -250,10 +250,10 @@ app.use('*', async (c, next) => {
       } catch (err2) {
         console.error('Failed to create admin schema:', err2);
       }
+      isDbInitialized = true;
     }
-    isDbInitialized = true;
+    await next();
   }
-  await next();
 });
 
 // ── Global Security & Privacy Headers ──
@@ -2002,6 +2002,14 @@ app.get('/api/crisis-resources', (c) => {
       }
     ]
   });
+app.get('/api/debug-db', async (c) => {
+  const db = c.env.DB;
+  try {
+    const { results } = await db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+    return c.json({ success: true, tables: results });
+  } catch (e) {
+    return c.json({ success: false, error: e.message });
+  }
 });
 
 // ═════════════════════════════════════════════════════════

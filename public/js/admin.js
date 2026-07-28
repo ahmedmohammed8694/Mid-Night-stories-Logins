@@ -951,6 +951,311 @@
     }
   }
 
+  // ── Bans ──
+  async function loadBans() {
+    try {
+      const bans = await api('/api/admin/bans');
+      const tbody = document.getElementById('bansBody');
+      tbody.innerHTML = '';
+
+      if (bans.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">No active bans.</td></tr>';
+        return;
+      }
+
+      bans.forEach(ban => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${ban.id}</td>
+          <td><code>${escapeHtml(ban.identifier)}</code></td>
+          <td>${escapeHtml(ban.reason || '—')}</td>
+          <td>${formatDate(ban.created_at)}</td>
+          <td>${ban.expires_at ? formatDate(ban.expires_at) : 'Permanent'}</td>
+          <td>
+            <button class="btn btn--secondary btn--sm" onclick="removeBan(${ban.id})">Remove</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      showToast('Failed to load bans.', 'error');
+    }
+  }
+
+  async function addBan() {
+    const identifier = document.getElementById('banIdentifier').value.trim();
+    const reason = document.getElementById('banReason').value.trim();
+    if (!identifier) {
+      showToast('Enter an IP hash.', 'warning');
+      return;
+    }
+    try {
+      await api('/api/admin/ban', {
+        method: 'POST',
+        body: JSON.stringify({ identifier, reason })
+      });
+      document.getElementById('banIdentifier').value = '';
+      document.getElementById('banReason').value = '';
+      showToast('IP banned.', 'success');
+      loadBans();
+      loadStats();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  window.removeBan = async function (id) {
+    try {
+      await api(`/api/admin/bans/${id}`, { method: 'DELETE' });
+      showToast('Ban removed.', 'success');
+      loadBans();
+      loadStats();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  // ── Settings ──
+  async function loadSettings() {
+    try {
+      const settings = await api('/api/admin/settings');
+
+      document.getElementById('settingStoryRate').value = settings.rate_limit_posts_per_hour || 5;
+      document.getElementById('settingCommentRate').value = settings.rate_limit_comments_per_hour || 15;
+      document.getElementById('settingReportThreshold').value = settings.auto_hide_report_threshold || 3;
+      document.getElementById('settingRequireApproval').checked = settings.require_manual_approval === 'true' || settings.require_manual_approval === true;
+
+      const keywords = Array.isArray(settings.banned_keywords)
+        ? settings.banned_keywords
+        : (typeof settings.banned_keywords === 'string' ? JSON.parse(settings.banned_keywords) : []);
+      document.getElementById('settingBannedKeywords').value = keywords.join('\n');
+    } catch (err) {
+      showToast('Failed to load settings.', 'error');
+    }
+  }
+
+  async function saveSettings() {
+    const keywords = document.getElementById('settingBannedKeywords').value
+      .split('\n')
+      .map(k => k.trim())
+      .filter(Boolean);
+
+    try {
+      await api('/api/admin/settings', {
+        method: 'PUT',
+        body: JSON.stringify({
+          rate_limit_posts_per_hour: document.getElementById('settingStoryRate').value,
+          rate_limit_comments_per_hour: document.getElementById('settingCommentRate').value,
+          auto_hide_report_threshold: document.getElementById('settingReportThreshold').value,
+          require_manual_approval: document.getElementById('settingRequireApproval').checked ? 'true' : 'false',
+          banned_keywords: keywords
+        })
+      });
+      showToast('Settings saved.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+  // ── Audit Log ──
+  async function loadAuditLog() {
+    try {
+      const logs = await api('/api/admin/audit-log');
+      const tbody = document.getElementById('auditBody');
+      tbody.innerHTML = '';
+
+      if (logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">No audit log entries yet.</td></tr>';
+        return;
+      }
+
+      logs.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${formatDate(log.created_at)}</td>
+          <td>${escapeHtml(log.admin_username || 'System')}</td>
+          <td><span class="status-badge status-badge--${log.action.includes('reject') || log.action.includes('ban') ? 'rejected' : 'approved'}">${escapeHtml(log.action)}</span></td>
+          <td>${escapeHtml(log.target_type)} #${log.target_id}</td>
+          <td><div class="admin-table__preview">${escapeHtml(log.reason || '—')}</div></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      showToast('Failed to load audit log.', 'error');
+    }
+  }
+
+  // ── Users ──
+  async function loadUsers() {
+    try {
+      const data = await api('/api/admin/users');
+      window.currentUsersCache = data;
+      const tbody = document.getElementById('usersList');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; opacity: 0.5;">No users found.</td></tr>';
+        return;
+      }
+
+      data.forEach(user => {
+        const tr = document.createElement('tr');
+        let statusClass = 'approved';
+        if (user.account_status === 'suspended') statusClass = 'pending';
+        if (user.account_status === 'banned') statusClass = 'rejected';
+        
+        tr.innerHTML = `
+          <td><a href="javascript:void(0)" onclick="window.openAuditModal(${user.id})" style="color:var(--primary);text-decoration:underline;">#${user.id}</a></td>
+          <td>${escapeHtml(user.full_name)}<br><small style="opacity:0.6">${escapeHtml(user.user_id)}</small></td>
+          <td>${escapeHtml(user.email)}</td>
+          <td>
+            <select class="form-input" style="padding: 4px 8px; width: auto; font-size: 0.85rem;" onchange="window.updateUserStatus(${user.id}, this.value)">
+              <option value="active" ${user.account_status === 'active' ? 'selected' : ''}>Active</option>
+              <option value="suspended" ${user.account_status === 'suspended' ? 'selected' : ''}>Suspended</option>
+              <option value="banned" ${user.account_status === 'banned' ? 'selected' : ''}>Banned</option>
+              <option value="shadowbanned" ${user.account_status === 'shadowbanned' ? 'selected' : ''}>Shadowbanned</option>
+            </select>
+          </td>
+          <td>${formatDate(user.created_at)}</td>
+          <td>
+            <button class="btn btn--secondary btn--sm" onclick="window.warnUser(${user.id})">Warn</button>
+            <button class="btn btn--ghost btn--sm" onclick="window.resetUserConnections(${user.id})">Reset Connections</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      showToast('Failed to load users.', 'error');
+    }
+  }
+  
+  window.updateUserStatus = async function(id, status) {
+    const reason = prompt(`Enter reason for changing status to ${status}:`);
+    if (reason === null) return;
+    try {
+      await api(`/api/admin/users/${id}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status, reason })
+      });
+      showToast('User status updated.', 'success');
+      loadUsers();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  window.warnUser = async function(id) {
+    const reason = prompt('Enter warning reason:');
+    if (!reason) return;
+    try {
+      await api(`/api/admin/users/${id}/warn`, {
+        method: 'POST',
+        body: JSON.stringify({ level: 'first_warning', template: 'general_warning', reason })
+      });
+      showToast('Warning sent to user.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  window.resetUserConnections = async function(id) {
+    if (!confirm('Are you sure you want to reset all follows and blocks for this user?')) return;
+    try {
+      await api(`/api/admin/users/${id}/reset-connections`, {
+        method: 'POST'
+      });
+      showToast('Connections reset.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  window.openAuditModal = function(id) {
+    const user = window.currentUsersCache?.find(u => u.id === id);
+    if (!user) return;
+    
+    window.currentAuditUserId = id;
+    
+    const perms = user.interaction_permissions ? JSON.parse(user.interaction_permissions) : {};
+    
+    document.getElementById('permLike').checked = perms.like !== false;
+    document.getElementById('permComment').checked = perms.comment !== false;
+    document.getElementById('permFollow').checked = perms.follow !== false;
+    document.getElementById('permBlock').checked = perms.block !== false;
+    
+    const chatCheckbox = document.getElementById('permChat');
+    if (chatCheckbox) chatCheckbox.checked = perms.chat !== false;
+    
+    document.getElementById('auditModal').classList.add('active');
+  };
+
+  window.updateInteractionPermissions = async function() {
+    if (!window.currentAuditUserId) return;
+    
+    const permissions = {
+      like: document.getElementById('permLike').checked,
+      comment: document.getElementById('permComment').checked,
+      follow: document.getElementById('permFollow').checked,
+      block: document.getElementById('permBlock').checked
+    };
+    
+    const chatCheckbox = document.getElementById('permChat');
+    if (chatCheckbox) {
+      permissions.chat = chatCheckbox.checked;
+    }
+    
+    try {
+      await api(`/api/admin/users/${window.currentAuditUserId}/permissions`, {
+        method: 'PUT',
+        body: JSON.stringify({ permissions })
+      });
+      
+      // Update cache
+      const user = window.currentUsersCache?.find(u => u.id === window.currentAuditUserId);
+      if (user) user.interaction_permissions = JSON.stringify(permissions);
+      
+      showToast('Permissions updated.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  // ── MFA Setup ──
+  async function loadMFASetup() {
+    try {
+      const data = await api('/api/admin/mfa-setup', {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
+
+      const qrContainer = document.getElementById('mfaQrContainer');
+      qrContainer.innerHTML = `<img src="${data.qrCode}" alt="MFA QR Code" style="width: 200px; height: 200px;">`;
+      document.getElementById('mfaSecretDisplay').textContent = `Secret: ${data.secret}`;
+    } catch (err) {
+      showToast('Failed to load MFA setup.', 'error');
+    }
+  }
+
+  async function enableMFA() {
+    const code = document.getElementById('mfaSetupCode').value.trim();
+    if (!code || code.length !== 6) {
+      showToast('Enter a valid 6-digit code.', 'warning');
+      return;
+    }
+
+    try {
+      await api('/api/admin/mfa-enable', {
+        method: 'POST',
+        body: JSON.stringify({ code })
+      });
+      showToast('MFA enabled! You will need your authenticator app for future logins.', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  }
+
+
   function initAdminPanel() {
     const btnBooksListTab = document.getElementById('btnBooksListTab');
     const btnBooksUploadTab = document.getElementById('btnBooksUploadTab');
@@ -1147,6 +1452,21 @@
         }
       }
     });
+
+    // Add category
+    const addCategoryBtn = document.getElementById('addCategoryBtn');
+    if (addCategoryBtn) addCategoryBtn.addEventListener('click', addCategory);
+
+    // Add ban
+    const addBanBtn = document.getElementById('addBanBtn');
+    if (addBanBtn) addBanBtn.addEventListener('click', addBan);
+
+    // Save settings
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveSettings);
+
+    const enableMfaBtn = document.getElementById('enableMfaBtn');
+    if (enableMfaBtn) enableMfaBtn.addEventListener('click', enableMFA);
 
     checkAuth();
   }
