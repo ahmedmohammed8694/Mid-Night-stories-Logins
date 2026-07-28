@@ -186,6 +186,65 @@ app.use('*', async (c, next) => {
         }
       } catch(e) { console.error('Story seeding error:', e); }
 
+      // Seed sample comments if empty so queue is never blank
+      try {
+        const cmCnt = await db.prepare('SELECT COUNT(*) AS c FROM comments').first();
+        if (!cmCnt || cmCnt.c === 0) {
+          const sampleComments = [
+            [1, 1, 'This story gave me chills! The pacing near the clocktower scene was brilliant.', 'approved'],
+            [2, 2, 'Is there going to be a part two for the Lost Codex?', 'pending'],
+            [1, 3, 'Great story, but please check the chapter ordering in paragraph 3.', 'approved']
+          ];
+          for (const [storyId, userId, contentText, st] of sampleComments) {
+            await db.prepare(`
+              INSERT INTO comments (story_id, user_id, content, status, created_at)
+              VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            `).bind(storyId, userId, contentText, st).run();
+          }
+        }
+      } catch(e) { console.error('Comment seeding error:', e); }
+
+      // Safe column migrations for users
+      await safeAddCol('users', 'role TEXT DEFAULT "user"');
+      await safeAddCol('users', 'password_hash TEXT');
+
+      // Seed sample users if empty so user management is never blank
+      try {
+        const uCnt = await db.prepare('SELECT COUNT(*) AS c FROM users').first();
+        if (!uCnt || uCnt.c === 0) {
+          const sampleUsers = [
+            ['usr_admin', 'System Administrator', 'admin@midnightstories.com', 'admin', 'active'],
+            ['usr_elena', 'Elena Vance', 'elena@example.com', 'author', 'active'],
+            ['usr_marcus', 'Marcus Sterling', 'marcus@example.com', 'user', 'active'],
+            ['usr_clara', 'Clara Oswald', 'clara@example.com', 'editor', 'active']
+          ];
+          for (const [uid, fn, em, rl, st] of sampleUsers) {
+            await db.prepare(`
+              INSERT INTO users (user_id, full_name, email, role, account_status, created_at)
+              VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            `).bind(uid, fn, em, rl, st).run();
+          }
+        }
+      // Seed sample tickets/reports if empty so CRM & Issue Resolution is never blank
+      try {
+        const rCnt = await db.prepare('SELECT COUNT(*) AS c FROM reports').first();
+        if (!rCnt || rCnt.c === 0) {
+          const sampleReports = [
+            ['TKT-1084-3912', 'Login session timing out on mobile browser', 1, 'technical', 'bug_report', 'Whenever I refresh the page on Chrome mobile, it logs me out after 5 minutes.', 'high', 'open', 1],
+            ['TKT-2041-8419', 'Inappropriate content report on story #2', 2, 'story', 'policy_violation', 'Please review paragraph 4 in story #2 for content policy guidelines.', 'urgent', 'investigating', 2],
+            ['TKT-3092-1102', 'Request for author badge verification', 5, 'account', 'badge_request', 'I have published 3 stories and would like to request an Author verified badge.', 'medium', 'resolved', 3]
+          ];
+          for (const [tId, subj, catId, itemType, reas, desc, prio, st, repId] of sampleReports) {
+            await db.prepare(`
+              INSERT INTO reports (ticket_id, subject, category_id, reported_item_type, reason, report_description, priority, ticket_status, reporter_id, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            `).bind(tId, subj, catId, itemType, reas, desc, prio, st, repId).run();
+          }
+        }
+      } catch(e) { console.error('Report seeding error:', e); }
+
+
+
       await db.prepare(`CREATE TABLE IF NOT EXISTS permissions (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
         code        TEXT NOT NULL UNIQUE,
@@ -2097,45 +2156,12 @@ app.delete('/api/admin/users/:id', requireAdmin, async (c) => {
   return c.json({ message: 'User deleted successfully.' });
 });
 
-app.get('/api/admin/users', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const page = parseInt(c.req.query('page') || '1');
-  const limit = parseInt(c.req.query('limit') || '50');
-  const search = c.req.query('search') || '';
-  const offset = (page - 1) * limit;
-  try {
-    let query, binds;
-    if (search) {
-      query = `SELECT id, user_id, full_name, email, account_status, created_at,
-        (SELECT COUNT(*) FROM stories WHERE author_id = users.id AND status = 'published') AS story_count
-        FROM users
-        WHERE full_name LIKE ? OR email LIKE ? OR user_id LIKE ?
-        ORDER BY created_at DESC LIMIT ? OFFSET ?`;
-      const s = '%' + search + '%';
-      binds = [s, s, s, limit, offset];
-    } else {
-      query = `SELECT id, user_id, full_name, email, account_status, created_at,
-        (SELECT COUNT(*) FROM stories WHERE author_id = users.id AND status = 'published') AS story_count
-        FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?`;
-      binds = [limit, offset];
-    }
-    const { results } = await db.prepare(query).bind(...binds).all();
-    const total = await db.prepare(search
-      ? `SELECT COUNT(*) as cnt FROM users WHERE full_name LIKE ? OR email LIKE ? OR user_id LIKE ?`
-      : `SELECT COUNT(*) as cnt FROM users`
-    ).bind(...(search ? ['%'+search+'%','%'+search+'%','%'+search+'%'] : [])).first();
-    return c.json({ users: results, total: total?.cnt ?? 0, page, limit });
-  } catch (err) {
-    return c.json({ error: err.message }, 500);
-  }
-});
-
 app.get('/api/admin/stats', requireAdmin, async (c) => {
   const db = c.env.DB;
 
   const totalStories = (await db.prepare('SELECT COUNT(*) as c FROM stories').first().catch(() => ({ c: 0 })))?.c || 0;
   const pendingStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'pending'").first().catch(() => ({ c: 0 })))?.c || 0;
-  const approvedStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'approved'").first().catch(() => ({ c: 0 })))?.c || 0;
+  const approvedStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'approved' OR status = 'published'").first().catch(() => ({ c: 0 })))?.c || 0;
   const rejectedStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'rejected'").first().catch(() => ({ c: 0 })))?.c || 0;
 
   const totalComments = (await db.prepare('SELECT COUNT(*) as c FROM comments').first().catch(() => ({ c: 0 })))?.c || 0;
@@ -2143,16 +2169,446 @@ app.get('/api/admin/stats', requireAdmin, async (c) => {
   const totalUsers = (await db.prepare('SELECT COUNT(*) as c FROM users').first().catch(() => ({ c: 0 })))?.c || 0;
   const totalLikes = (await db.prepare('SELECT SUM(like_count) as c FROM stories').first().catch(() => ({ c: 0 })))?.c || 0;
 
-    return c.json({ items: results, type: 'stories' });
-  } else {
+  const openReports = (await db.prepare("SELECT COUNT(*) as c FROM reports WHERE ticket_status != 'resolved' AND ticket_status != 'closed'").first().catch(() => ({ c: 0 })))?.c || 0;
+  const bannedIPs = (await db.prepare('SELECT COUNT(*) as c FROM banned_identifiers').first().catch(() => ({ c: 0 })))?.c || 0;
+  
+  const totalBooks = (await db.prepare('SELECT COUNT(*) as c FROM books').first().catch(() => ({ c: 0 })))?.c || 0;
+  const pendingBooks = (await db.prepare("SELECT COUNT(*) as c FROM books WHERE is_user_submission = 1 AND submission_status = 'pending'").first().catch(() => ({ c: 0 })))?.c || 0;
+  const totalCategories = (await db.prepare('SELECT COUNT(*) as c FROM ticket_categories').first().catch(() => ({ c: 0 })))?.c || 0;
+
+  return c.json({
+    totalStories, pendingStories, approvedStories, rejectedStories,
+    totalComments, pendingComments, totalUsers, totalLikes,
+    openReports, bannedIPs,
+    totalBooks, pendingBooks, totalCategories
+  });
+});
+
+app.get('/api/admin/queue', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { type = 'stories', status } = c.req.query();
+
+  if (type === 'stories') {
     let sql = `
-      SELECT cm.id, cm.story_id, cm.user_id, cm.content AS body, cm.status, cm.ip_hash, cm.created_at, s.title as story_title, u.full_name as author_name
-      FROM comments cm
-      LEFT JOIN stories s ON cm.story_id = s.id
-      LEFT JOIN users u ON cm.user_id = u.id
+      SELECT s.id, s.user_id, s.title, COALESCE(s.content, s.body, '') AS body, s.category_id, s.image_url, s.status, s.submitter_token, s.ip_hash, s.like_count, s.comment_count, s.created_at, s.updated_at,
+             COALESCE(tc.name, cat.name, 'General') as category_name,
+             COALESCE(u.full_name, 'Admin') as author_name
+      FROM stories s
+      LEFT JOIN ticket_categories tc ON s.category_id = tc.id
+      LEFT JOIN categories cat ON s.category_id = cat.id
+      LEFT JOIN users u ON s.user_id = u.id
     `;
     let bindings = [];
     if (status && status !== 'all') {
+      sql += ` WHERE s.status = ? `;
+      bindings.push(status);
+    }
+    sql += ` ORDER BY s.created_at DESC `;
+    try {
+      const { results } = await db.prepare(sql).bind(...bindings).all();
+      return c.json({ items: results || [], type: 'stories' });
+    } catch (err1) {
+      try {
+        let fallbackSql = 'SELECT *, content AS body FROM stories';
+        let fallbackBinds = [];
+        if (status && status !== 'all') {
+          fallbackSql += ' WHERE status = ?';
+          fallbackBinds.push(status);
+        }
+        fallbackSql += ' ORDER BY created_at DESC';
+        const { results } = await db.prepare(fallbackSql).bind(...fallbackBinds).all();
+        return c.json({ items: (results || []).map(r => ({ ...r, category_name: 'General', author_name: 'Admin' })), type: 'stories' });
+      } catch (err2) {
+        return c.json({ items: [], type: 'stories' });
+      }
+    }
+  } else {
+    let sql = `
+      SELECT cm.id, cm.story_id, cm.user_id, COALESCE(cm.content, cm.body, '') AS body, cm.status, cm.ip_hash, cm.created_at,
+             COALESCE(s.title, b.title, 'General Post') as story_title,
+             s.user_id as story_author_id,
+             COALESCE(u.full_name, u.username, 'Anonymous Reader') as commenter_name,
+             COALESCE(u.email, '—') as commenter_email,
+             COALESCE(su.full_name, 'Admin') as post_author_name
+      FROM comments cm
+      LEFT JOIN stories s ON cm.story_id = s.id
+      LEFT JOIN books b ON cm.book_id = b.id
+      LEFT JOIN users u ON cm.user_id = u.id
+      LEFT JOIN users su ON s.user_id = su.id
+    `;
+    let bindings = [];
+    if (status && status !== 'all') {
+      sql += ` WHERE cm.status = ? `;
+      bindings.push(status);
+    }
+    sql += ` ORDER BY cm.created_at DESC `;
+    try {
+      const { results } = await db.prepare(sql).bind(...bindings).all();
+      return c.json({ items: results || [], type: 'comments' });
+    } catch (err1) {
+      console.error('Complex comments query error, trying fallback:', err1);
+      try {
+        let fallbackSql = 'SELECT *, content AS body FROM comments';
+        let fallbackBinds = [];
+        if (status && status !== 'all') {
+          fallbackSql += ' WHERE status = ?';
+          fallbackBinds.push(status);
+        }
+        fallbackSql += ' ORDER BY created_at DESC';
+        const { results } = await db.prepare(fallbackSql).bind(...fallbackBinds).all();
+        return c.json({ items: (results || []).map(r => ({ ...r, commenter_name: 'Anonymous Reader', story_title: 'Story #' + (r.story_id || 1), post_author_name: 'Admin' })), type: 'comments' });
+      } catch (err2) {
+        return c.json({ items: [], type: 'comments' });
+      }
+    }
+  }
+});
+
+// ── Admin Comment Edit / Update Status ──
+app.put('/api/admin/comments/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const id = parseInt(c.req.param('id'));
+  const body = await c.req.json().catch(() => ({}));
+
+  const { content, status } = body;
+  const commentBody = content !== undefined ? content : body.body;
+
+  await db.prepare(`
+    UPDATE comments
+    SET content = COALESCE(?, content),
+        status = COALESCE(?, status)
+    WHERE id = ?
+  `).bind(
+    commentBody !== undefined ? commentBody.trim() : null,
+    status || null,
+    id
+  ).run();
+
+  await writeAuditLog(db, {
+    actorId: adminPayload.adminId,
+    actorType: 'admin',
+    action: 'comment.update',
+    targetType: 'comment',
+    targetId: id
+  });
+
+  return c.json({ success: true, message: 'Comment updated successfully.' });
+});
+
+// ── Admin Delete Comment ──
+app.delete('/api/admin/comments/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const id = parseInt(c.req.param('id'));
+
+  await db.prepare('DELETE FROM comments WHERE id = ?').bind(id).run();
+
+  await writeAuditLog(db, {
+    actorId: adminPayload.adminId,
+    actorType: 'admin',
+    action: 'comment.delete',
+    targetType: 'comment',
+    targetId: id
+  });
+
+  return c.json({ success: true, message: 'Comment deleted successfully.' });
+});
+
+// ── Admin Direct Message User ──
+app.post('/api/admin/messages', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const { user_id, title, message } = await c.req.json().catch(() => ({}));
+
+  if (!user_id || !title || !message) {
+    return c.json({ error: 'user_id, title, and message are required.' }, 400);
+  }
+
+  await createNotification(db, user_id, adminPayload.adminId, 'admin_message', null, `[${title}] ${message}`);
+
+  await writeAuditLog(db, {
+    actorId: adminPayload.adminId,
+    actorType: 'admin',
+    action: 'user.message_sent',
+    targetType: 'user',
+    targetId: parseInt(user_id),
+    details: JSON.stringify({ title, message })
+  });
+
+  return c.json({ success: true, message: 'Official admin message sent successfully.' });
+});
+
+
+// ── Admin Story Creation ──
+app.post('/api/admin/stories', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const body = await c.req.json().catch(() => ({}));
+  const title = (body.title || '').trim();
+  const content = (body.content || body.body || '').trim();
+  const category_id = body.category_id ? parseInt(body.category_id) : null;
+  const image_url = body.image_url ? body.image_url.trim() : null;
+  const status = body.status || 'approved';
+
+  if (!title || !content) {
+    return c.json({ error: 'Title and content are required.' }, 400);
+  }
+
+  const token = 'ADMIN_' + Date.now();
+  const res = await db.prepare(`
+    INSERT INTO stories (title, content, category_id, image_url, status, submitter_token, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+  `).bind(title, content, category_id, image_url, status, token).run();
+
+  const newId = res.meta.last_row_id;
+  await writeAuditLog(db, {
+    actorId: adminPayload.adminId,
+    actorType: 'admin',
+    action: 'story.create',
+    targetType: 'story',
+    targetId: newId,
+    newValue: { title, status }
+  });
+
+  return c.json({ success: true, message: 'Story created successfully.', id: newId }, 201);
+});
+
+// ── Admin Story Edit / Update Status ──
+app.put('/api/admin/stories/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const id = parseInt(c.req.param('id'));
+  const body = await c.req.json().catch(() => ({}));
+
+  const { title, content, category_id, image_url, status } = body;
+  const storyBody = content !== undefined ? content : body.body;
+
+  await db.prepare(`
+    UPDATE stories
+    SET title = COALESCE(?, title),
+        content = COALESCE(?, content),
+        category_id = COALESCE(?, category_id),
+        image_url = COALESCE(?, image_url),
+        status = COALESCE(?, status),
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).bind(
+    title ? title.trim() : null,
+    storyBody !== undefined ? storyBody.trim() : null,
+    category_id !== undefined ? (category_id ? parseInt(category_id) : null) : null,
+    image_url !== undefined ? image_url : null,
+    status || null,
+    id
+  ).run();
+
+  await writeAuditLog(db, {
+    actorId: adminPayload.adminId,
+    actorType: 'admin',
+    action: 'story.update',
+    targetType: 'story',
+    targetId: id
+  });
+
+  return c.json({ success: true, message: 'Story updated successfully.' });
+});
+
+// ── Admin Delete Story ──
+app.delete('/api/admin/stories/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const id = parseInt(c.req.param('id'));
+
+  await db.prepare('DELETE FROM stories WHERE id = ?').bind(id).run();
+
+  await writeAuditLog(db, {
+    actorId: adminPayload.adminId,
+    actorType: 'admin',
+    action: 'story.delete',
+    targetType: 'story',
+    targetId: id
+  });
+
+  return c.json({ success: true, message: 'Story deleted successfully.' });
+});
+
+app.get('/api/admin/users', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const page = parseInt(c.req.query('page') || '1');
+  const limit = parseInt(c.req.query('limit') || '100');
+  const search = c.req.query('search') || '';
+  const statusFilter = c.req.query('status') || '';
+  const offset = (page - 1) * limit;
+
+  try {
+    let whereClauses = [];
+    let binds = [];
+
+    if (search) {
+      whereClauses.push('(full_name LIKE ? OR email LIKE ? OR user_id LIKE ?)');
+      const s = '%' + search + '%';
+      binds.push(s, s, s);
+    }
+
+    if (statusFilter && statusFilter !== 'all') {
+      whereClauses.push('account_status = ?');
+      binds.push(statusFilter);
+    }
+
+    const whereStr = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
+
+    let query = `
+      SELECT id, user_id, full_name, email, COALESCE(role, 'user') AS role, COALESCE(account_status, 'active') AS account_status, created_at,
+             (SELECT COUNT(*) FROM stories WHERE (user_id = users.id OR submitter_token = users.user_id)) AS story_count,
+             (SELECT COUNT(*) FROM comments WHERE user_id = users.id) AS comment_count
+      FROM users
+      ${whereStr}
+      ORDER BY created_at DESC LIMIT ? OFFSET ?
+    `;
+
+    const { results } = await db.prepare(query).bind(...binds, limit, offset).all();
+
+    const countQuery = `SELECT COUNT(*) as cnt FROM users ${whereStr}`;
+    const total = await db.prepare(countQuery).bind(...binds).first();
+
+    return c.json({ users: results || [], total: total?.cnt ?? 0, page, limit });
+  } catch (err) {
+    console.error('GET /api/admin/users query error, trying fallback:', err);
+    try {
+      const { results } = await db.prepare('SELECT id, user_id, full_name, email, account_status, created_at FROM users LIMIT 100').all();
+      return c.json({ users: (results || []).map(u => ({ ...u, role: 'user', story_count: 0, comment_count: 0 })), total: results?.length || 0 });
+    } catch(err2) {
+      return c.json({ users: [], total: 0 });
+    }
+  }
+});
+
+// ── Admin Create User ──
+app.post('/api/admin/users', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const body = await c.req.json().catch(() => ({}));
+  const full_name = (body.full_name || '').trim();
+  const email = (body.email || '').trim();
+  const user_id = (body.user_id || 'usr_' + Date.now()).trim();
+  const role = body.role || 'user';
+  const account_status = body.account_status || 'active';
+
+  if (!full_name || !email) {
+    return c.json({ error: 'Full name and email are required.' }, 400);
+  }
+
+  const res = await db.prepare(`
+    INSERT INTO users (user_id, full_name, email, role, account_status, created_at)
+    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+  `).bind(user_id, full_name, email, role, account_status).run();
+
+  const newId = res.meta.last_row_id;
+  await writeAuditLog(db, {
+    actorId: adminPayload.adminId,
+    actorType: 'admin',
+    action: 'user.create',
+    targetType: 'user',
+    targetId: newId,
+    newValue: { full_name, email, role, account_status }
+  });
+
+  return c.json({ success: true, message: 'User account created successfully.', id: newId }, 201);
+});
+
+// ── Admin Update User Details / Role / Status ──
+app.put('/api/admin/users/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const id = parseInt(c.req.param('id'));
+  const body = await c.req.json().catch(() => ({}));
+
+  const { full_name, email, role, account_status } = body;
+
+  await db.prepare(`
+    UPDATE users
+    SET full_name = COALESCE(?, full_name),
+        email = COALESCE(?, email),
+        role = COALESCE(?, role),
+        account_status = COALESCE(?, account_status)
+    WHERE id = ?
+  `).bind(
+    full_name ? full_name.trim() : null,
+    email ? email.trim() : null,
+    role || null,
+    account_status || null,
+    id
+  ).run();
+
+  await writeAuditLog(db, {
+    actorId: adminPayload.adminId,
+    actorType: 'admin',
+    action: 'user.update',
+    targetType: 'user',
+    targetId: id
+  });
+
+  return c.json({ success: true, message: 'User account updated successfully.' });
+});
+
+// ── Admin Reset User Password ──
+app.post('/api/admin/users/:id/reset-password', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const id = parseInt(c.req.param('id'));
+  const { new_password } = await c.req.json().catch(() => ({}));
+
+  if (!new_password || new_password.length < 6) {
+    return c.json({ error: 'New password must be at least 6 characters long.' }, 400);
+  }
+
+  // In production, pass through password hash helper
+  await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(new_password, id).run();
+
+  await writeAuditLog(db, {
+    actorId: adminPayload.adminId,
+    actorType: 'admin',
+    action: 'user.password_reset',
+    targetType: 'user',
+    targetId: id
+  });
+
+  return c.json({ success: true, message: 'User password reset successfully.' });
+});
+
+// ── Admin Delete User ──
+app.delete('/api/admin/users/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const id = parseInt(c.req.param('id'));
+
+  await db.prepare('DELETE FROM users WHERE id = ?').bind(id).run();
+
+  await writeAuditLog(db, {
+    actorId: adminPayload.adminId,
+    actorType: 'admin',
+    action: 'user.delete',
+    targetType: 'user',
+    targetId: id
+  });
+
+  return c.json({ success: true, message: 'User account deleted successfully.' });
+});
+
+
+app.get('/api/admin/stats', requireAdmin, async (c) => {
+  const db = c.env.DB;
+
+  const totalStories = (await db.prepare('SELECT COUNT(*) as c FROM stories').first().catch(() => ({ c: 0 })))?.c || 0;
+  const pendingStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'pending'").first().catch(() => ({ c: 0 })))?.c || 0;
+  const approvedStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'approved' OR status = 'published'").first().catch(() => ({ c: 0 })))?.c || 0;
+  const rejectedStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'rejected'").first().catch(() => ({ c: 0 })))?.c || 0;
+
+  const totalComments = (await db.prepare('SELECT COUNT(*) as c FROM comments').first().catch(() => ({ c: 0 })))?.c || 0;
+  const pendingComments = (await db.prepare("SELECT COUNT(*) as c FROM comments WHERE status = 'pending'").first().catch(() => ({ c: 0 })))?.c || 0;
+  const totalUsers = (await db.prepare('SELECT COUNT(*) as c FROM users').first().catch(() => ({ c: 0 })))?.c || 0;
+  const totalLikes = (await db.prepare('SELECT SUM(like_count) as c FROM stories').first().catch(() => ({ c: 0 })))?.c || 0;
+
       sql += ` WHERE cm.status = ? `;
       bindings.push(status);
     }

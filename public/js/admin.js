@@ -449,46 +449,57 @@
 
 
 
-  // ── Stories Queue ──
-  let currentStoryQueueStatus = 'pending';
+  // ── Stories Queue & Management ──
+  let currentStoryQueueStatus = 'all';
   let currentStoriesList = [];
+  window._currentEditingStoryId = null;
 
   async function loadStoriesQueue(status) {
-    if (status) currentStoryQueueStatus = status;
+    if (status !== undefined) currentStoryQueueStatus = status;
     try {
       const data = await api(`/api/admin/queue?type=stories&status=${currentStoryQueueStatus}`);
       const tbody = document.getElementById('storiesQueueBody');
       const empty = document.getElementById('noStoriesQueue');
+      if (!tbody) return;
       tbody.innerHTML = '';
       currentStoriesList = data.items || [];
 
+      const wrapper = document.getElementById('storiesQueueTable')?.closest('.admin-table-wrapper');
+
       if (currentStoriesList.length === 0) {
-        empty.classList.remove('hidden');
-        document.getElementById('storiesQueueTable').closest('.admin-table-wrapper').classList.add('hidden');
+        if (empty) empty.classList.remove('hidden');
+        if (wrapper) wrapper.classList.add('hidden');
         return;
       }
 
-      empty.classList.add('hidden');
-      document.getElementById('storiesQueueTable').closest('.admin-table-wrapper').classList.remove('hidden');
+      if (empty) empty.classList.add('hidden');
+      if (wrapper) wrapper.classList.remove('hidden');
 
       currentStoriesList.forEach(item => {
         const tr = document.createElement('tr');
+        const st = (item.status || 'pending').toLowerCase();
+        const statusBadgeClass = (st === 'approved' || st === 'published') ? 'approved'
+          : st === 'rejected' ? 'rejected'
+          : (st === 'removed' || st === 'hidden' || st === 'archived') ? 'archived' : 'pending';
+
         tr.innerHTML = `
-          <td>${item.id}</td>
+          <td>#${item.id}</td>
           <td style="font-weight: 500;">
-            <a href="#" class="admin-story-detail-trigger" data-story-id="${item.id}" style="color: var(--text-primary); text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
-              ${escapeHtml(item.title || 'Untitled')}
+            <a href="#" class="admin-story-detail-trigger" data-story-id="${item.id}" style="color: var(--text-primary); text-decoration: none; font-weight: 600;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+              ${escapeHtml(item.title || 'Untitled Story')}
             </a>
           </td>
-          <td><div class="admin-table__preview" style="max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(item.body ? item.body.substring(0, 100) : '')}</div></td>
-          <td>${escapeHtml(item.category_name || 'General')}</td>
-          <td><span class="status-badge status-badge--${item.status === 'approved' ? 'approved' : item.status === 'rejected' ? 'rejected' : 'pending'}">${escapeHtml(item.status)}</span></td>
+          <td><div class="admin-table__preview" style="max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary);">${escapeHtml(item.body || item.content || '')}</div></td>
+          <td><span class="coverage-chip">📁 ${escapeHtml(item.category_name || 'General')}</span></td>
+          <td><span class="status-badge status-badge--${statusBadgeClass}">${escapeHtml(st)}</span></td>
           <td>${formatDate(item.created_at)}</td>
           <td>
-            <div class="admin-table__actions" style="display: flex; gap: 6px;">
-              <button class="btn btn--secondary btn--sm admin-story-detail-trigger" data-story-id="${item.id}" style="padding: 4px 8px; font-size: 0.8rem;">🔍 Details</button>
-              ${item.status !== 'approved' ? `<button class="btn btn--success btn--sm" onclick="moderateItem('story', ${item.id}, 'approve')" style="padding: 4px 8px;" title="Approve">✓</button>` : ''}
-              ${item.status !== 'rejected' ? `<button class="btn btn--danger btn--sm" onclick="moderateItem('story', ${item.id}, 'reject')" style="padding: 4px 8px;" title="Reject">✕</button>` : ''}
+            <div class="admin-table__actions" style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button class="btn btn--secondary btn--sm admin-story-detail-trigger" data-story-id="${item.id}" style="padding: 4px 8px; font-size: 0.8rem;" title="View Details & Edit">🔍 Details</button>
+              ${st !== 'approved' && st !== 'published' ? `<button class="btn btn--success btn--sm" onclick="quickUpdateStoryStatus(${item.id}, 'approved')" style="padding: 4px 8px;" title="Approve & Publish">✓</button>` : ''}
+              ${st !== 'rejected' ? `<button class="btn btn--danger btn--sm" onclick="quickUpdateStoryStatus(${item.id}, 'rejected')" style="padding: 4px 8px;" title="Reject">✕</button>` : ''}
+              ${st !== 'removed' && st !== 'hidden' ? `<button class="btn btn--ghost btn--sm" onclick="quickUpdateStoryStatus(${item.id}, 'removed')" style="padding: 4px 8px;" title="Hide Story">👁️ Hide</button>` : `<button class="btn btn--ghost btn--sm" onclick="quickUpdateStoryStatus(${item.id}, 'approved')" style="padding: 4px 8px;" title="Unhide Story">👁️ Unhide</button>`}
+              <button class="btn btn--danger btn--sm" onclick="deleteAdminStory(${item.id})" style="padding: 4px 8px;" title="Delete Permanently">🗑️</button>
             </div>
           </td>
         `;
@@ -507,96 +518,499 @@
         });
       });
     } catch (err) {
+      console.error('loadStoriesQueue error:', err);
       showToast('Failed to load stories.', 'error');
     }
   }
 
-  function openAdminStoryModal(story) {
+  async function populateCategoryOptions(selectElementId, selectedId = null) {
+    const sel = document.getElementById(selectElementId);
+    if (!sel) return;
+    try {
+      const cats = _allCategories.length ? _allCategories : await api('/api/admin/tax/categories').catch(() => []);
+      sel.innerHTML = '<option value="">General / Uncategorized</option>' +
+        cats.map(c => `<option value="${c.id}" ${String(c.id) === String(selectedId) ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
+    } catch(e) {
+      sel.innerHTML = '<option value="">General / Uncategorized</option>';
+    }
+  }
+
+  async function openAdminStoryModal(story) {
     const modal = document.getElementById('adminStoryReviewModal');
     if (!modal) return;
 
-    document.getElementById('adminStoryId').textContent = `ID: #${story.id}`;
-    document.getElementById('adminStoryTitle').textContent = story.title || 'Untitled Story';
-    document.getElementById('adminStoryMeta').textContent = `By ${story.author_name || (story.user_id ? 'User #' + story.user_id : 'Anonymous')} • Submitted ${formatDate(story.created_at)}`;
-    document.getElementById('adminStoryCategory').textContent = story.category_name || 'General';
-    document.getElementById('adminStoryContent').textContent = story.body || 'No text content available.';
-    document.getElementById('adminStoryLikes').textContent = story.like_count || 0;
-    document.getElementById('adminStoryComments').textContent = story.comment_count || 0;
+    window._currentEditingStoryId = story.id;
+
+    const idEl = document.getElementById('adminStoryId');
+    if (idEl) idEl.textContent = `ID: #${story.id}`;
+
+    const titleInput = document.getElementById('adminStoryTitleInput');
+    if (titleInput) titleInput.value = story.title || '';
+
+    const metaEl = document.getElementById('adminStoryMeta');
+    if (metaEl) metaEl.textContent = `By ${story.author_name || (story.user_id ? 'User #' + story.user_id : 'Admin')} • Submitted ${formatDate(story.created_at)}`;
+
+    const catEl = document.getElementById('adminStoryCategory');
+    if (catEl) catEl.textContent = story.category_name || 'General';
+
+    await populateCategoryOptions('adminStoryCategorySelect', story.category_id);
+
+    const statusSel = document.getElementById('adminStoryStatusSelect');
+    if (statusSel) statusSel.value = story.status || 'pending';
+
+    const imgInput = document.getElementById('adminStoryImageInput');
+    if (imgInput) imgInput.value = story.image_url || '';
+
+    const contentInput = document.getElementById('adminStoryContentInput');
+    if (contentInput) contentInput.value = story.body || story.content || '';
+
+    const likesEl = document.getElementById('adminStoryLikes');
+    if (likesEl) likesEl.textContent = story.like_count || 0;
+
+    const commentsEl = document.getElementById('adminStoryComments');
+    if (commentsEl) commentsEl.textContent = story.comment_count || 0;
 
     const badge = document.getElementById('adminStoryStatusBadge');
-    badge.className = `status-badge status-badge--${story.status === 'approved' ? 'approved' : story.status === 'rejected' ? 'rejected' : 'pending'}`;
-    badge.textContent = (story.status || 'pending').toUpperCase();
+    if (badge) {
+      const st = (story.status || 'pending').toLowerCase();
+      badge.className = `status-badge status-badge--${st === 'approved' || st === 'published' ? 'approved' : st === 'rejected' ? 'rejected' : 'pending'}`;
+      badge.textContent = st.toUpperCase();
+    }
 
     const imgContainer = document.getElementById('adminStoryImageContainer');
     const imgEl = document.getElementById('adminStoryImage');
-    if (story.image_url) {
+    if (story.image_url && imgContainer && imgEl) {
       imgEl.src = story.image_url;
       imgContainer.style.display = 'block';
-    } else {
+    } else if (imgContainer) {
       imgContainer.style.display = 'none';
     }
-
-    // Bind modal actions
-    const approveBtn = document.getElementById('adminStoryApproveBtn');
-    const rejectBtn = document.getElementById('adminStoryRejectBtn');
-
-    approveBtn.onclick = async () => {
-      await moderateItem('story', story.id, 'approve');
-      modal.style.display = 'none';
-      modal.classList.remove('active');
-    };
-
-    rejectBtn.onclick = async () => {
-      await moderateItem('story', story.id, 'reject');
-      modal.style.display = 'none';
-      modal.classList.remove('active');
-    };
 
     modal.style.display = 'flex';
     modal.classList.add('active');
   }
 
-  // ── Comments Queue ──
-  let currentCommentQueueStatus = 'pending';
+  function closeAdminStoryModal() {
+    const modal = document.getElementById('adminStoryReviewModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('active');
+    }
+  }
+
+  async function saveAdminStoryModalEdits() {
+    const id = window._currentEditingStoryId;
+    if (!id) return;
+
+    const title = (document.getElementById('adminStoryTitleInput')?.value || '').trim();
+    const category_id = document.getElementById('adminStoryCategorySelect')?.value || null;
+    const status = document.getElementById('adminStoryStatusSelect')?.value || 'approved';
+    const image_url = (document.getElementById('adminStoryImageInput')?.value || '').trim();
+    const content = (document.getElementById('adminStoryContentInput')?.value || '').trim();
+
+    if (!title || !content) {
+      return showToast('Title and content cannot be empty.', 'warning');
+    }
+
+    try {
+      await api(`/api/admin/stories/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ title, category_id, status, image_url, content })
+      });
+      showToast('Story updated successfully.', 'success');
+      closeAdminStoryModal();
+      loadStoriesQueue();
+    } catch (err) {
+      showToast('Failed to save story edits: ' + err.message, 'error');
+    }
+  }
+
+  async function quickUpdateStoryStatus(storyId, newStatus) {
+    try {
+      await api(`/api/admin/stories/${storyId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: newStatus })
+      });
+      showToast(`Story status updated to ${newStatus}.`, 'success');
+      loadStoriesQueue();
+    } catch (err) {
+      showToast('Failed to update status: ' + err.message, 'error');
+    }
+  }
+
+  async function deleteAdminStory(storyId) {
+    if (!confirm(`Are you sure you want to PERMANENTLY delete story #${storyId}? This action cannot be undone.`)) return;
+    try {
+      await api(`/api/admin/stories/${storyId}`, { method: 'DELETE' });
+      showToast('Story deleted successfully.', 'success');
+      if (window._currentEditingStoryId == storyId) closeAdminStoryModal();
+      loadStoriesQueue();
+    } catch (err) {
+      showToast('Failed to delete story: ' + err.message, 'error');
+    }
+  }
+
+  function deleteCurrentAdminStory() {
+    if (window._currentEditingStoryId) {
+      deleteAdminStory(window._currentEditingStoryId);
+    }
+  }
+
+  async function toggleHideCurrentAdminStory() {
+    const id = window._currentEditingStoryId;
+    if (!id) return;
+    const targetStory = currentStoriesList.find(s => s.id == id);
+    const currentStatus = targetStory ? targetStory.status : 'approved';
+    const newStatus = (currentStatus === 'removed' || currentStatus === 'hidden') ? 'approved' : 'removed';
+    await quickUpdateStoryStatus(id, newStatus);
+    closeAdminStoryModal();
+  }
+
+  async function openAdminCreateStoryModal() {
+    await populateCategoryOptions('createStoryCategory');
+    const form = document.getElementById('adminCreateStoryForm');
+    if (form) form.reset();
+    const modal = document.getElementById('adminCreateStoryModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+    }
+  }
+
+  function closeAdminCreateStoryModal() {
+    const modal = document.getElementById('adminCreateStoryModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('active');
+    }
+  }
+
+  async function saveAdminNewStory(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const title = (document.getElementById('createStoryTitle')?.value || '').trim();
+    const category_id = document.getElementById('createStoryCategory')?.value || null;
+    const status = document.getElementById('createStoryStatus')?.value || 'approved';
+    const image_url = (document.getElementById('createStoryImageUrl')?.value || '').trim();
+    const content = (document.getElementById('createStoryContent')?.value || '').trim();
+
+    if (!title || !content) {
+      return showToast('Please enter title and story content.', 'warning');
+    }
+
+    const btn = document.getElementById('btnSaveNewStory');
+    if (btn) { btn.disabled = true; btn.textContent = 'Publishing...'; }
+
+    try {
+      await api('/api/admin/stories', {
+        method: 'POST',
+        body: JSON.stringify({ title, category_id, status, image_url, content })
+      });
+      showToast('Story published successfully!', 'success');
+      closeAdminCreateStoryModal();
+      loadStoriesQueue('all');
+    } catch (err) {
+      showToast('Failed to publish story: ' + err.message, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '🚀 Publish Story'; }
+    }
+  }
+
+  // Export functions to window
+  window.openAdminStoryModal = openAdminStoryModal;
+  window.closeAdminStoryModal = closeAdminStoryModal;
+  window.saveAdminStoryModalEdits = saveAdminStoryModalEdits;
+  window.quickUpdateStoryStatus = quickUpdateStoryStatus;
+  window.deleteAdminStory = deleteAdminStory;
+  window.deleteCurrentAdminStory = deleteCurrentAdminStory;
+  window.toggleHideCurrentAdminStory = toggleHideCurrentAdminStory;
+  window.openAdminCreateStoryModal = openAdminCreateStoryModal;
+  window.closeAdminCreateStoryModal = closeAdminCreateStoryModal;
+  window.saveAdminNewStory = saveAdminNewStory;
+
+
+  // ── Comments Queue & Management ──
+  let currentCommentQueueStatus = 'all';
+  let currentCommentsList = [];
+  window._currentEditingComment = null;
+  window._activeMsgUserId = null;
 
   async function loadCommentsQueue(status) {
-    if (status) currentCommentQueueStatus = status;
+    if (status !== undefined) currentCommentQueueStatus = status;
     try {
       const data = await api(`/api/admin/queue?type=comments&status=${currentCommentQueueStatus}`);
       const tbody = document.getElementById('commentsQueueBody');
       const empty = document.getElementById('noCommentsQueue');
+      if (!tbody) return;
       tbody.innerHTML = '';
+      currentCommentsList = data.items || [];
 
-      if (data.items.length === 0) {
-        empty.classList.remove('hidden');
-        document.getElementById('commentsQueueTable').closest('.admin-table-wrapper').classList.add('hidden');
+      const wrapper = document.getElementById('commentsQueueTable')?.closest('.admin-table-wrapper');
+
+      if (currentCommentsList.length === 0) {
+        if (empty) empty.classList.remove('hidden');
+        if (wrapper) wrapper.classList.add('hidden');
         return;
       }
 
-      empty.classList.add('hidden');
-      document.getElementById('commentsQueueTable').closest('.admin-table-wrapper').classList.remove('hidden');
+      if (empty) empty.classList.add('hidden');
+      if (wrapper) wrapper.classList.remove('hidden');
 
-      data.items.forEach(item => {
+      currentCommentsList.forEach(item => {
         const tr = document.createElement('tr');
+        const st = (item.status || 'pending').toLowerCase();
+        const statusBadgeClass = (st === 'approved' || st === 'published') ? 'approved'
+          : st === 'rejected' ? 'rejected'
+          : (st === 'removed' || st === 'hidden' || st === 'archived') ? 'archived' : 'pending';
+
+        const commenterDisp = item.commenter_name || (item.user_id ? `User #${item.user_id}` : 'Anonymous');
+        const commenterEmail = item.commenter_email && item.commenter_email !== '—' ? `<br><small style="color: var(--text-muted);">${escapeHtml(item.commenter_email)}</small>` : '';
+
         tr.innerHTML = `
-          <td>${item.id}</td>
-          <td>${escapeHtml(item.story_title || `Story #${item.story_id}`)}</td>
-          <td><div class="admin-table__preview">${escapeHtml(item.body)}</div></td>
-          <td><span class="status-badge status-badge--${item.status}">${item.status}</span></td>
+          <td>#${item.id}</td>
+          <td>
+            <div style="font-weight: 600; color: var(--text-primary);">👤 ${escapeHtml(commenterDisp)}</div>
+            ${commenterEmail}
+          </td>
+          <td>
+            <div class="admin-table__preview" style="max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); font-size: 0.9rem;">
+              <a href="#" class="admin-comment-detail-trigger" data-comment-id="${item.id}" style="color: var(--text-primary); text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                "${escapeHtml(item.body || item.content || '')}"
+              </a>
+            </div>
+          </td>
+          <td>
+            <div style="font-weight: 500; font-size: 0.85rem; color: var(--primary);">📖 ${escapeHtml(item.story_title || `Story #${item.story_id}`)}</div>
+          </td>
+          <td>
+            <div style="font-size: 0.85rem; color: var(--text-secondary);">✍️ ${escapeHtml(item.post_author_name || 'Admin')}</div>
+          </td>
+          <td><span class="status-badge status-badge--${statusBadgeClass}">${escapeHtml(st)}</span></td>
           <td>${formatDate(item.created_at)}</td>
           <td>
-            <div class="admin-table__actions">
-              ${item.status !== 'approved' ? `<button class="btn btn--success btn--sm" onclick="moderateItem('comment', ${item.id}, 'approve')">✓</button>` : ''}
-              ${item.status !== 'rejected' ? `<button class="btn btn--danger btn--sm" onclick="moderateItem('comment', ${item.id}, 'reject')">✗</button>` : ''}
+            <div class="admin-table__actions" style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button class="btn btn--secondary btn--sm admin-comment-detail-trigger" data-comment-id="${item.id}" style="padding: 4px 8px; font-size: 0.8rem;" title="View Details & Edit">🔍 Details</button>
+              ${st !== 'approved' ? `<button class="btn btn--success btn--sm" onclick="quickUpdateCommentStatus(${item.id}, 'approved')" style="padding: 4px 8px;" title="Approve">✓</button>` : ''}
+              ${st !== 'rejected' ? `<button class="btn btn--danger btn--sm" onclick="quickUpdateCommentStatus(${item.id}, 'rejected')" style="padding: 4px 8px;" title="Reject">✕</button>` : ''}
+              ${st !== 'removed' && st !== 'hidden' ? `<button class="btn btn--ghost btn--sm" onclick="quickUpdateCommentStatus(${item.id}, 'removed')" style="padding: 4px 8px;" title="Hide Comment">👁️ Hide</button>` : `<button class="btn btn--ghost btn--sm" onclick="quickUpdateCommentStatus(${item.id}, 'approved')" style="padding: 4px 8px;" title="Unhide Comment">👁️ Unhide</button>`}
+              ${item.user_id ? `<button class="btn btn--secondary btn--sm" onclick="openAdminMessagingModal(${item.user_id}, '${escapeHtml(commenterDisp).replace(/'/g, "\\'")}', 'Notice Regarding Your Comment #${item.id}')" style="padding: 4px 8px;" title="Message Commenter">✉️</button>` : ''}
+              <button class="btn btn--danger btn--sm" onclick="deleteAdminComment(${item.id})" style="padding: 4px 8px;" title="Delete Permanently">🗑️</button>
             </div>
           </td>
         `;
         tbody.appendChild(tr);
       });
+
+      // Bind comment detail triggers
+      tbody.querySelectorAll('.admin-comment-detail-trigger').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const commentId = btn.dataset.commentId;
+          const targetComment = currentCommentsList.find(c => c.id == commentId);
+          if (targetComment) {
+            openAdminCommentModal(targetComment);
+          }
+        });
+      });
     } catch (err) {
+      console.error('loadCommentsQueue error:', err);
       showToast('Failed to load comments queue.', 'error');
     }
   }
+
+  function openAdminCommentModal(comment) {
+    const modal = document.getElementById('adminCommentDetailModal');
+    if (!modal) return;
+
+    window._currentEditingComment = comment;
+
+    const idEl = document.getElementById('adminCommentId');
+    if (idEl) idEl.textContent = `Comment ID: #${comment.id}`;
+
+    const dateEl = document.getElementById('adminCommentDate');
+    if (dateEl) dateEl.textContent = `Submitted ${formatDate(comment.created_at)}`;
+
+    const commenterName = comment.commenter_name || (comment.user_id ? `User #${comment.user_id}` : 'Anonymous Reader');
+    const commenterNameEl = document.getElementById('adminCommenterName');
+    if (commenterNameEl) commenterNameEl.textContent = commenterName;
+
+    const commenterEmailEl = document.getElementById('adminCommenterEmail');
+    if (commenterEmailEl) commenterEmailEl.textContent = comment.commenter_email || 'No email registered';
+
+    const targetTitleEl = document.getElementById('adminCommentTargetTitle');
+    if (targetTitleEl) targetTitleEl.textContent = comment.story_title || `Story #${comment.story_id}`;
+
+    const targetAuthorEl = document.getElementById('adminCommentTargetAuthor');
+    if (targetAuthorEl) targetAuthorEl.textContent = `Uploaded by: ${comment.post_author_name || 'Admin'}`;
+
+    const ipEl = document.getElementById('adminCommentIpHash');
+    if (ipEl) ipEl.textContent = comment.ip_hash ? `IP Hash: ${comment.ip_hash}` : 'IP: Unknown';
+
+    const bodyInput = document.getElementById('adminCommentBodyInput');
+    if (bodyInput) bodyInput.value = comment.body || comment.content || '';
+
+    const statusSel = document.getElementById('adminCommentStatusSelect');
+    if (statusSel) statusSel.value = comment.status || 'pending';
+
+    const badge = document.getElementById('adminCommentStatusBadge');
+    if (badge) {
+      const st = (comment.status || 'pending').toLowerCase();
+      badge.className = `status-badge status-badge--${st === 'approved' ? 'approved' : st === 'rejected' ? 'rejected' : 'pending'}`;
+      badge.textContent = st.toUpperCase();
+    }
+
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+  }
+
+  function closeAdminCommentModal() {
+    const modal = document.getElementById('adminCommentDetailModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('active');
+    }
+  }
+
+  async function saveAdminCommentModalEdits() {
+    const comment = window._currentEditingComment;
+    if (!comment || !comment.id) return;
+
+    const content = (document.getElementById('adminCommentBodyInput')?.value || '').trim();
+    const status = document.getElementById('adminCommentStatusSelect')?.value || 'approved';
+
+    if (!content) {
+      return showToast('Comment content cannot be empty.', 'warning');
+    }
+
+    try {
+      await api(`/api/admin/comments/${comment.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ content, status })
+      });
+      showToast('Comment updated successfully.', 'success');
+      closeAdminCommentModal();
+      loadCommentsQueue();
+    } catch (err) {
+      showToast('Failed to save comment edits: ' + err.message, 'error');
+    }
+  }
+
+  async function quickUpdateCommentStatus(commentId, newStatus) {
+    try {
+      await api(`/api/admin/comments/${commentId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: newStatus })
+      });
+      showToast(`Comment status updated to ${newStatus}.`, 'success');
+      loadCommentsQueue();
+    } catch (err) {
+      showToast('Failed to update status: ' + err.message, 'error');
+    }
+  }
+
+  async function deleteAdminComment(commentId) {
+    if (!confirm(`Are you sure you want to PERMANENTLY delete comment #${commentId}? This action cannot be undone.`)) return;
+    try {
+      await api(`/api/admin/comments/${commentId}`, { method: 'DELETE' });
+      showToast('Comment deleted successfully.', 'success');
+      if (window._currentEditingComment && window._currentEditingComment.id == commentId) closeAdminCommentModal();
+      loadCommentsQueue();
+    } catch (err) {
+      showToast('Failed to delete comment: ' + err.message, 'error');
+    }
+  }
+
+  function deleteCurrentAdminComment() {
+    if (window._currentEditingComment) {
+      deleteAdminComment(window._currentEditingComment.id);
+    }
+  }
+
+  async function toggleHideCurrentAdminComment() {
+    const comment = window._currentEditingComment;
+    if (!comment) return;
+    const currentStatus = comment.status || 'approved';
+    const newStatus = (currentStatus === 'removed' || currentStatus === 'hidden') ? 'approved' : 'removed';
+    await quickUpdateCommentStatus(comment.id, newStatus);
+    closeAdminCommentModal();
+  }
+
+  // ── Admin Direct Messaging Handlers ──
+  function openAdminMessagingModal(userId, recipientName, defaultSubject = '') {
+    window._activeMsgUserId = userId;
+    const badge = document.getElementById('modalMsgRecipientBadge');
+    if (badge) badge.textContent = `User: ${recipientName} (ID #${userId || 'N/A'})`;
+
+    const titleInput = document.getElementById('adminMsgTitleInput');
+    if (titleInput) titleInput.value = defaultSubject || 'Official Notice from Midnight Support Team';
+
+    const bodyInput = document.getElementById('adminMsgBodyInput');
+    if (bodyInput) bodyInput.value = '';
+
+    const modal = document.getElementById('adminMessagingModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+    }
+  }
+
+  function closeAdminMessagingModal() {
+    const modal = document.getElementById('adminMessagingModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('active');
+    }
+  }
+
+  function messageCommenterFromModal() {
+    const comment = window._currentEditingComment;
+    if (!comment) return;
+    const commenterName = comment.commenter_name || (comment.user_id ? `User #${comment.user_id}` : 'Anonymous');
+    openAdminMessagingModal(comment.user_id, commenterName, `Regarding your comment on "${comment.story_title || 'Story #' + comment.story_id}"`);
+  }
+
+  async function submitAdminDirectMessage(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const userId = window._activeMsgUserId;
+    const title = (document.getElementById('adminMsgTitleInput')?.value || '').trim();
+    const message = (document.getElementById('adminMsgBodyInput')?.value || '').trim();
+
+    if (!userId) {
+      return showToast('No recipient user specified.', 'warning');
+    }
+    if (!title || !message) {
+      return showToast('Please enter both subject and message body.', 'warning');
+    }
+
+    const btn = document.getElementById('btnSubmitAdminMsg');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+    try {
+      await api('/api/admin/messages', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: userId, title, message })
+      });
+      showToast('Official admin message sent successfully!', 'success');
+      closeAdminMessagingModal();
+    } catch (err) {
+      showToast('Failed to send message: ' + err.message, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '🚀 Send Official Admin Message'; }
+    }
+  }
+
+  // Export comment & messaging functions
+  window.openAdminCommentModal = openAdminCommentModal;
+  window.closeAdminCommentModal = closeAdminCommentModal;
+  window.saveAdminCommentModalEdits = saveAdminCommentModalEdits;
+  window.quickUpdateCommentStatus = quickUpdateCommentStatus;
+  window.deleteAdminComment = deleteAdminComment;
+  window.deleteCurrentAdminComment = deleteCurrentAdminComment;
+  window.toggleHideCurrentAdminComment = toggleHideCurrentAdminComment;
+  window.openAdminMessagingModal = openAdminMessagingModal;
+  window.closeAdminMessagingModal = closeAdminMessagingModal;
+  window.messageCommenterFromModal = messageCommenterFromModal;
+  window.submitAdminDirectMessage = submitAdminDirectMessage;
+
 
   // ── Moderate Item ──
   window.moderateItem = async function (type, id, action) {
@@ -617,7 +1031,7 @@
   };
 
   // ── Reports / Tickets (Helpdesk Management) ──
-  let currentTicketStatus = 'open';
+  let currentTicketStatus = 'all';
   let adminReplyType = 'public'; // 'public' | 'internal'
   let cachedCannedResponses = [];
   let cachedSupportAgents = [];
@@ -689,17 +1103,34 @@
           <td><span class="status-badge status-badge--${(report.ticket_status || 'open').replace('_', '-')}">${(report.ticket_status || 'open').replace(/_/g, ' ')}</span></td>
           <td><span style="font-size: 0.82rem; font-weight: 500; color: var(--text-secondary);">${escapeHtml(report.assigned_agent_name || 'Unassigned')}</span></td>
           <td>
-            <div class="admin-table__actions">
-              <button class="btn btn--primary btn--sm" onclick='window.openTicketModal(${JSON.stringify(report).replace(/'/g, "&#39;")})'>Review Ticket</button>
+            <div class="admin-table__actions" style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button class="btn btn--primary btn--sm" onclick='window.openTicketModal(${JSON.stringify(report).replace(/'/g, "&#39;")})' title="Open Ticket Workspace">🔍 Review</button>
+              ${report.ticket_status !== 'resolved' && report.ticket_status !== 'closed' ? `<button class="btn btn--success btn--sm" onclick="window.quickSetTicketStatus(${report.id}, 'resolved')" style="padding: 4px 8px;" title="Resolve Ticket">✓</button>` : ''}
+              ${report.reporter_id ? `<button class="btn btn--secondary btn--sm" onclick="openAdminMessagingModal(${report.reporter_id}, '${escapeHtml(report.reporter_name || 'User').replace(/'/g, "\\'")}', 'Regarding Ticket #${report.ticket_id || report.id}')" style="padding: 4px 8px;" title="Message Reporter">✉️</button>` : ''}
             </div>
           </td>
         `;
         tbody.appendChild(tr);
       });
     } catch (err) {
+      console.error('loadReports error:', err);
       showToast('Failed to load tickets.', 'error');
     }
   };
+
+  window.quickSetTicketStatus = async function (ticketId, newStatus) {
+    try {
+      await api(`/api/admin/reports/${ticketId}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status: newStatus })
+      });
+      showToast(`Ticket #${ticketId} status set to ${newStatus.replace(/_/g, ' ')}.`, 'success');
+      loadReports();
+    } catch (err) {
+      showToast('Failed to update ticket: ' + err.message, 'error');
+    }
+  };
+
 
   window.openTicketModal = async function (report) {
     window.currentTicketId = report.id;
@@ -1095,50 +1526,293 @@
     }
   }
 
-  // ── Users ──
-  async function loadUsers() {
+  // ── Users Management Suite ──
+  let currentUserStatusFilter = 'all';
+  window.currentUsersCache = [];
+  window._currentEditingUser = null;
+
+  async function loadUsers(statusFilter) {
+    if (statusFilter !== undefined) currentUserStatusFilter = statusFilter;
     try {
-      const data = await api('/api/admin/users');
-      window.currentUsersCache = data;
+      const search = (document.getElementById('adminUserSearch')?.value || '').trim();
+      let queryUrl = `/api/admin/users?status=${currentUserStatusFilter}`;
+      if (search) queryUrl += `&search=${encodeURIComponent(search)}`;
+
+      const data = await api(queryUrl).catch(e => { console.error('User load error:', e); return { users: [] }; });
+      const usersList = Array.isArray(data) ? data : (data.users || []);
+      window.currentUsersCache = usersList;
+
       const tbody = document.getElementById('usersList');
       if (!tbody) return;
-
       tbody.innerHTML = '';
-      if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; opacity: 0.5;">No users found.</td></tr>';
+
+      if (usersList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; opacity: 0.5; padding: 24px;">No users found matching the criteria.</td></tr>';
         return;
       }
 
-      data.forEach(user => {
+      usersList.forEach(user => {
         const tr = document.createElement('tr');
-        let statusClass = 'approved';
-        if (user.account_status === 'suspended') statusClass = 'pending';
-        if (user.account_status === 'banned') statusClass = 'rejected';
-        
+        const st = (user.account_status || 'active').toLowerCase();
+        const statusBadgeClass = st === 'active' ? 'approved' : st === 'banned' ? 'rejected' : 'pending';
+        const userRole = (user.role || 'user').toLowerCase();
+        const roleChip = userRole === 'admin' ? '🔥 ADMIN' : userRole === 'editor' ? '✍️ EDITOR' : userRole === 'author' ? '📚 AUTHOR' : '👤 READER';
+
         tr.innerHTML = `
-          <td><a href="javascript:void(0)" onclick="window.openAuditModal(${user.id})" style="color:var(--primary);text-decoration:underline;">#${user.id}</a></td>
-          <td>${escapeHtml(user.full_name)}<br><small style="opacity:0.6">${escapeHtml(user.user_id)}</small></td>
-          <td>${escapeHtml(user.email)}</td>
+          <td><input type="checkbox" class="user-select-checkbox" data-user-id="${user.id}" data-user-name="${escapeHtml(user.full_name)}" style="cursor: pointer; transform: scale(1.15);"></td>
           <td>
-            <select class="form-input" style="padding: 4px 8px; width: auto; font-size: 0.85rem;" onchange="window.updateUserStatus(${user.id}, this.value)">
-              <option value="active" ${user.account_status === 'active' ? 'selected' : ''}>Active</option>
-              <option value="suspended" ${user.account_status === 'suspended' ? 'selected' : ''}>Suspended</option>
-              <option value="banned" ${user.account_status === 'banned' ? 'selected' : ''}>Banned</option>
-              <option value="shadowbanned" ${user.account_status === 'shadowbanned' ? 'selected' : ''}>Shadowbanned</option>
-            </select>
+            <strong>#${user.id}</strong>
+            <br><small style="color: var(--text-muted); font-family: monospace;">${escapeHtml(user.user_id || '')}</small>
           </td>
+          <td style="font-weight: 600;">
+            <a href="#" class="admin-user-detail-trigger" data-user-id="${user.id}" style="color: var(--text-primary); text-decoration: none;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+              ${escapeHtml(user.full_name)}
+            </a>
+          </td>
+          <td><span style="font-size: 0.85rem; color: var(--text-secondary);">${escapeHtml(user.email)}</span></td>
+          <td><span class="coverage-chip">${roleChip}</span></td>
+          <td><span class="status-badge status-badge--${statusBadgeClass}">${escapeHtml(st)}</span></td>
           <td>${formatDate(user.created_at)}</td>
           <td>
-            <button class="btn btn--secondary btn--sm" onclick="window.warnUser(${user.id})">Warn</button>
-            <button class="btn btn--ghost btn--sm" onclick="window.resetUserConnections(${user.id})">Reset Connections</button>
+            <div class="admin-table__actions" style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button class="btn btn--secondary btn--sm admin-user-detail-trigger" data-user-id="${user.id}" style="padding: 4px 8px; font-size: 0.8rem;" title="View & Edit Details">🔍 Details</button>
+              ${st !== 'active' ? `<button class="btn btn--success btn--sm" onclick="quickUpdateUserStatus(${user.id}, 'active')" style="padding: 4px 8px;" title="Activate Account">✓</button>` : `<button class="btn btn--danger btn--sm" onclick="quickUpdateUserStatus(${user.id}, 'suspended')" style="padding: 4px 8px;" title="Suspend Account">🚫</button>`}
+              <button class="btn btn--secondary btn--sm" onclick="openAdminMessagingModal(${user.id}, '${escapeHtml(user.full_name).replace(/'/g, "\\'")}', 'Notice Regarding Your Midnight Stories Account')" style="padding: 4px 8px;" title="Message User">✉️</button>
+              <button class="btn btn--danger btn--sm" onclick="deleteAdminUser(${user.id})" style="padding: 4px 8px;" title="Delete User">🗑️</button>
+            </div>
           </td>
         `;
         tbody.appendChild(tr);
       });
+
+      // Bind detail triggers
+      tbody.querySelectorAll('.admin-user-detail-trigger').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const uId = btn.dataset.userId;
+          const targetUser = window.currentUsersCache.find(u => u.id == uId);
+          if (targetUser) openAdminUserModal(targetUser);
+        });
+      });
+
+      // Update check count listener
+      tbody.querySelectorAll('.user-select-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateSelectedUserCount);
+      });
     } catch (err) {
+      console.error('loadUsers error:', err);
       showToast('Failed to load users.', 'error');
     }
   }
+
+  function updateSelectedUserCount() {
+    const selected = document.querySelectorAll('.user-select-checkbox:checked');
+    const badge = document.getElementById('msgSelectedCount');
+    if (badge) badge.textContent = selected.length;
+  }
+
+  function openAdminUserModal(user) {
+    const modal = document.getElementById('adminUserDetailModal');
+    if (!modal) return;
+
+    window._currentEditingUser = user;
+
+    const tagEl = document.getElementById('adminUserTag');
+    if (tagEl) tagEl.textContent = `ID: #${user.id} (${user.user_id || 'usr'})`;
+
+    const joinedEl = document.getElementById('adminUserJoinedDate');
+    if (joinedEl) joinedEl.textContent = `Joined ${formatDate(user.created_at)}`;
+
+    const nameInput = document.getElementById('adminUserFullNameInput');
+    if (nameInput) nameInput.value = user.full_name || '';
+
+    const emailInput = document.getElementById('adminUserEmailInput');
+    if (emailInput) emailInput.value = user.email || '';
+
+    const roleSel = document.getElementById('adminUserRoleSelect');
+    if (roleSel) roleSel.value = user.role || 'user';
+
+    const statusSel = document.getElementById('adminUserStatusSelect');
+    if (statusSel) statusSel.value = user.account_status || 'active';
+
+    const storyCntEl = document.getElementById('adminUserStoryCount');
+    if (storyCntEl) storyCntEl.textContent = user.story_count || 0;
+
+    const commentCntEl = document.getElementById('adminUserCommentCount');
+    if (commentCntEl) commentCntEl.textContent = user.comment_count || 0;
+
+    const roleBadge = document.getElementById('adminUserRoleBadge');
+    if (roleBadge) roleBadge.textContent = (user.role || 'user').toUpperCase();
+
+    const statusBadge = document.getElementById('adminUserStatusBadge');
+    if (statusBadge) {
+      const st = (user.account_status || 'active').toLowerCase();
+      statusBadge.className = `status-badge status-badge--${st === 'active' ? 'approved' : 'rejected'}`;
+      statusBadge.textContent = st.toUpperCase();
+    }
+
+    const passInput = document.getElementById('adminUserNewPasswordInput');
+    if (passInput) passInput.value = '';
+
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+  }
+
+  function closeAdminUserModal() {
+    const modal = document.getElementById('adminUserDetailModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('active');
+    }
+  }
+
+  async function saveAdminUserModalEdits() {
+    const user = window._currentEditingUser;
+    if (!user || !user.id) return;
+
+    const full_name = (document.getElementById('adminUserFullNameInput')?.value || '').trim();
+    const email = (document.getElementById('adminUserEmailInput')?.value || '').trim();
+    const role = document.getElementById('adminUserRoleSelect')?.value || 'user';
+    const account_status = document.getElementById('adminUserStatusSelect')?.value || 'active';
+
+    if (!full_name || !email) {
+      return showToast('Full name and email are required.', 'warning');
+    }
+
+    try {
+      await api(`/api/admin/users/${user.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ full_name, email, role, account_status })
+      });
+      showToast('User profile updated successfully.', 'success');
+      closeAdminUserModal();
+      loadUsers();
+    } catch (err) {
+      showToast('Failed to save user profile: ' + err.message, 'error');
+    }
+  }
+
+  async function resetUserPasswordFromModal() {
+    const user = window._currentEditingUser;
+    if (!user || !user.id) return;
+    const passInput = document.getElementById('adminUserNewPasswordInput');
+    const new_password = (passInput?.value || '').trim();
+
+    if (!new_password || new_password.length < 6) {
+      return showToast('Please enter a password with at least 6 characters.', 'warning');
+    }
+
+    try {
+      await api(`/api/admin/users/${user.id}/reset-password`, {
+        method: 'POST',
+        body: JSON.stringify({ new_password })
+      });
+      showToast(`Password reset successfully for ${user.full_name}.`, 'success');
+      if (passInput) passInput.value = '';
+    } catch (err) {
+      showToast('Failed to reset password: ' + err.message, 'error');
+    }
+  }
+
+  async function quickUpdateUserStatus(userId, newStatus) {
+    try {
+      await api(`/api/admin/users/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ account_status: newStatus })
+      });
+      showToast(`User status updated to ${newStatus}.`, 'success');
+      loadUsers();
+    } catch (err) {
+      showToast('Failed to update user status: ' + err.message, 'error');
+    }
+  }
+
+  async function deleteAdminUser(userId) {
+    if (!confirm(`Are you sure you want to PERMANENTLY delete user account #${userId}? All associated data will be removed.`)) return;
+    try {
+      await api(`/api/admin/users/${userId}`, { method: 'DELETE' });
+      showToast('User account deleted successfully.', 'success');
+      if (window._currentEditingUser && window._currentEditingUser.id == userId) closeAdminUserModal();
+      loadUsers();
+    } catch (err) {
+      showToast('Failed to delete user: ' + err.message, 'error');
+    }
+  }
+
+  function deleteCurrentAdminUser() {
+    if (window._currentEditingUser) {
+      deleteAdminUser(window._currentEditingUser.id);
+    }
+  }
+
+  function messageUserFromModal() {
+    const user = window._currentEditingUser;
+    if (!user) return;
+    openAdminMessagingModal(user.id, user.full_name, 'Official Notice Regarding Your Account');
+  }
+
+  function openAdminCreateUserModal() {
+    const form = document.getElementById('adminCreateUserForm');
+    if (form) form.reset();
+    const modal = document.getElementById('adminCreateUserModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+    }
+  }
+
+  function closeAdminCreateUserModal() {
+    const modal = document.getElementById('adminCreateUserModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('active');
+    }
+  }
+
+  async function saveAdminNewUser(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const full_name = (document.getElementById('createUserFullName')?.value || '').trim();
+    const email = (document.getElementById('createUserEmail')?.value || '').trim();
+    const user_id = (document.getElementById('createUserIdTag')?.value || '').trim() || ('usr_' + Date.now());
+    const role = document.getElementById('createUserRole')?.value || 'user';
+    const account_status = document.getElementById('createUserStatus')?.value || 'active';
+    const password = (document.getElementById('createUserPassword')?.value || '').trim();
+
+    if (!full_name || !email) {
+      return showToast('Full name and email are required.', 'warning');
+    }
+
+    const btn = document.getElementById('btnSaveNewUser');
+    if (btn) { btn.disabled = true; btn.textContent = 'Creating...'; }
+
+    try {
+      await api('/api/admin/users', {
+        method: 'POST',
+        body: JSON.stringify({ full_name, email, user_id, role, account_status, password })
+      });
+      showToast('User account created successfully!', 'success');
+      closeAdminCreateUserModal();
+      loadUsers();
+    } catch (err) {
+      showToast('Failed to create user: ' + err.message, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '🚀 Create User Account'; }
+    }
+  }
+
+  window.loadUsers = loadUsers;
+  window.openAdminUserModal = openAdminUserModal;
+  window.closeAdminUserModal = closeAdminUserModal;
+  window.saveAdminUserModalEdits = saveAdminUserModalEdits;
+  window.resetUserPasswordFromModal = resetUserPasswordFromModal;
+  window.quickUpdateUserStatus = quickUpdateUserStatus;
+  window.deleteAdminUser = deleteAdminUser;
+  window.deleteCurrentAdminUser = deleteCurrentAdminUser;
+  window.messageUserFromModal = messageUserFromModal;
+  window.openAdminCreateUserModal = openAdminCreateUserModal;
+  window.closeAdminCreateUserModal = closeAdminCreateUserModal;
+  window.saveAdminNewUser = saveAdminNewUser;
+
   
   window.updateUserStatus = async function(id, status) {
     const reason = prompt(`Enter reason for changing status to ${status}:`);
@@ -1463,8 +2137,83 @@
       }
     });
 
+    // Stories Queue filter chip listener
+    document.querySelectorAll('[data-queue-status]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('[data-queue-status]').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        loadStoriesQueue(chip.dataset.queueStatus);
+      });
+    });
+
+    // Comments Queue filter chip listener
+    document.querySelectorAll('[data-comment-status]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('[data-comment-status]').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        loadCommentsQueue(chip.dataset.commentStatus);
+      });
+    });
+
+    // Tickets / Reports filter chip listener
+    document.querySelectorAll('[data-ticket-status]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('[data-ticket-status]').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        loadReports(chip.dataset.ticketStatus);
+      });
+    });
+
+
+    // Users filter chip listener
+    document.querySelectorAll('[data-user-status]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('[data-user-status]').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        loadUsers(chip.dataset.userStatus);
+      });
+    });
+
+    // User search listener
+    const userSearchInput = document.getElementById('adminUserSearch');
+    if (userSearchInput) {
+      userSearchInput.addEventListener('input', debounce(() => {
+        loadUsers();
+      }, 400));
+    }
+
+    // Select all users checkbox
+    const selectAllUsersCb = document.getElementById('selectAllUsers');
+    if (selectAllUsersCb) {
+      selectAllUsersCb.addEventListener('change', () => {
+        document.querySelectorAll('.user-select-checkbox').forEach(cb => cb.checked = selectAllUsersCb.checked);
+        updateSelectedUserCount();
+      });
+    }
+
+    // Bulk Message Selected Users
+    const btnMsgSelected = document.getElementById('btnMsgSelectedUsers');
+    if (btnMsgSelected) {
+      btnMsgSelected.addEventListener('click', () => {
+        const checked = Array.from(document.querySelectorAll('.user-select-checkbox:checked'));
+        if (checked.length === 0) return showToast('Please select at least one user to message.', 'warning');
+        const firstUser = checked[0];
+        const userNames = checked.map(c => c.dataset.userName).join(', ');
+        openAdminMessagingModal(firstUser.dataset.userId, `${checked.length} Users (${userNames})`, 'Notice to Selected Users');
+      });
+    }
+
+    // Broadcast Message to All Users
+    const btnMsgAll = document.getElementById('btnMsgAllUsers');
+    if (btnMsgAll) {
+      btnMsgAll.addEventListener('click', () => {
+        openAdminMessagingModal('ALL', 'Broadcast to ALL Registered Users', 'Platform Announcement from Support Team');
+      });
+    }
+
     // Add category
     const addCategoryBtn = document.getElementById('addCategoryBtn');
+
     if (addCategoryBtn) addCategoryBtn.addEventListener('click', addCategory);
 
     // Add ban
