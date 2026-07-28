@@ -1,4 +1,4 @@
-﻿// admin.js — Admin dashboard: login, MFA, moderation queues, reports, categories, bans, settings, audit log
+// admin.js — Admin dashboard: login, MFA, moderation queues, reports, categories, bans, settings, audit log
 
 (function () {
   let adminToken = sessionStorage.getItem('adminToken');
@@ -816,8 +816,971 @@
 })();
 
 
-// ── Ticket Taxonomy ──
+
+// ═══════════════════════════════════════════════════════════
+// ██  RBAC & TAXONOMY — FULL IMPLEMENTATION
+// ═══════════════════════════════════════════════════════════
+
+// ── Shared caches ──
+let _allCategories = [], _allTeams = [], _allRoles = [], _allAccounts = [], _allSlaRules = [], _allPermissions = [];
+let _currentEmpId = null;
+
+// ── Drawer helpers ──
+window.closeDrawer = function(id) { document.getElementById(id)?.classList.remove('active'); };
+function openDrawer(id) { document.getElementById(id)?.classList.add('active'); }
+
+// ── Tab bar init ──
+document.addEventListener('DOMContentLoaded', () => {
+  // Panel tab bars
+  document.querySelectorAll('.tab-bar').forEach(bar => {
+    bar.addEventListener('click', e => {
+      const btn = e.target.closest('.tab-btn');
+      if (!btn) return;
+      const tabId = btn.dataset.tab;
+      if (tabId) {
+        bar.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const panel = bar.closest('.admin-panel') || bar.closest('.modal__content');
+        if (panel) {
+          panel.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+          const target = panel.querySelector(`#tab-${tabId}`);
+          if (target) target.classList.add('active');
+        }
+      }
+      // Permission modal inner tabs
+      const permsTab = btn.dataset.permsTab;
+      if (permsTab) {
+        bar.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.perms-tab-content').forEach(tc => tc.style.display = 'none');
+        const target = document.getElementById(`permsTab-${permsTab}`);
+        if (target) target.style.display = 'block';
+        if (permsTab === 'effective') renderEffectivePermissionsTab();
+      }
+    });
+  });
+
+  // Drawer open buttons
+  document.getElementById('openCreateCategoryBtn')?.addEventListener('click', () => openCategoryDrawer());
+  document.getElementById('openCreateRoleBtn')?.addEventListener('click', () => openRoleDrawer());
+  document.getElementById('openCreateTeamBtn')?.addEventListener('click', () => openTeamDrawer());
+  document.getElementById('openCreateAccountBtn')?.addEventListener('click', () => openAccountDrawer());
+  document.getElementById('openProvisionEmployeeBtn')?.addEventListener('click', () => openEmployeeDrawer());
+
+  // Category form search+filter
+  document.getElementById('taxCatSearch')?.addEventListener('input', renderCategoryCards);
+  document.getElementById('taxCatStatusFilter')?.addEventListener('change', renderCategoryCards);
+  document.getElementById('taxCatScopeFilter')?.addEventListener('change', renderCategoryCards);
+  document.getElementById('taxSubcatSearch')?.addEventListener('input', renderSubcatsTable);
+  document.getElementById('taxSubcatParentFilter')?.addEventListener('change', renderSubcatsTable);
+
+  // Roles search+filter
+  document.getElementById('rolesSearch')?.addEventListener('input', renderRolesTable);
+  document.getElementById('rolesModuleFilter')?.addEventListener('change', renderRolesTable);
+
+  // Teams search+filter
+  document.getElementById('teamsSearch')?.addEventListener('input', renderTeamsTable);
+  document.getElementById('teamsAccountFilter')?.addEventListener('change', renderTeamsTable);
+
+  // Accounts search+filter
+  document.getElementById('accountsSearch')?.addEventListener('input', renderAccountsTable);
+  document.getElementById('accountsStatusFilter')?.addEventListener('change', renderAccountsTable);
+
+  // Employees search+filter
+  document.getElementById('employeesSearch')?.addEventListener('input', renderEmployeesTable);
+  document.getElementById('employeesAccountFilter')?.addEventListener('change', renderEmployeesTable);
+  document.getElementById('employeesStatusFilter')?.addEventListener('change', renderEmployeesTable);
+
+  // Override add button
+  document.getElementById('addOverrideBtn')?.addEventListener('click', addEmployeeOverride);
+
+  // Category drawer: routing preview live update
+  document.getElementById('catFormTeam')?.addEventListener('change', updateCatRoutingPreview);
+  document.getElementById('catFormPriority')?.addEventListener('change', updateCatRoutingPreview);
+  document.getElementById('catFormSla')?.addEventListener('change', updateCatRoutingPreview);
+
+  // Team coverage → summary preview
+  document.getElementById('teamFormCategoryList')?.addEventListener('change', updateTeamCoverageSummary);
+});
+
+// ══════════════════════════════════════════════════════════
+// ██  TICKET TAXONOMY
+// ══════════════════════════════════════════════════════════
+
 async function loadTaxonomy() {
+  try {
+    const [cats, subcats, teams, slaRules] = await Promise.all([
+      api('/api/admin/tax/categories'),
+      api('/api/admin/tax/subcategories'),
+      api('/api/admin/teams'),
+      api('/api/admin/sla-rules')
+    ]);
+    _allCategories = cats;
+    _allTeams = teams;
+    _allSlaRules = slaRules;
+    renderCategoryCards();
+    renderSubcatsTable();
+    // Populate subcategory parent filter
+    const pf = document.getElementById('taxSubcatParentFilter');
+    if (pf) pf.innerHTML = '<option value="">All Categories</option>' + cats.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  } catch (err) { showToast('Failed to load taxonomy.', 'error'); }
+}
+
+function renderCategoryCards() {
+  const grid = document.getElementById('taxCategoriesGrid');
+  if (!grid) return;
+  const search = (document.getElementById('taxCatSearch')?.value || '').toLowerCase();
+  const statusF = document.getElementById('taxCatStatusFilter')?.value;
+  const scopeF = document.getElementById('taxCatScopeFilter')?.value;
+  let filtered = _allCategories.filter(c => {
+    if (search && !c.name.toLowerCase().includes(search)) return false;
+    if (statusF && c.status !== statusF) return false;
+    if (scopeF === 'global' && !c.is_global) return false;
+    if (scopeF === 'account' && c.is_global) return false;
+    return true;
+  });
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty-state-mini"><div class="empty-state-mini__icon">📁</div>No categories found.</div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(c => {
+    const statusClass = c.status === 'active' ? 'approved' : c.status === 'draft' ? 'draft' : 'archived';
+    const scopeBadge = c.is_global
+      ? `<span class="status-badge status-badge--global">🌐 Global</span>`
+      : `<span class="status-badge status-badge--account-specific">🏢 Account</span>`;
+    const priorityIcon = { low: '🟢', medium: '🟡', high: '🔴', critical: '🚨' }[c.default_priority] || '⚪';
+    return `<div class="category-card">
+      <div class="category-card__header">
+        <span class="category-card__name">${escapeHtml(c.name)}</span>
+        <div class="category-card__badges">
+          ${scopeBadge}
+          <span class="status-badge status-badge--${statusClass}">${c.status}</span>
+        </div>
+      </div>
+      <div class="category-card__meta">
+        <span class="category-card__meta-item">${priorityIcon} ${c.default_priority || 'medium'}</span>
+        <span class="category-card__meta-item">👥 ${escapeHtml(c.default_team_name || 'Unassigned')}</span>
+        <span class="category-card__meta-item">⏱ ${c.frt_hours ? c.frt_hours + 'h FRT' : 'No SLA'}</span>
+        <span class="category-card__meta-item">📂 ${c.subcategory_count ?? 0} sub-cats</span>
+      </div>
+      <div class="category-card__actions">
+        <button class="btn btn--ghost btn--sm" onclick="editCategory(${c.id})">✏️ Edit</button>
+        <button class="btn btn--ghost btn--sm" onclick="archiveCategory(${c.id}, '${escapeHtml(c.name)}', '${c.status}')">
+          ${c.status === 'archived' ? '🔄 Restore' : '📦 Archive'}
+        </button>
+        <button class="btn btn--danger btn--sm" onclick="deleteTaxCategory(${c.id})">🗑 Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSubcatsTable() {
+  const tbody = document.getElementById('taxSubcatsBody');
+  if (!tbody) return;
+  const search = (document.getElementById('taxSubcatSearch')?.value || '').toLowerCase();
+  const parentF = document.getElementById('taxSubcatParentFilter')?.value;
+  // We need to re-fetch filtered subcategories or use cached
+  api(`/api/admin/tax/subcategories${parentF ? `?category_id=${parentF}` : ''}`).then(subcats => {
+    const filtered = subcats.filter(s => !search || s.name.toLowerCase().includes(search) || (s.category_name || '').toLowerCase().includes(search));
+    tbody.innerHTML = filtered.map(s => {
+      const priorityIcon = { low: '🟢', medium: '🟡', high: '🔴', critical: '🚨' }[s.default_priority] || '—';
+      return `<tr>
+        <td>${s.id}</td>
+        <td>${escapeHtml(s.category_name || '—')}</td>
+        <td>${escapeHtml(s.name)}</td>
+        <td>${s.default_priority ? `${priorityIcon} ${s.default_priority}` : '<span style="opacity:.4">inherited</span>'}</td>
+        <td>${s.default_team_name ? escapeHtml(s.default_team_name) : '<span style="opacity:.4">inherited</span>'}</td>
+        <td>${s.frt_hours ? s.frt_hours + 'h FRT' : '<span style="opacity:.4">inherited</span>'}</td>
+        <td><span class="status-badge status-badge--${s.status === 'active' ? 'approved' : s.status || 'draft'}">${s.status || 'active'}</span></td>
+        <td>
+          <button class="btn btn--ghost btn--sm" onclick="editSubcategory(${s.id})">✏️</button>
+          <button class="btn btn--danger btn--sm" onclick="deleteTaxSubcat(${s.id})">🗑</button>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="8" style="text-align:center;opacity:.5">No sub-categories found.</td></tr>';
+  });
+}
+
+async function openCategoryDrawer(cat = null) {
+  // Load selects
+  const [teams, slaRules, accounts] = await Promise.all([
+    api('/api/admin/teams'),
+    api('/api/admin/sla-rules'),
+    api('/api/admin/accounts')
+  ]);
+  _allTeams = teams; _allSlaRules = slaRules; _allAccounts = accounts;
+
+  const teamSel = document.getElementById('catFormTeam');
+  teamSel.innerHTML = '<option value="">Unassigned</option>' + teams.filter(t => t.status === 'active').map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+
+  const slaSel = document.getElementById('catFormSla');
+  slaSel.innerHTML = '<option value="">None</option>' + slaRules.map(s => `<option value="${s.id}">${escapeHtml(s.name || `SLA #${s.id}`)} (${s.frt_hours}h FRT)</option>`).join('');
+
+  // Account multi-check
+  const acctList = document.getElementById('catFormAccountList');
+  acctList.innerHTML = accounts.map(a => `<label class="multi-check-item"><input type="checkbox" value="${a.id}" name="catAccounts"> ${escapeHtml(a.name)}</label>`).join('');
+
+  // Reset / populate form
+  if (cat) {
+    document.getElementById('categoryDrawerTitle').textContent = 'Edit Category';
+    document.getElementById('editCategoryId').value = cat.id;
+    document.getElementById('catFormName').value = cat.name;
+    document.getElementById('catFormDesc').value = cat.description || '';
+    document.getElementById('catFormPriority').value = cat.default_priority || 'medium';
+    document.getElementById('catFormSla').value = cat.default_sla_id || '';
+    document.getElementById('catFormTeam').value = cat.default_team_id || '';
+    document.getElementById('catFormStatus').value = cat.status || 'active';
+    document.getElementById('catFormIsGlobal').checked = !!cat.is_global;
+    toggleCatAccountSection();
+    // If account-specific, load which accounts have access
+    if (!cat.is_global) {
+      const catAccess = await api(`/api/admin/accounts/${cat.id}/categories`).catch(() => []);
+      acctList.querySelectorAll('input[name="catAccounts"]').forEach(cb => {
+        const acc = catAccess.find(a => a.id == cb.value);
+        cb.checked = acc?.enabled ?? false;
+      });
+    }
+  } else {
+    document.getElementById('categoryDrawerTitle').textContent = 'Create Category';
+    document.getElementById('editCategoryId').value = '';
+    document.getElementById('catFormName').value = '';
+    document.getElementById('catFormDesc').value = '';
+    document.getElementById('catFormPriority').value = 'medium';
+    document.getElementById('catFormSla').value = '';
+    document.getElementById('catFormTeam').value = '';
+    document.getElementById('catFormStatus').value = 'active';
+    document.getElementById('catFormIsGlobal').checked = true;
+    toggleCatAccountSection();
+  }
+  openDrawer('categoryDrawerOverlay');
+  updateCatRoutingPreview();
+}
+
+window.toggleCatAccountSection = function() {
+  const isGlobal = document.getElementById('catFormIsGlobal').checked;
+  document.getElementById('catAccountSection').style.display = isGlobal ? 'none' : 'block';
+};
+
+function updateCatRoutingPreview() {
+  const teamSel = document.getElementById('catFormTeam');
+  const prioritySel = document.getElementById('catFormPriority');
+  const slaSel = document.getElementById('catFormSla');
+  const preview = document.getElementById('catRoutingPreview');
+  if (!preview) return;
+  const teamName = teamSel?.options[teamSel?.selectedIndex]?.text || 'Unassigned';
+  const priority = prioritySel?.value || 'medium';
+  const slaText = slaSel?.options[slaSel?.selectedIndex]?.text || 'No SLA';
+  const catName = document.getElementById('catFormName')?.value || 'Category';
+  const priorityIcon = { low: '🟢', medium: '🟡', high: '🔴', critical: '🚨' }[priority] || '⚪';
+  preview.innerHTML = `
+    <span class="routing-preview__label">Preview</span>
+    <span class="routing-preview__pill routing-preview__pill--category">📁 ${escapeHtml(catName || 'New Category')}</span>
+    <span class="routing-preview__arrow">→</span>
+    <span class="routing-preview__pill routing-preview__pill--team">👥 ${escapeHtml(teamName)}</span>
+    <span class="routing-preview__arrow">→</span>
+    <span class="routing-preview__pill routing-preview__pill--priority">${priorityIcon} ${priority}</span>
+    <span class="routing-preview__arrow">→</span>
+    <span class="routing-preview__pill routing-preview__pill--sla">⏱ ${escapeHtml(slaText)}</span>
+  `;
+}
+
+window.saveCategory = async function() {
+  const id = document.getElementById('editCategoryId').value;
+  const payload = {
+    name: document.getElementById('catFormName').value.trim(),
+    description: document.getElementById('catFormDesc').value.trim(),
+    is_global: document.getElementById('catFormIsGlobal').checked,
+    default_priority: document.getElementById('catFormPriority').value,
+    default_sla_id: document.getElementById('catFormSla').value || null,
+    default_team_id: document.getElementById('catFormTeam').value || null,
+    status: document.getElementById('catFormStatus').value
+  };
+  if (!payload.name) return showToast('Category name is required.', 'warning');
+  try {
+    if (id) {
+      await api(`/api/admin/tax/categories/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+      showToast('Category updated.', 'success');
+    } else {
+      const res = await api('/api/admin/tax/categories', { method: 'POST', body: JSON.stringify(payload) });
+      showToast('Category created.', 'success');
+      // Save account access if account-specific
+      if (!payload.is_global && res.id) {
+        const checks = document.querySelectorAll('input[name="catAccounts"]');
+        for (const cb of checks) {
+          await api(`/api/admin/accounts/${cb.value}/categories`, { method: 'PUT', body: JSON.stringify({ category_id: res.id, enabled: cb.checked }) });
+        }
+      }
+    }
+    closeDrawer('categoryDrawerOverlay');
+    loadTaxonomy();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.editCategory = async function(id) {
+  const cat = _allCategories.find(c => c.id === id);
+  if (cat) openCategoryDrawer(cat);
+};
+
+window.archiveCategory = async function(id, name, currentStatus) {
+  const newStatus = currentStatus === 'archived' ? 'active' : 'archived';
+  const msg = newStatus === 'archived' ? `Archive category "${name}"?` : `Restore category "${name}"?`;
+  if (!confirm(msg)) return;
+  try {
+    await api(`/api/admin/tax/categories/${id}`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
+    showToast(`Category ${newStatus}.`, 'success');
+    loadTaxonomy();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.deleteTaxCategory = async function(id) {
+  if (!confirm('Permanently delete this category? This cannot be undone.')) return;
+  try {
+    await api(`/api/admin/tax/categories/${id}`, { method: 'DELETE' });
+    showToast('Category deleted.', 'success');
+    loadTaxonomy();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.deleteTaxSubcat = async function(id) {
+  if (!confirm('Delete this sub-category?')) return;
+  try {
+    await api(`/api/admin/tax/subcategories/${id}`, { method: 'DELETE' });
+    showToast('Sub-category deleted.', 'success');
+    renderSubcatsTable();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.editSubcategory = async function(id) {
+  // Simple inline edit via prompt for now
+  const subcat = await api(`/api/admin/tax/subcategories`).then(sc => sc.find(s => s.id === id));
+  if (!subcat) return;
+  const newName = prompt('Sub-category name:', subcat.name);
+  if (!newName || newName === subcat.name) return;
+  try {
+    await api(`/api/admin/tax/subcategories/${id}`, { method: 'PUT', body: JSON.stringify({ name: newName.trim() }) });
+    showToast('Sub-category updated.', 'success');
+    renderSubcatsTable();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+// ══════════════════════════════════════════════════════════
+// ██  ROLES & PERMISSIONS
+// ══════════════════════════════════════════════════════════
+
+async function loadRoles() {
+  try {
+    const [roles, perms] = await Promise.all([
+      api('/api/admin/roles'),
+      api('/api/admin/permissions').catch(() => [])
+    ]);
+    _allRoles = roles;
+    _allPermissions = perms;
+    renderRolesTable();
+  } catch (err) { showToast('Failed to load roles.', 'error'); }
+}
+
+function renderRolesTable() {
+  const tbody = document.getElementById('rolesBody');
+  if (!tbody) return;
+  const search = (document.getElementById('rolesSearch')?.value || '').toLowerCase();
+  const typeF = document.getElementById('rolesModuleFilter')?.value;
+  let filtered = _allRoles.filter(r => {
+    if (search && !r.name.toLowerCase().includes(search)) return false;
+    if (typeF === 'system' && !r.is_system) return false;
+    if (typeF === 'custom' && r.is_system) return false;
+    return true;
+  });
+  tbody.innerHTML = filtered.map(r => `
+    <tr>
+      <td>${r.id}</td>
+      <td><strong>${escapeHtml(r.name)}</strong>${r.description ? `<br><span style="font-size:11px;opacity:.6">${escapeHtml(r.description)}</span>` : ''}</td>
+      <td><span style="font-size:12px;opacity:.7">${r.scope || 'global'}</span></td>
+      <td>${r.is_system ? '<span class="status-badge status-badge--system">🔒 System</span>' : '<span class="status-badge status-badge--in-use">Custom</span>'}</td>
+      <td><span class="status-badge status-badge--${r.status === 'active' ? 'approved' : 'archived'}">${r.status || 'active'}</span></td>
+      <td><span style="font-size:12px;opacity:.7">—</span></td>
+      <td>
+        <button class="btn btn--ghost btn--sm" onclick="openRoleDrawer(${r.id})">✏️ Edit</button>
+        ${!r.is_system ? `<button class="btn btn--danger btn--sm" onclick="deleteRole(${r.id})">🗑</button>` : ''}
+      </td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;opacity:.5">No roles found.</td></tr>';
+}
+
+async function openRoleDrawer(id = null) {
+  const [perms] = await Promise.all([api('/api/admin/permissions').catch(() => [])]);
+  _allPermissions = perms;
+  document.getElementById('editRoleId').value = id || '';
+  if (id) {
+    const role = _allRoles.find(r => r.id === id);
+    if (!role) return;
+    document.getElementById('roleDrawerTitle').textContent = `Edit Role: ${role.name}`;
+    document.getElementById('roleFormName').value = role.name;
+    document.getElementById('roleFormDesc').value = role.description || '';
+    document.getElementById('roleFormScope').value = role.scope || 'global';
+    document.getElementById('roleFormName').disabled = !!role.is_system;
+    // Load permissions
+    const rolePerms = await api(`/api/admin/roles/${id}/permissions`).catch(() => []);
+    document.getElementById('rolePermMatrixSection').style.display = 'block';
+    renderPermissionMatrix(rolePerms, perms, !!role.is_system);
+  } else {
+    document.getElementById('roleDrawerTitle').textContent = 'Create Role';
+    document.getElementById('roleFormName').value = '';
+    document.getElementById('roleFormName').disabled = false;
+    document.getElementById('roleFormDesc').value = '';
+    document.getElementById('roleFormScope').value = 'global';
+    document.getElementById('rolePermMatrixSection').style.display = 'none';
+  }
+  openDrawer('roleDrawerOverlay');
+}
+
+function renderPermissionMatrix(rolePerms, allPerms, isSystem) {
+  const matrix = document.getElementById('rolePermMatrix');
+  if (!matrix || !allPerms.length) return;
+  // Group by module
+  const byModule = {};
+  allPerms.forEach(p => {
+    const mod = (p.module || p.resource || p.code?.split('.')[0] || 'General').toLowerCase();
+    if (!byModule[mod]) byModule[mod] = [];
+    byModule[mod].push(p);
+  });
+  const granted = new Set(rolePerms.map(rp => rp.permission_id || rp.id));
+  matrix.innerHTML = Object.entries(byModule).map(([mod, perms]) => `
+    <div class="perm-matrix__module">
+      <div class="perm-matrix__module-header">
+        <span>${mod.toUpperCase()}</span>
+        ${!isSystem ? `<button class="perm-matrix__select-all" onclick="selectAllModulePerms('${mod}', this)">Select All</button>` : ''}
+      </div>
+      ${perms.map(p => `
+        <div class="perm-matrix__row">
+          <input type="checkbox" class="perm-matrix__checkbox" id="perm_${p.id}" value="${p.id}" data-module="${mod}"
+            ${granted.has(p.id) ? 'checked' : ''} ${isSystem ? 'disabled' : ''}>
+          <div class="perm-matrix__info">
+            <div class="perm-matrix__code">${escapeHtml(p.code || p.resource + '.' + p.action)}</div>
+            <div class="perm-matrix__desc">${escapeHtml(p.description || '')}</div>
+          </div>
+          <div class="perm-matrix__icons">
+            ${isSystem ? '<span class="perm-matrix__lock" title="System role — read only">🔒</span>' : ''}
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+window.selectAllModulePerms = function(mod, btn) {
+  const checks = document.querySelectorAll(`.perm-matrix__checkbox[data-module="${mod}"]`);
+  const allChecked = [...checks].every(c => c.checked);
+  checks.forEach(c => c.checked = !allChecked);
+  btn.textContent = allChecked ? 'Select All' : 'Deselect All';
+};
+
+window.saveRole = async function() {
+  const id = document.getElementById('editRoleId').value;
+  const name = document.getElementById('roleFormName').value.trim();
+  const description = document.getElementById('roleFormDesc').value.trim();
+  const scope = document.getElementById('roleFormScope').value;
+  if (!name) return showToast('Role name is required.', 'warning');
+  try {
+    let roleId = id ? parseInt(id) : null;
+    if (!id) {
+      const res = await api('/api/admin/roles', { method: 'POST', body: JSON.stringify({ name, description, scope }) });
+      roleId = res.id;
+      showToast('Role created.', 'success');
+    } else {
+      // For system roles, skip name edit but save permissions
+      const role = _allRoles.find(r => r.id === parseInt(id));
+      if (!role?.is_system) {
+        await api(`/api/admin/roles/${id}`, { method: 'PUT', body: JSON.stringify({ name, description, scope }) }).catch(() => {});
+      }
+    }
+    // Save permissions if matrix is visible
+    if (roleId && document.getElementById('rolePermMatrixSection').style.display !== 'none') {
+      const checkedIds = [...document.querySelectorAll('.perm-matrix__checkbox:checked')].map(c => parseInt(c.value));
+      await api(`/api/admin/roles/${roleId}/permissions`, { method: 'PUT', body: JSON.stringify({ permission_ids: checkedIds }) }).catch(() => {});
+    }
+    closeDrawer('roleDrawerOverlay');
+    loadRoles();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.deleteRole = async function(id) {
+  if (!confirm('Delete this role? Employees using it must be reassigned.')) return;
+  try {
+    await api(`/api/admin/roles/${id}`, { method: 'DELETE' });
+    showToast('Role deleted.', 'success');
+    loadRoles();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+// ══════════════════════════════════════════════════════════
+// ██  TEAMS
+// ══════════════════════════════════════════════════════════
+
+async function loadTeams() {
+  try {
+    const teams = await api('/api/admin/teams');
+    _allTeams = teams;
+    renderTeamsTable();
+    // Populate account filter
+    const accountFilter = document.getElementById('teamsAccountFilter');
+    if (accountFilter && _allAccounts.length) {
+      accountFilter.innerHTML = '<option value="">All Accounts</option>' + _allAccounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+    }
+  } catch (err) { showToast('Failed to load teams.', 'error'); }
+}
+
+function renderTeamsTable() {
+  const tbody = document.getElementById('teamsBody');
+  if (!tbody) return;
+  const search = (document.getElementById('teamsSearch')?.value || '').toLowerCase();
+  const accountF = document.getElementById('teamsAccountFilter')?.value;
+  let filtered = _allTeams.filter(t => {
+    if (search && !t.name.toLowerCase().includes(search)) return false;
+    if (accountF && String(t.account_id) !== String(accountF)) return false;
+    return true;
+  });
+  tbody.innerHTML = filtered.map(t => {
+    const acct = _allAccounts.find(a => a.id === t.account_id);
+    return `<tr>
+      <td>${t.id}</td>
+      <td><strong>${escapeHtml(t.name)}</strong></td>
+      <td>${acct ? `<span class="status-badge status-badge--in-use">🏢 ${escapeHtml(acct.name)}</span>` : '<span style="opacity:.4">Platform-wide</span>'}</td>
+      <td><span class="status-badge status-badge--${t.status === 'active' ? 'approved' : 'archived'}">${t.status || 'active'}</span></td>
+      <td><span style="font-size:12px;opacity:.7">—</span></td>
+      <td id="team-coverage-${t.id}"><span style="opacity:.4;font-size:12px">Loading…</span></td>
+      <td>
+        <button class="btn btn--ghost btn--sm" onclick="openTeamDrawer(${t.id})">✏️ Edit</button>
+        <button class="btn btn--danger btn--sm" onclick="deleteTeam(${t.id})">🗑</button>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;opacity:.5">No teams found.</td></tr>';
+  // Load coverage chips async
+  filtered.forEach(async t => {
+    const cell = document.getElementById(`team-coverage-${t.id}`);
+    if (!cell) return;
+    const cats = await api(`/api/admin/teams/${t.id}/categories`).catch(() => []);
+    cell.innerHTML = cats.length
+      ? cats.map(c => `<span class="coverage-chip">📁 ${escapeHtml(c.category_name)}${c.subcategory_name ? ' › ' + escapeHtml(c.subcategory_name) : ''}</span>`).join('')
+      : '<span style="opacity:.4;font-size:12px">None</span>';
+  });
+}
+
+async function openTeamDrawer(id = null) {
+  const [accounts, roles, cats] = await Promise.all([
+    api('/api/admin/accounts'),
+    api('/api/admin/roles'),
+    api('/api/admin/tax/categories')
+  ]);
+  _allAccounts = accounts; _allRoles = roles; _allCategories = cats;
+
+  // Populate account select
+  document.getElementById('teamFormAccount').innerHTML =
+    '<option value="">Platform-wide (no restriction)</option>' +
+    accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+
+  // Populate roles multi-check
+  document.getElementById('teamFormRoleList').innerHTML =
+    roles.map(r => `<label class="multi-check-item"><input type="checkbox" name="teamRoles" value="${r.id}"> ${escapeHtml(r.name)}${r.is_system ? ' 🔒' : ''}</label>`).join('');
+
+  // Populate categories multi-check
+  document.getElementById('teamFormCategoryList').innerHTML =
+    cats.map(c => `<label class="multi-check-item"><input type="checkbox" name="teamCats" value="${c.id}" data-name="${escapeHtml(c.name)}"> ${escapeHtml(c.name)}</label>`).join('');
+
+  document.getElementById('editTeamId').value = id || '';
+  if (id) {
+    const team = _allTeams.find(t => t.id === id);
+    document.getElementById('teamDrawerTitle').textContent = `Edit Team: ${team?.name || ''}`;
+    document.getElementById('teamFormName').value = team?.name || '';
+    document.getElementById('teamFormAccount').value = team?.account_id || '';
+    document.getElementById('teamFormStatus').value = team?.status || 'active';
+    // Load existing roles+categories
+    const [teamRoles, teamCats] = await Promise.all([
+      api(`/api/admin/teams/${id}/roles`).catch(() => []),
+      api(`/api/admin/teams/${id}/categories`).catch(() => [])
+    ]);
+    const teamRoleIds = new Set(teamRoles.map(r => r.role_id));
+    document.querySelectorAll('input[name="teamRoles"]').forEach(cb => { cb.checked = teamRoleIds.has(parseInt(cb.value)); });
+    const teamCatIds = new Set(teamCats.map(c => c.category_id));
+    document.querySelectorAll('input[name="teamCats"]').forEach(cb => { cb.checked = teamCatIds.has(parseInt(cb.value)); });
+  } else {
+    document.getElementById('teamDrawerTitle').textContent = 'Create Team';
+    document.getElementById('teamFormName').value = '';
+    document.getElementById('teamFormAccount').value = '';
+    document.getElementById('teamFormStatus').value = 'active';
+    document.querySelectorAll('input[name="teamRoles"], input[name="teamCats"]').forEach(cb => cb.checked = false);
+  }
+  updateTeamCoverageSummary();
+  openDrawer('teamDrawerOverlay');
+}
+
+function updateTeamCoverageSummary() {
+  const checked = [...document.querySelectorAll('input[name="teamCats"]:checked')];
+  const section = document.getElementById('teamCoverageSummarySection');
+  const summary = document.getElementById('teamCoverageSummary');
+  if (!section || !summary) return;
+  if (!checked.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  summary.innerHTML = checked.map(cb => `<span class="coverage-chip">📁 ${escapeHtml(cb.dataset.name || cb.value)}</span>`).join('');
+}
+
+window.saveTeam = async function() {
+  const id = document.getElementById('editTeamId').value;
+  const name = document.getElementById('teamFormName').value.trim();
+  const account_id = document.getElementById('teamFormAccount').value || null;
+  const status = document.getElementById('teamFormStatus').value;
+  if (!name) return showToast('Team name is required.', 'warning');
+  try {
+    let teamId = id ? parseInt(id) : null;
+    if (!id) {
+      const res = await api('/api/admin/teams', { method: 'POST', body: JSON.stringify({ name, account_id: account_id ? parseInt(account_id) : null }) });
+      teamId = res.id;
+    } else {
+      await api(`/api/admin/teams/${id}`, { method: 'PUT', body: JSON.stringify({ name, account_id: account_id ? parseInt(account_id) : null, status }) });
+    }
+    // Save roles
+    const roles = [...document.querySelectorAll('input[name="teamRoles"]:checked')].map(cb => ({ role_id: parseInt(cb.value), is_default: false }));
+    await api(`/api/admin/teams/${teamId}/roles`, { method: 'PUT', body: JSON.stringify({ roles }) });
+    // Save categories
+    const assignments = [...document.querySelectorAll('input[name="teamCats"]:checked')].map(cb => ({ category_id: parseInt(cb.value) }));
+    await api(`/api/admin/teams/${teamId}/categories`, { method: 'PUT', body: JSON.stringify({ assignments }) });
+    showToast(id ? 'Team updated.' : 'Team created.', 'success');
+    closeDrawer('teamDrawerOverlay');
+    loadTeams();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.deleteTeam = async function(id) {
+  if (!confirm('Delete this team? Active employees must be transferred first.')) return;
+  try {
+    await api(`/api/admin/teams/${id}`, { method: 'DELETE' });
+    showToast('Team deleted.', 'success');
+    loadTeams();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+// ══════════════════════════════════════════════════════════
+// ██  ACCOUNTS
+// ══════════════════════════════════════════════════════════
+
+async function loadAccounts() {
+  try {
+    const accounts = await api('/api/admin/accounts');
+    _allAccounts = accounts;
+    renderAccountsTable();
+  } catch { showToast('Failed to load accounts.', 'error'); }
+}
+
+function renderAccountsTable() {
+  const tbody = document.getElementById('accountsBody');
+  if (!tbody) return;
+  const search = (document.getElementById('accountsSearch')?.value || '').toLowerCase();
+  const statusF = document.getElementById('accountsStatusFilter')?.value;
+  let filtered = _allAccounts.filter(a => {
+    if (search && !a.name.toLowerCase().includes(search)) return false;
+    if (statusF && a.status !== statusF) return false;
+    return true;
+  });
+  tbody.innerHTML = filtered.map(a => `
+    <tr>
+      <td>${a.id}</td>
+      <td><strong>${escapeHtml(a.name)}</strong></td>
+      <td><span style="font-size:12px;opacity:.7">${escapeHtml(a.domain || '—')}</span></td>
+      <td><span class="status-badge status-badge--${a.status === 'active' ? 'approved' : 'rejected'}">${a.status}</span></td>
+      <td>${a.employee_count ?? 0}</td>
+      <td>${a.team_count ?? 0}</td>
+      <td>
+        <button class="btn btn--ghost btn--sm" onclick="toggleAccountStatus(${a.id},'${a.status === 'active' ? 'suspended' : 'active'}','${escapeHtml(a.name)}')">${a.status === 'active' ? 'Suspend' : 'Activate'}</button>
+        <button class="btn btn--danger btn--sm" onclick="deleteAccount(${a.id})">🗑</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;opacity:.5">No accounts found.</td></tr>';
+}
+
+function openAccountDrawer() {
+  const name = prompt('Account name:');
+  if (!name) return;
+  const domain = prompt('Domain (optional):');
+  api('/api/admin/accounts', { method: 'POST', body: JSON.stringify({ name, domain: domain || undefined }) })
+    .then(() => { showToast('Account created.', 'success'); loadAccounts(); })
+    .catch(err => showToast(err.message, 'error'));
+}
+
+window.toggleAccountStatus = async (id, newStatus, name) => {
+  if (!confirm(`Set account "${name}" to ${newStatus}?`)) return;
+  try {
+    await api(`/api/admin/accounts/${id}`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
+    showToast('Account updated.', 'success');
+    loadAccounts();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.deleteAccount = async (id) => {
+  if (!confirm('Delete this account? All employees must be removed first.')) return;
+  try {
+    await api(`/api/admin/accounts/${id}`, { method: 'DELETE' });
+    showToast('Account deleted.', 'success');
+    loadAccounts();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+// ══════════════════════════════════════════════════════════
+// ██  EMPLOYEES
+// ══════════════════════════════════════════════════════════
+
+let _allEmployees = [];
+
+async function loadEmployees() {
+  try {
+    const [accounts, teams, roles, employees] = await Promise.all([
+      api('/api/admin/accounts'),
+      api('/api/admin/teams'),
+      api('/api/admin/roles'),
+      api('/api/admin/employees'),
+    ]);
+    _allAccounts = accounts; _allTeams = teams; _allRoles = roles; _allEmployees = employees;
+    renderEmployeesTable();
+    // Populate filter selects
+    const acctFilter = document.getElementById('employeesAccountFilter');
+    if (acctFilter) acctFilter.innerHTML = '<option value="">All Accounts</option>' + accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+  } catch { showToast('Failed to load employees.', 'error'); }
+}
+
+function renderEmployeesTable() {
+  const tbody = document.getElementById('employeesBody');
+  if (!tbody) return;
+  const search = (document.getElementById('employeesSearch')?.value || '').toLowerCase();
+  const accountF = document.getElementById('employeesAccountFilter')?.value;
+  const statusF = document.getElementById('employeesStatusFilter')?.value;
+  let filtered = _allEmployees.filter(e => {
+    if (search && !(e.full_name || '').toLowerCase().includes(search) && !(e.email || '').toLowerCase().includes(search)) return false;
+    if (accountF && String(e.account_id) !== String(accountF)) return false;
+    if (statusF && e.employment_status !== statusF) return false;
+    return true;
+  });
+  tbody.innerHTML = filtered.map(e => {
+    const statusClass = e.employment_status === 'active' ? 'approved' : e.employment_status === 'pending_invite' ? 'pending' : 'rejected';
+    return `<tr>
+      <td>${e.id}</td>
+      <td><strong>${escapeHtml(e.full_name)}</strong></td>
+      <td><span style="font-size:12px">${escapeHtml(e.email)}</span></td>
+      <td>${escapeHtml(e.account_name || '—')}</td>
+      <td>${escapeHtml(e.team_name || '—')}</td>
+      <td>${escapeHtml(e.role_name || '—')}</td>
+      <td><span class="status-badge status-badge--${statusClass}">${e.employment_status}</span></td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn btn--ghost btn--sm" onclick="viewEmployeePerms(${e.id},'${escapeHtml(e.full_name)}')">🔐 Perms</button>
+        <button class="btn btn--ghost btn--sm" onclick="openEmployeeDrawer(${e.id})">✏️</button>
+        <button class="btn btn--danger btn--sm" onclick="deleteEmployee(${e.id})">🗑</button>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" style="text-align:center;opacity:.5">No employees found.</td></tr>';
+}
+
+async function openEmployeeDrawer(id = null) {
+  const [accounts, teams, roles] = await Promise.all([
+    api('/api/admin/accounts'),
+    api('/api/admin/teams'),
+    api('/api/admin/roles'),
+  ]);
+  _allAccounts = accounts; _allTeams = teams; _allRoles = roles;
+
+  // Populate form selects
+  const acctSel = document.getElementById('empFormAccount');
+  acctSel.innerHTML = '<option value="">Select account…</option>' + accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+
+  const roleSel = document.getElementById('empFormRole');
+  roleSel.innerHTML = '<option value="">Select role…</option>' + roles.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
+
+  // All teams initially in team select
+  const teamSel = document.getElementById('empFormTeam');
+  teamSel.innerHTML = '<option value="">Select team…</option>' + teams.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+
+  document.getElementById('editEmployeeId').value = id || '';
+  if (id) {
+    const emp = _allEmployees.find(e => e.id === id);
+    document.getElementById('employeeDrawerTitle').textContent = `Edit: ${emp?.full_name || ''}`;
+    document.getElementById('empFormName').value = emp?.full_name || '';
+    document.getElementById('empFormEmail').value = emp?.email || '';
+    document.getElementById('empFormPhone').value = emp?.phone || '';
+    document.getElementById('empFormAccount').value = emp?.account_id || '';
+    document.getElementById('empFormTeam').value = emp?.team_id || '';
+    document.getElementById('empFormRole').value = emp?.role_id || '';
+    document.getElementById('empFormStatus').value = emp?.employment_status || 'active';
+    document.getElementById('saveEmployeeBtn').textContent = 'Save Changes';
+    filterTeamsByAccount();
+    updateAccessPreview();
+  } else {
+    document.getElementById('employeeDrawerTitle').textContent = 'Provision Employee';
+    document.getElementById('empFormName').value = '';
+    document.getElementById('empFormEmail').value = '';
+    document.getElementById('empFormPhone').value = '';
+    document.getElementById('empFormAccount').value = '';
+    document.getElementById('empFormTeam').value = '';
+    document.getElementById('empFormRole').value = '';
+    document.getElementById('empFormStatus').value = 'pending_invite';
+    document.getElementById('saveEmployeeBtn').textContent = 'Save & Invite';
+    document.getElementById('empAccessPreviewContent').innerHTML = '';
+  }
+  openDrawer('employeeDrawerOverlay');
+}
+
+window.filterTeamsByAccount = function() {
+  const accountId = document.getElementById('empFormAccount')?.value;
+  const teamSel = document.getElementById('empFormTeam');
+  if (!teamSel) return;
+  const filtered = _allTeams.filter(t => !accountId || !t.account_id || String(t.account_id) === String(accountId));
+  teamSel.innerHTML = '<option value="">Select team…</option>' + filtered.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+  updateAccessPreview();
+};
+
+window.updateAccessPreview = async function() {
+  const roleId = document.getElementById('empFormRole')?.value;
+  const content = document.getElementById('empAccessPreviewContent');
+  if (!content) return;
+  if (!roleId) { content.innerHTML = ''; return; }
+  try {
+    const rolePerms = await api(`/api/admin/roles/${roleId}/permissions`).catch(() => []);
+    const granted = rolePerms.filter(p => p.effect !== 'deny' || !p.effect);
+    const denied = rolePerms.filter(p => p.effect === 'deny');
+    content.innerHTML = `
+      <div class="access-preview-section">
+        <div class="access-preview-section__label">✅ Granted from Role</div>
+        <div class="access-preview-chips">
+          ${granted.length ? granted.map(p => `<span class="access-chip access-chip--allow">${escapeHtml(p.code || p.name || '')}</span>`).join('') : '<span style="opacity:.5;font-size:12px">None</span>'}
+        </div>
+      </div>
+      ${denied.length ? `<div class="access-preview-section">
+        <div class="access-preview-section__label">🚫 Denied from Role</div>
+        <div class="access-preview-chips">
+          ${denied.map(p => `<span class="access-chip access-chip--deny">${escapeHtml(p.code || p.name || '')}</span>`).join('')}
+        </div>
+      </div>` : ''}
+    `;
+  } catch { content.innerHTML = '<span style="opacity:.5;font-size:12px">Could not load preview.</span>'; }
+};
+
+window.saveEmployee = async function() {
+  const id = document.getElementById('editEmployeeId').value;
+  const payload = {
+    full_name: document.getElementById('empFormName').value.trim(),
+    email: document.getElementById('empFormEmail').value.trim(),
+    phone: document.getElementById('empFormPhone').value.trim() || undefined,
+    account_id: parseInt(document.getElementById('empFormAccount').value) || null,
+    team_id: parseInt(document.getElementById('empFormTeam').value) || null,
+    role_id: parseInt(document.getElementById('empFormRole').value) || null,
+    employment_status: document.getElementById('empFormStatus').value
+  };
+  if (!payload.full_name || !payload.email || !payload.account_id) return showToast('Name, email, and account are required.', 'warning');
+  try {
+    if (id) {
+      await api(`/api/admin/employees/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+      showToast('Employee updated.', 'success');
+    } else {
+      const res = await api('/api/admin/employees/invite', { method: 'POST', body: JSON.stringify(payload) });
+      showToast(res.token ? `Invite sent. Token: ${res.token}` : 'Employee provisioned.', 'success');
+    }
+    closeDrawer('employeeDrawerOverlay');
+    loadEmployees();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.viewEmployeePerms = async (id, name) => {
+  _currentEmpId = id;
+  try {
+    const perms = await api(`/api/admin/employees/${id}/effective-permissions`);
+    const allPerms = await api('/api/admin/permissions').catch(() => []);
+    document.getElementById('empPermsName').textContent = `${name} — Effective Access`;
+    document.getElementById('empPermsAllowed').innerHTML = (perms.allowed || []).length
+      ? (perms.allowed || []).map(p => `<li><code>${escapeHtml(p)}</code></li>`).join('')
+      : '<li style="opacity:.5">None</li>';
+    document.getElementById('empPermsDenied').innerHTML = (perms.denied || []).length
+      ? (perms.denied || []).map(p => `<li><code>${escapeHtml(p)}</code></li>`).join('')
+      : '<li style="opacity:.5">None</li>';
+    // Load overrides
+    const overrides = await api(`/api/admin/employees/${id}/overrides`).catch(() => []);
+    renderOverridesList(overrides);
+    // Populate permission select for adding overrides
+    const permSel = document.getElementById('overridePermSelect');
+    if (permSel) permSel.innerHTML = '<option value="">Select…</option>' + allPerms.map(p => `<option value="${p.id}">${escapeHtml(p.code || p.name || '')}</option>`).join('');
+    document.getElementById('empPermsModal').classList.add('active');
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+function renderOverridesList(overrides) {
+  const list = document.getElementById('empOverridesList');
+  if (!list) return;
+  list.innerHTML = overrides.length
+    ? overrides.map(o => `<div class="override-row">
+        <span class="override-row__perm">${escapeHtml(o.permission_code || o.permission_id || '')}</span>
+        <span class="override-row__effect" style="color:${o.effect === 'allow' ? 'var(--accent-emerald)' : 'var(--accent-rose)'}">${o.effect === 'allow' ? '✅ Allow' : '🚫 Deny'}</span>
+        <span class="override-row__reason">${escapeHtml(o.reason || '')}</span>
+        <span class="override-row__expiry">${o.expires_at ? new Date(o.expires_at).toLocaleDateString() : 'No expiry'}</span>
+        <button class="btn btn--danger btn--sm" onclick="removeOverride(${o.id})">✕</button>
+      </div>`).join('')
+    : '<p style="font-size:13px;opacity:.5;text-align:center;padding:12px">No overrides yet.</p>';
+}
+
+async function addEmployeeOverride() {
+  const permId = document.getElementById('overridePermSelect')?.value;
+  const effect = document.getElementById('overrideEffectSelect')?.value;
+  const reason = document.getElementById('overrideReasonInput')?.value.trim();
+  const expires = document.getElementById('overrideExpiryInput')?.value;
+  if (!permId || !effect) return showToast('Select a permission and effect.', 'warning');
+  if (!reason) return showToast('Reason is required for overrides.', 'warning');
+  try {
+    await api(`/api/admin/employees/${_currentEmpId}/overrides`, {
+      method: 'POST',
+      body: JSON.stringify({ permission_id: parseInt(permId), effect, reason, expires_at: expires || null })
+    });
+    showToast('Override added.', 'success');
+    document.getElementById('overrideReasonInput').value = '';
+    document.getElementById('overrideExpiryInput').value = '';
+    const overrides = await api(`/api/admin/employees/${_currentEmpId}/overrides`).catch(() => []);
+    renderOverridesList(overrides);
+  } catch (err) { showToast(err.message, 'error'); }
+}
+
+window.removeOverride = async function(overrideId) {
+  if (!confirm('Remove this override?')) return;
+  try {
+    await api(`/api/admin/employees/${_currentEmpId}/overrides/${overrideId}`, { method: 'DELETE' });
+    showToast('Override removed.', 'success');
+    const overrides = await api(`/api/admin/employees/${_currentEmpId}/overrides`).catch(() => []);
+    renderOverridesList(overrides);
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+async function renderEffectivePermissionsTab() {
+  if (!_currentEmpId) return;
+  try {
+    const perms = await api(`/api/admin/employees/${_currentEmpId}/effective-permissions`);
+    document.getElementById('empEffectiveAllowed').innerHTML = (perms.allowed || []).map(p => `<li><code>${escapeHtml(p)}</code></li>`).join('') || '<li style="opacity:.5">None</li>';
+    document.getElementById('empEffectiveDenied').innerHTML = (perms.denied || []).map(p => `<li><code>${escapeHtml(p)}</code></li>`).join('') || '<li style="opacity:.5">None</li>';
+  } catch {}
+}
+
+window.deleteEmployee = async (id) => {
+  if (!confirm('Remove this employee? This cannot be undone.')) return;
+  try {
+    await api(`/api/admin/employees/${id}`, { method: 'DELETE' });
+    showToast('Employee removed.', 'success');
+    loadEmployees();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+// ══════════════════════════════════════════════════════════
+// ██  STATS — RBAC row
+// ══════════════════════════════════════════════════════════
+// Extend the existing loadStats to also populate RBAC stat cards
+const _origLoadStats = window._loadStats || null;
+function extendLoadStatsWithRBAC(stats) {
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val ?? '—'; };
+  setEl('statAccounts', stats.totalAccounts);
+  setEl('statTeams', stats.totalTeams);
+  setEl('statEmployees', stats.totalEmployees);
+  setEl('statPendingInvites', stats.pendingInvites);
+  setEl('statRoles', stats.totalRoles);
+  setEl('statTicketCategories', stats.totalTicketCategories);
+}
+// Patch: expose for admin.js closure to call
+window._extendLoadStatsWithRBAC = extendLoadStatsWithRBAC;
+
   try {
     const [cats, subcats] = await Promise.all([
       api('/api/admin/tax/categories'),
