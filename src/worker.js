@@ -1995,8 +1995,6 @@ app.get('/api/admin/reports', requireAdmin, async (c) => {
   const category_id = c.req.query('category_id');
   const search = c.req.query('search');
   
-  await ensureHelpdeskSchema(db);
-
   try {
     await db.prepare("UPDATE reports SET ticket_status = 'open' WHERE ticket_status IS NULL OR ticket_status = ''").run();
   } catch (e) {}
