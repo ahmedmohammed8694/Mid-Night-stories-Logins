@@ -2352,7 +2352,7 @@ app.get('/api/admin/users/:id/audit', requireAdmin, async (c) => {
   const db = c.env.DB;
   const userId = parseInt(c.req.param('id'));
 
-  const user = await db.prepare('SELECT id, user_id, full_name, email, phone_number, account_status, dm_permission, visit_count, interaction_permissions, created_at FROM users WHERE id = ?').bind(userId).first();
+  const user = await db.prepare('SELECT id, user_id, full_name, email, phone_number, account_status, dm_permission, interaction_permissions, created_at FROM users WHERE id = ?').bind(userId).first();
   if (!user) return c.json({ error: 'User not found' }, 404);
 
   const storiesCount = await db.prepare('SELECT COUNT(*) as count FROM stories WHERE user_id = ?').bind(userId).first();

@@ -675,7 +675,7 @@
 
   window.openTicketModal = async function (report) {
     window.currentTicketId = report.id;
-    window.currentTicketTargetUser = report.reporter_id;
+    window.currentTicketTargetUser = report.reporter_id || report.user_id || null;
 
     document.getElementById('modalTicketId').textContent = report.ticket_id || report.id;
     document.getElementById('modalTicketStatus').textContent = (report.ticket_status || 'open').replace(/_/g, ' ');
@@ -683,7 +683,7 @@
     
     document.getElementById('modalTargetType').textContent = report.reported_item_type || 'support';
     document.getElementById('modalTargetId').textContent = report.id;
-    document.getElementById('modalTargetUserId').textContent = report.reporter_id || 'Unknown';
+    document.getElementById('modalTargetUserId').textContent = window.currentTicketTargetUser || 'No linked account';
     document.getElementById('modalTargetPreview').textContent = report.subject || report.reason || 'No subject preview.';
     
     if (document.getElementById('modalUpdateStatus')) document.getElementById('modalUpdateStatus').value = report.ticket_status || 'open';
@@ -699,7 +699,10 @@
     document.getElementById('ticketChatMessages').innerHTML = '<div class="empty-state">Loading chat & audit timeline...</div>';
     document.getElementById('reportDetailsModal').classList.add('active');
     
-    await loadTicketMessages(report);
+    await Promise.all([
+      loadTicketMessages(report),
+      window.loadUserAuditData(window.currentTicketTargetUser)
+    ]);
   };
 
   async function loadTicketMessages(report) {

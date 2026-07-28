@@ -1122,6 +1122,40 @@ img {
   color: #ffffff;
 }
 
+/* Native select popups need their own colors. Many admin controls use the
+   shared .form-input class or inline styles, so target every select instead
+   of only the two form-specific classes above. */
+select {
+  color-scheme: light;
+}
+
+select option {
+  background-color: #FFFFFF !important;
+  color: #1A202C !important;
+  font-weight: 500;
+}
+
+select option:checked,
+select option:hover {
+  background-color: #801D2C !important;
+  color: #FFFFFF !important;
+}
+
+:root[data-theme="dark"] select {
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] select option {
+  background-color: #12162A !important;
+  color: #F1EDE4 !important;
+}
+
+:root[data-theme="dark"] select option:checked,
+:root[data-theme="dark"] select option:hover {
+  background-color: #7A8FBB !important;
+  color: #FFFFFF !important;
+}
+
 .sort-select:focus { border-color: var(--border-focus); }
 
 /* ═══════════════════════════════════════════════════════════
@@ -3175,4 +3209,3 @@ body.reader-mode-active #btnEnterReaderMode {
 .reader-size-btn {
   min-width: 32px !important;
 }
-
