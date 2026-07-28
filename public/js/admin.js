@@ -3004,20 +3004,23 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadTaxonomy() {
   try {
     const [cats, subcats, teams, slaRules] = await Promise.all([
-      api('/api/admin/tax/categories'),
-      api('/api/admin/tax/subcategories'),
-      api('/api/admin/teams'),
-      api('/api/admin/sla-rules')
+      api('/api/admin/tax/categories').catch(e => { console.error('Categories load error:', e); return []; }),
+      api('/api/admin/tax/subcategories').catch(e => { console.error('Subcategories load error:', e); return []; }),
+      api('/api/admin/teams').catch(e => { console.error('Teams load error:', e); return []; }),
+      api('/api/admin/sla-rules').catch(e => { console.error('SLA rules load error:', e); return []; })
     ]);
-    _allCategories = cats;
-    _allTeams = teams;
-    _allSlaRules = slaRules;
+    _allCategories = Array.isArray(cats) ? cats : [];
+    _allTeams = Array.isArray(teams) ? teams : [];
+    _allSlaRules = Array.isArray(slaRules) ? slaRules : [];
     renderCategoryCards();
     renderSubcatsTable();
     // Populate subcategory parent filter
     const pf = document.getElementById('taxSubcatParentFilter');
-    if (pf) pf.innerHTML = '<option value="">All Categories</option>' + cats.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
-  } catch (err) { showToast('Failed to load taxonomy.', 'error'); }
+    if (pf) pf.innerHTML = '<option value="">All Categories</option>' + _allCategories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  } catch (err) {
+    console.error('Failed to load taxonomy:', err);
+    showToast('Failed to load taxonomy details.', 'error');
+  }
 }
 
 function renderCategoryCards() {
@@ -3257,13 +3260,13 @@ window.editSubcategory = async function(id) {
 async function loadRoles() {
   try {
     const [roles, perms] = await Promise.all([
-      api('/api/admin/roles'),
-      api('/api/admin/permissions').catch(() => [])
+      api('/api/admin/roles').catch(e => { console.error('Roles load error:', e); return []; }),
+      api('/api/admin/permissions').catch(e => { console.error('Permissions load error:', e); return []; })
     ]);
-    _allRoles = roles;
-    _allPermissions = perms;
+    _allRoles = Array.isArray(roles) ? roles : [];
+    _allPermissions = Array.isArray(perms) ? perms : [];
     renderRolesTable();
-  } catch (err) { showToast('Failed to load roles.', 'error'); }
+  } catch (err) { console.error('loadRoles error:', err); showToast('Failed to load roles.', 'error'); }
 }
 
 function renderRolesTable() {
@@ -3398,14 +3401,14 @@ window.deleteRole = async function(id) {
 
 async function loadTeams() {
   try {
-    const teams = await api('/api/admin/teams');
-    _allTeams = teams;
+    const teams = await api('/api/admin/teams').catch(e => { console.error('Teams load error:', e); return []; });
+    _allTeams = Array.isArray(teams) ? teams : [];
     renderTeamsTable();
     const accountFilter = document.getElementById('teamsAccountFilter');
     if (accountFilter && _allAccounts.length) {
       accountFilter.innerHTML = '<option value="">All Accounts</option>' + _allAccounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
     }
-  } catch (err) { showToast('Failed to load teams.', 'error'); }
+  } catch (err) { console.error('loadTeams error:', err); showToast('Failed to load teams.', 'error'); }
 }
 
 function renderTeamsTable() {
@@ -3536,10 +3539,10 @@ window.deleteTeam = async function(id) {
 
 async function loadAccounts() {
   try {
-    const accounts = await api('/api/admin/accounts');
-    _allAccounts = accounts;
+    const accounts = await api('/api/admin/accounts').catch(e => { console.error('Accounts load error:', e); return []; });
+    _allAccounts = Array.isArray(accounts) ? accounts : [];
     renderAccountsTable();
-  } catch { showToast('Failed to load accounts.', 'error'); }
+  } catch (err) { console.error('loadAccounts error:', err); showToast('Failed to load accounts.', 'error'); }
 }
 
 function renderAccountsTable() {
@@ -3603,16 +3606,19 @@ let _allEmployees = [];
 async function loadEmployees() {
   try {
     const [accounts, teams, roles, employees] = await Promise.all([
-      api('/api/admin/accounts'),
-      api('/api/admin/teams'),
-      api('/api/admin/roles'),
-      api('/api/admin/employees'),
+      api('/api/admin/accounts').catch(e => { console.error('Accounts load error:', e); return []; }),
+      api('/api/admin/teams').catch(e => { console.error('Teams load error:', e); return []; }),
+      api('/api/admin/roles').catch(e => { console.error('Roles load error:', e); return []; }),
+      api('/api/admin/employees').catch(e => { console.error('Employees load error:', e); return []; }),
     ]);
-    _allAccounts = accounts; _allTeams = teams; _allRoles = roles; _allEmployees = employees;
+    _allAccounts = Array.isArray(accounts) ? accounts : [];
+    _allTeams = Array.isArray(teams) ? teams : [];
+    _allRoles = Array.isArray(roles) ? roles : [];
+    _allEmployees = Array.isArray(employees) ? employees : [];
     renderEmployeesTable();
     const acctFilter = document.getElementById('employeesAccountFilter');
-    if (acctFilter) acctFilter.innerHTML = '<option value="">All Accounts</option>' + accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
-  } catch { showToast('Failed to load employees.', 'error'); }
+    if (acctFilter) acctFilter.innerHTML = '<option value="">All Accounts</option>' + _allAccounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+  } catch (err) { console.error('loadEmployees error:', err); showToast('Failed to load employees.', 'error'); }
 }
 
 function renderEmployeesTable() {

@@ -134,6 +134,40 @@ app.use('*', async (c, next) => {
         created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
       )`).run();
 
+      // Safe column auto-migrations for existing tables created under older schemas
+      const safeAddCol = async (tbl, colDef) => {
+        try { await db.prepare(`ALTER TABLE ${tbl} ADD COLUMN ${colDef}`).run(); } catch(e) {}
+      };
+      await safeAddCol('ticket_categories', 'is_global INTEGER DEFAULT 1');
+      await safeAddCol('ticket_categories', 'default_sla_id INTEGER');
+      await safeAddCol('ticket_categories', 'default_priority TEXT DEFAULT "medium"');
+      await safeAddCol('ticket_categories', 'default_team_id INTEGER');
+      await safeAddCol('ticket_categories', 'status TEXT DEFAULT "active"');
+      await safeAddCol('ticket_subcategories', 'default_sla_id INTEGER');
+      await safeAddCol('ticket_subcategories', 'default_priority TEXT');
+      await safeAddCol('ticket_subcategories', 'default_team_id INTEGER');
+      await safeAddCol('ticket_subcategories', 'status TEXT DEFAULT "active"');
+      await safeAddCol('teams', 'status TEXT DEFAULT "active"');
+      await safeAddCol('teams', 'account_id INTEGER');
+
+      // Seed default ticket categories if empty
+      try {
+        const catCnt = await db.prepare('SELECT COUNT(*) AS c FROM ticket_categories').first();
+        if (!catCnt || catCnt.c === 0) {
+          const defaultCats = [
+            ['📖 Story & Content Moderation', 'Copyright, plagiarism, inappropriate content, and story/comment reports', 1, 'medium', 'active'],
+            ['📚 Book Library & Reader Mode', 'EPUB/PDF rendering bugs, missing pages, corrupt files, and audiobook errors', 1, 'medium', 'active'],
+            ['👤 Account & Access', 'Password resets, email verification, profile updates, and suspension appeals', 1, 'high', 'active'],
+            ['💳 Billing & Subscriptions', 'Payment failures, receipts, premium upgrades, and refund inquiries', 1, 'high', 'active'],
+            ['🛠️ Platform & Technical Bugs', 'App crashes, slow performance, bookmark sync issues, and broken links', 1, 'urgent', 'active'],
+            ['💡 Feature Requests & Feedback', 'Reader UI suggestions, author tools, and publishing partnerships', 1, 'low', 'active']
+          ];
+          for (const [name, desc, isGlob, prio, st] of defaultCats) {
+            await db.prepare(`INSERT OR IGNORE INTO ticket_categories (name, description, is_global, default_priority, status) VALUES (?, ?, ?, ?, ?)`).bind(name, desc, isGlob, prio, st).run();
+          }
+        }
+      } catch(e) { console.error('Category seeding error:', e); }
+
       await db.prepare(`CREATE TABLE IF NOT EXISTS permissions (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
         code        TEXT NOT NULL UNIQUE,
@@ -4799,17 +4833,38 @@ app.post('/api/admin/helpdesk/tickets/:id/reply', requireAdmin, async (c) => {
 // ── TAXONOMY: Categories ──
 app.get('/api/admin/tax/categories', requireAdmin, async (c) => {
   const db = c.env.DB;
-  const { results } = await db.prepare(`
-    SELECT tc.*,
-      sr.frt_hours,
-      t.name AS default_team_name,
-      (SELECT COUNT(*) FROM ticket_subcategories WHERE category_id = tc.id) AS subcategory_count
-    FROM ticket_categories tc
-    LEFT JOIN sla_rules sr ON sr.id = tc.default_sla_id
-    LEFT JOIN teams t ON t.id = tc.default_team_id
-    ORDER BY tc.name ASC
-  `).all();
-  return c.json(results || []);
+  try {
+    const { results } = await db.prepare(`
+      SELECT tc.*,
+        sr.frt_hours,
+        t.name AS default_team_name,
+        (SELECT COUNT(*) FROM ticket_subcategories WHERE category_id = tc.id) AS subcategory_count
+      FROM ticket_categories tc
+      LEFT JOIN sla_rules sr ON sr.id = tc.default_sla_id
+      LEFT JOIN teams t ON t.id = tc.default_team_id
+      ORDER BY tc.name ASC
+    `).all();
+    return c.json(results || []);
+  } catch (err1) {
+    console.error('Complex categories query failed, trying simple query:', err1);
+    try {
+      const { results } = await db.prepare('SELECT * FROM ticket_categories ORDER BY name ASC').all();
+      return c.json((results || []).map(cat => ({
+        id: cat.id,
+        name: cat.name || 'Category #' + cat.id,
+        description: cat.description || '',
+        is_global: cat.is_global !== undefined ? cat.is_global : 1,
+        default_priority: cat.default_priority || 'medium',
+        status: cat.status || 'active',
+        frt_hours: null,
+        default_team_name: null,
+        subcategory_count: 0
+      })));
+    } catch (err2) {
+      console.error('Fallback categories query failed:', err2);
+      return c.json([]);
+    }
+  }
 });
 
 app.post('/api/admin/tax/categories', requireAdmin, async (c) => {
@@ -4878,18 +4933,33 @@ app.get('/api/admin/sla-rules', requireAdmin, async (c) => {
 app.get('/api/admin/tax/subcategories', requireAdmin, async (c) => {
   const db = c.env.DB;
   const catId = c.req.query('category_id');
-  let query = `
-    SELECT ts.*, tc.name AS category_name, sr.frt_hours, t.name AS default_team_name
-    FROM ticket_subcategories ts
-    LEFT JOIN ticket_categories tc ON tc.id = ts.category_id
-    LEFT JOIN sla_rules sr ON sr.id = ts.default_sla_id
-    LEFT JOIN teams t ON t.id = ts.default_team_id
-  `;
-  const binds = [];
-  if (catId) { query += ' WHERE ts.category_id = ?'; binds.push(parseInt(catId)); }
-  query += ' ORDER BY tc.name, ts.name';
-  const { results } = await db.prepare(query).bind(...binds).all();
-  return c.json(results || []);
+  try {
+    let query = `
+      SELECT ts.*, tc.name AS category_name, sr.frt_hours, t.name AS default_team_name
+      FROM ticket_subcategories ts
+      LEFT JOIN ticket_categories tc ON tc.id = ts.category_id
+      LEFT JOIN sla_rules sr ON sr.id = ts.default_sla_id
+      LEFT JOIN teams t ON t.id = ts.default_team_id
+    `;
+    const binds = [];
+    if (catId) { query += ' WHERE ts.category_id = ?'; binds.push(parseInt(catId)); }
+    query += ' ORDER BY tc.name, ts.name';
+    const { results } = await db.prepare(query).bind(...binds).all();
+    return c.json(results || []);
+  } catch (err1) {
+    console.error('Complex subcategories query failed, trying simple query:', err1);
+    try {
+      let query = 'SELECT * FROM ticket_subcategories';
+      const binds = [];
+      if (catId) { query += ' WHERE category_id = ?'; binds.push(parseInt(catId)); }
+      query += ' ORDER BY name';
+      const { results } = await db.prepare(query).bind(...binds).all();
+      return c.json(results || []);
+    } catch (err2) {
+      console.error('Fallback subcategories query failed:', err2);
+      return c.json([]);
+    }
+  }
 });
 
 app.post('/api/admin/tax/subcategories', requireAdmin, async (c) => {
@@ -5048,13 +5118,24 @@ app.put('/api/admin/roles/:id/permissions', requireAdmin, async (c) => {
 // ── TEAMS ──
 app.get('/api/admin/teams', requireAdmin, async (c) => {
   const db = c.env.DB;
-  const { results } = await db.prepare(`
-    SELECT t.*, a.name AS account_name,
-           (SELECT COUNT(*) FROM employee_users WHERE team_id = t.id) AS member_count
-    FROM teams t LEFT JOIN accounts a ON a.id = t.account_id
-    ORDER BY t.name ASC
-  `).all();
-  return c.json(results || []);
+  try {
+    const { results } = await db.prepare(`
+      SELECT t.*, a.name AS account_name,
+             (SELECT COUNT(*) FROM employee_users WHERE team_id = t.id) AS member_count
+      FROM teams t LEFT JOIN accounts a ON a.id = t.account_id
+      ORDER BY t.name ASC
+    `).all();
+    return c.json(results || []);
+  } catch (err1) {
+    console.error('Complex teams query failed, trying simple query:', err1);
+    try {
+      const { results } = await db.prepare('SELECT * FROM teams ORDER BY name ASC').all();
+      return c.json(results || []);
+    } catch (err2) {
+      console.error('Fallback teams query failed:', err2);
+      return c.json([]);
+    }
+  }
 });
 
 app.post('/api/admin/teams', requireAdmin, async (c) => {
