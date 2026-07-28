@@ -108,6 +108,9 @@
         </div>
         <div class="admin-sidebar__section">
           <p class="admin-sidebar__heading">Administration</p>
+          <button class="admin-nav-item" data-panel="accounts">
+            <span class="admin-nav-item__icon">🏛️</span> Accounts
+          </button>
           <button class="admin-nav-item" data-panel="taxonomy">
             <span class="admin-nav-item__icon">🗂️</span> Ticket Taxonomy
           </button>
@@ -483,25 +486,58 @@
           </div>
         </div>
 
+        <!-- Accounts Panel -->
+        <div class="admin-panel" id="panel-accounts">
+          <h1 class="admin-page-title">Accounts</h1>
+          <p class="admin-page-subtitle">Manage tenant accounts that employees and teams belong to.</p>
+          <div style="display:flex;gap:12px;margin-bottom:20px;align-items:flex-end;">
+            <div style="flex:1;"><label class="form-label">Account Name</label><input type="text" class="form-input" id="newAccountName" placeholder="e.g. Acme Support"></div>
+            <div style="flex:1;"><label class="form-label">Domain (optional)</label><input type="text" class="form-input" id="newAccountDomain" placeholder="acme.com"></div>
+            <button class="btn btn--primary" id="addAccountBtn">Create Account</button>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead><tr><th>ID</th><th>Name</th><th>Domain</th><th>Status</th><th>Employees</th><th>Teams</th><th>Actions</th></tr></thead>
+              <tbody id="accountsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- Employees Panel -->
         <div class="admin-panel" id="panel-employees">
           <h1 class="admin-page-title">Employee Provisioning</h1>
           <p class="admin-page-subtitle">Invite and manage support staff.</p>
           <div class="card card--flat card--no-hover" style="padding:20px;margin-bottom:20px;">
             <h3 style="margin-bottom:12px;">Invite Employee</h3>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:flex-end;">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr auto;gap:12px;align-items:flex-end;">
+              <div><label class="form-label">Full Name</label><input type="text" class="form-input" id="inviteFullName" placeholder="Jane Smith"></div>
               <div><label class="form-label">Email</label><input type="email" class="form-input" id="inviteEmail" placeholder="agent@company.com"></div>
-              <div><label class="form-label">First Name</label><input type="text" class="form-input" id="inviteFirstName"></div>
-              <div><label class="form-label">Last Name</label><input type="text" class="form-input" id="inviteLastName"></div>
+              <div><label class="form-label">Account</label><select class="form-input" id="inviteAccount"><option value="">Select account...</option></select></div>
               <div><label class="form-label">Team</label><select class="form-input" id="inviteTeam"><option value="">Select team...</option></select></div>
+              <div><label class="form-label">Role</label><select class="form-input" id="inviteRole"><option value="">Select role...</option></select></div>
               <button class="btn btn--primary" id="sendInviteBtn">Send Invite</button>
             </div>
           </div>
           <div class="admin-table-wrapper">
             <table class="admin-table">
-              <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Team</th><th>Status</th><th>Invited</th></tr></thead>
+              <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Account</th><th>Team</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
               <tbody id="employeesBody"></tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- Employee Permissions Modal -->
+        <div id="empPermsModal" class="modal">
+          <div class="modal__content" style="max-width:700px;">
+            <h2 style="margin-top:0;border-bottom:1px solid var(--border);padding-bottom:1rem;">Employee Permissions</h2>
+            <p id="empPermsName" style="color:var(--text-secondary);margin-bottom:1rem;"></p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div><h4 style="color:var(--success);">✅ Allowed</h4><ul id="empPermsAllowed" style="font-size:.85rem;line-height:2;"></ul></div>
+              <div><h4 style="color:var(--danger);">🚫 Denied</h4><ul id="empPermsDenied" style="font-size:.85rem;line-height:2;"></ul></div>
+            </div>
+            <div style="text-align:right;margin-top:1.5rem;">
+              <button class="btn btn--secondary" onclick="document.getElementById('empPermsModal').classList.remove('active')">Close</button>
+            </div>
           </div>
         </div>
 
