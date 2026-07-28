@@ -3001,42 +3001,6 @@ app.get('/api/admin/settings', requireAdmin, async (c) => {
   }
 });
 
-
-    if (search) {
-      // clean line 3011
-      const searchPattern = `%${search}%`;
-      params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
-    }
-
-    query += " ORDER BY r.created_at DESC";
-
-    const { results } = await db.prepare(query).bind(...params).all();
-    return c.json(results || []);
-  } catch (err) {
-    updates.push('category_id = ?');
-    binds.push(parseInt(category_id));
-  }
-
-  if (action !== undefined) {
-    updates.push('enforcement_action = ?');
-    binds.push(action);
-  }
-
-  updates.push('updated_at = CURRENT_TIMESTAMP');
-
-  if (updates.length > 0) {
-    binds.push(id);
-    await db.prepare(`UPDATE reports SET ${updates.join(', ')} WHERE id = ?`).bind(...binds).run();
-  }
-
-  await db.prepare(`
-    INSERT INTO ticket_audit_logs (ticket_id, actor_id, actor_type, action_type, old_value, new_value)
-    VALUES (?, ?, 'admin', 'update_properties', ?, ?)
-  `).bind(id, adminPayload.adminId, JSON.stringify(oldReport), JSON.stringify({ status, priority, category_id })).run();
-  
-  return c.json({ message: 'Ticket updated successfully.' });
-});
-
 app.patch('/api/admin/tickets/:id/assign', requireAdmin, async (c) => {
   const db = c.env.DB;
   const adminPayload = c.get('admin');
