@@ -81,179 +81,199 @@ let isDbInitialized = false;
 app.use('*', async (c, next) => {
   if (!isDbInitialized) {
     const db = c.env.DB;
-    console.log('Unconditionally creating any missing D1 database schema tables...');
+    console.log('Creating any missing D1 database schema tables...');
     try {
-      await db.exec(`
-          CREATE TABLE IF NOT EXISTS sla_rules (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            priority TEXT NOT NULL UNIQUE CHECK(priority IN ('urgent', 'high', 'medium', 'low')),
-            frt_hours REAL NOT NULL,
-            ttr_hours REAL NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-          );
-          CREATE TABLE IF NOT EXISTS accounts (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
-            name       TEXT NOT NULL,
-            domain     TEXT UNIQUE,
-            status     TEXT DEFAULT 'active' CHECK(status IN ('active','suspended','inactive')),
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-          );
-          CREATE TABLE IF NOT EXISTS teams (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
-            name       TEXT NOT NULL,
-            account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
-            status     TEXT DEFAULT 'active' CHECK(status IN ('active','inactive')),
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-          );
-          CREATE TABLE IF NOT EXISTS ticket_categories (
-            id               INTEGER PRIMARY KEY AUTOINCREMENT,
-            name             TEXT NOT NULL UNIQUE,
-            description      TEXT,
-            is_global        INTEGER DEFAULT 1,
-            default_sla_id   INTEGER REFERENCES sla_rules(id) ON DELETE SET NULL,
-            default_priority TEXT DEFAULT 'medium' CHECK(default_priority IN ('low','medium','high','urgent')),
-            default_team_id  INTEGER REFERENCES teams(id) ON DELETE SET NULL,
-            status           TEXT DEFAULT 'active' CHECK(status IN ('active','draft','archived')),
-            created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
-          );
-          CREATE TABLE IF NOT EXISTS ticket_subcategories (
-            id               INTEGER PRIMARY KEY AUTOINCREMENT,
-            category_id      INTEGER NOT NULL REFERENCES ticket_categories(id) ON DELETE CASCADE,
-            name             TEXT NOT NULL,
-            description      TEXT,
-            default_sla_id   INTEGER REFERENCES sla_rules(id) ON DELETE SET NULL,
-            default_priority TEXT CHECK(default_priority IN ('low','medium','high','urgent')),
-            default_team_id  INTEGER REFERENCES teams(id) ON DELETE SET NULL,
-            status           TEXT DEFAULT 'active' CHECK(status IN ('active','draft','archived')),
-            created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
-          );
-          CREATE TABLE IF NOT EXISTS permissions (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            code        TEXT NOT NULL UNIQUE,
-            module      TEXT NOT NULL,
-            description TEXT
-          );
-          CREATE TABLE IF NOT EXISTS roles (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
-            name       TEXT NOT NULL UNIQUE,
-            scope      TEXT DEFAULT 'account' CHECK(scope IN ('global','account','team')),
-            is_system  INTEGER DEFAULT 0,
-            status     TEXT DEFAULT 'active' CHECK(status IN ('active','inactive')),
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-          );
-          CREATE TABLE IF NOT EXISTS role_permissions (
-            role_id       INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-            permission_id INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
-            effect        TEXT NOT NULL DEFAULT 'allow' CHECK(effect IN ('allow','deny')),
-            PRIMARY KEY (role_id, permission_id)
-          );
-          CREATE TABLE IF NOT EXISTS team_roles (
-            team_id    INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-            role_id    INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-            is_default INTEGER DEFAULT 0,
-            PRIMARY KEY (team_id, role_id)
-          );
-          CREATE TABLE IF NOT EXISTS employee_users (
-            id                INTEGER PRIMARY KEY AUTOINCREMENT,
-            account_id        INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-            team_id           INTEGER REFERENCES teams(id) ON DELETE SET NULL,
-            role_id           INTEGER REFERENCES roles(id) ON DELETE SET NULL,
-            full_name         TEXT NOT NULL,
-            email             TEXT NOT NULL UNIQUE,
-            phone             TEXT,
-            password_hash     TEXT,
-            invite_token      TEXT UNIQUE,
-            invite_expires    DATETIME,
-            employment_status TEXT DEFAULT 'pending_invite' CHECK(employment_status IN ('active','suspended','deactivated','pending_invite')),
-            last_login_at     DATETIME,
-            created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP
-          );
-          CREATE TABLE IF NOT EXISTS employee_permission_overrides (
-            id            INTEGER PRIMARY KEY AUTOINCREMENT,
-            employee_id   INTEGER NOT NULL REFERENCES employee_users(id) ON DELETE CASCADE,
-            permission_id INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
-            effect        TEXT NOT NULL CHECK(effect IN ('allow','deny')),
-            reason        TEXT NOT NULL,
-            granted_by    INTEGER NOT NULL REFERENCES employee_users(id),
-            expires_at    DATETIME,
-            created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(employee_id, permission_id)
-          );
-          CREATE TABLE IF NOT EXISTS audit_log (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            actor_id    INTEGER NOT NULL,
-            actor_type  TEXT NOT NULL CHECK(actor_type IN ('admin','employee','system')),
-            action      TEXT NOT NULL,
-            target_type TEXT,
-            target_id   INTEGER,
-            details     TEXT,
-            ip_address  TEXT,
-            created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
-          );
-          CREATE TABLE IF NOT EXISTS account_category_access (
-            account_id  INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-            category_id INTEGER NOT NULL REFERENCES ticket_categories(id) ON DELETE CASCADE,
-            enabled     INTEGER NOT NULL DEFAULT 1,
-            PRIMARY KEY (account_id, category_id)
-          );
-          CREATE TABLE IF NOT EXISTS account_subcategory_access (
-            account_id     INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-            subcategory_id INTEGER NOT NULL REFERENCES ticket_subcategories(id) ON DELETE CASCADE,
-            enabled        INTEGER NOT NULL DEFAULT 1,
-            PRIMARY KEY (account_id, subcategory_id)
-          );
-          CREATE TABLE IF NOT EXISTS team_category_assignments (
-            team_id        INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-            category_id    INTEGER NOT NULL REFERENCES ticket_categories(id) ON DELETE CASCADE,
-            subcategory_id INTEGER REFERENCES ticket_subcategories(id) ON DELETE CASCADE,
-            PRIMARY KEY (team_id, category_id, subcategory_id)
-          );
-        `);
+      // Run each CREATE TABLE individually — D1 exec() does not support multi-statement strings
+      await db.prepare(`CREATE TABLE IF NOT EXISTS sla_rules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        priority TEXT NOT NULL UNIQUE CHECK(priority IN ('urgent', 'high', 'medium', 'low')),
+        frt_hours REAL NOT NULL,
+        ttr_hours REAL NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`).run();
 
-        // Seed permissions
-        await db.exec(`
-          INSERT OR IGNORE INTO permissions (code, module, description) VALUES
-          ('stories.read', 'stories', 'Read all stories'),
-          ('stories.create', 'stories', 'Submit a new story'),
-          ('stories.approve', 'stories', 'Approve pending stories'),
-          ('stories.reject', 'stories', 'Reject pending stories'),
-          ('comments.read', 'comments', 'Read comments'),
-          ('comments.create', 'comments', 'Post a comment'),
-          ('comments.moderate', 'comments', 'Moderate and remove comments'),
-          ('reports.view', 'reports', 'View ticket reports'),
-          ('reports.resolve', 'reports', 'Resolve ticket reports'),
-          ('users.view', 'users', 'View users list'),
-          ('users.delete', 'users', 'Delete/ban users'),
-          ('categories.manage', 'categories', 'Create and delete categories'),
-          ('bans.manage', 'bans', 'Manage IP bans'),
-          ('settings.manage', 'settings', 'Manage platform settings'),
-          ('accounts.manage', 'accounts', 'Provision accounts'),
-          ('teams.manage', 'teams', 'Manage teams'),
-          ('employees.manage', 'employees', 'Provision and update employees'),
-          ('roles.manage', 'roles', 'Manage roles and permissions'),
-          ('audit.view', 'audit', 'View audit log');
-        `);
+      await db.prepare(`CREATE TABLE IF NOT EXISTS accounts (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        name       TEXT NOT NULL,
+        domain     TEXT UNIQUE,
+        status     TEXT DEFAULT 'active' CHECK(status IN ('active','suspended','inactive')),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`).run();
 
-        // Seed roles
-        await db.exec(`
-          INSERT OR IGNORE INTO roles (name, scope, is_system, status) VALUES
-          ('superadmin', 'global', 1, 'active'),
-          ('admin', 'account', 1, 'active'),
-          ('moderator', 'account', 1, 'active'),
-          ('agent', 'team', 1, 'active');
-        `);
-        console.log('Admin schema created and seeded successfully.');
-      } catch (err2) {
-        console.error('Failed to create admin schema:', err2);
+      await db.prepare(`CREATE TABLE IF NOT EXISTS teams (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        name       TEXT NOT NULL,
+        account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+        status     TEXT DEFAULT 'active' CHECK(status IN ('active','inactive')),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS ticket_categories (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        name             TEXT NOT NULL UNIQUE,
+        description      TEXT,
+        is_global        INTEGER DEFAULT 1,
+        default_sla_id   INTEGER REFERENCES sla_rules(id) ON DELETE SET NULL,
+        default_priority TEXT DEFAULT 'medium' CHECK(default_priority IN ('low','medium','high','urgent')),
+        default_team_id  INTEGER REFERENCES teams(id) ON DELETE SET NULL,
+        status           TEXT DEFAULT 'active' CHECK(status IN ('active','draft','archived')),
+        created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS ticket_subcategories (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        category_id      INTEGER NOT NULL REFERENCES ticket_categories(id) ON DELETE CASCADE,
+        name             TEXT NOT NULL,
+        description      TEXT,
+        default_sla_id   INTEGER REFERENCES sla_rules(id) ON DELETE SET NULL,
+        default_priority TEXT CHECK(default_priority IN ('low','medium','high','urgent')),
+        default_team_id  INTEGER REFERENCES teams(id) ON DELETE SET NULL,
+        status           TEXT DEFAULT 'active' CHECK(status IN ('active','draft','archived')),
+        created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS permissions (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        code        TEXT NOT NULL UNIQUE,
+        module      TEXT NOT NULL,
+        description TEXT
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS roles (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        name       TEXT NOT NULL UNIQUE,
+        scope      TEXT DEFAULT 'account' CHECK(scope IN ('global','account','team')),
+        is_system  INTEGER DEFAULT 0,
+        status     TEXT DEFAULT 'active' CHECK(status IN ('active','inactive')),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS role_permissions (
+        role_id       INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+        permission_id INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+        effect        TEXT NOT NULL DEFAULT 'allow' CHECK(effect IN ('allow','deny')),
+        PRIMARY KEY (role_id, permission_id)
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS team_roles (
+        team_id    INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        role_id    INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+        is_default INTEGER DEFAULT 0,
+        PRIMARY KEY (team_id, role_id)
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS employee_users (
+        id                INTEGER PRIMARY KEY AUTOINCREMENT,
+        account_id        INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        team_id           INTEGER REFERENCES teams(id) ON DELETE SET NULL,
+        role_id           INTEGER REFERENCES roles(id) ON DELETE SET NULL,
+        full_name         TEXT NOT NULL,
+        email             TEXT NOT NULL UNIQUE,
+        phone             TEXT,
+        password_hash     TEXT,
+        invite_token      TEXT UNIQUE,
+        invite_expires    DATETIME,
+        employment_status TEXT DEFAULT 'pending_invite' CHECK(employment_status IN ('active','suspended','deactivated','pending_invite')),
+        last_login_at     DATETIME,
+        created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS employee_permission_overrides (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        employee_id   INTEGER NOT NULL REFERENCES employee_users(id) ON DELETE CASCADE,
+        permission_id INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+        effect        TEXT NOT NULL CHECK(effect IN ('allow','deny')),
+        reason        TEXT NOT NULL,
+        granted_by    INTEGER NOT NULL REFERENCES employee_users(id),
+        expires_at    DATETIME,
+        created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(employee_id, permission_id)
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS audit_log (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        actor_id    INTEGER NOT NULL,
+        actor_type  TEXT NOT NULL CHECK(actor_type IN ('admin','employee','system')),
+        action      TEXT NOT NULL,
+        target_type TEXT,
+        target_id   INTEGER,
+        details     TEXT,
+        ip_address  TEXT,
+        created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS account_category_access (
+        account_id  INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        category_id INTEGER NOT NULL REFERENCES ticket_categories(id) ON DELETE CASCADE,
+        enabled     INTEGER NOT NULL DEFAULT 1,
+        PRIMARY KEY (account_id, category_id)
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS account_subcategory_access (
+        account_id     INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+        subcategory_id INTEGER NOT NULL REFERENCES ticket_subcategories(id) ON DELETE CASCADE,
+        enabled        INTEGER NOT NULL DEFAULT 1,
+        PRIMARY KEY (account_id, subcategory_id)
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS team_category_assignments (
+        team_id        INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+        category_id    INTEGER NOT NULL REFERENCES ticket_categories(id) ON DELETE CASCADE,
+        subcategory_id INTEGER REFERENCES ticket_subcategories(id) ON DELETE CASCADE,
+        PRIMARY KEY (team_id, category_id, subcategory_id)
+      )`).run();
+
+      // Seed permissions
+      const permSeeds = [
+        ['stories.read','stories','Read all stories'],
+        ['stories.create','stories','Submit a new story'],
+        ['stories.approve','stories','Approve pending stories'],
+        ['stories.reject','stories','Reject pending stories'],
+        ['comments.read','comments','Read comments'],
+        ['comments.create','comments','Post a comment'],
+        ['comments.moderate','comments','Moderate and remove comments'],
+        ['reports.view','reports','View ticket reports'],
+        ['reports.resolve','reports','Resolve ticket reports'],
+        ['users.view','users','View users list'],
+        ['users.delete','users','Delete/ban users'],
+        ['categories.manage','categories','Create and delete categories'],
+        ['bans.manage','bans','Manage IP bans'],
+        ['settings.manage','settings','Manage platform settings'],
+        ['accounts.manage','accounts','Provision accounts'],
+        ['teams.manage','teams','Manage teams'],
+        ['employees.manage','employees','Provision and update employees'],
+        ['roles.manage','roles','Manage roles and permissions'],
+        ['audit.view','audit','View audit log'],
+      ];
+      for (const [code, module, description] of permSeeds) {
+        await db.prepare(`INSERT OR IGNORE INTO permissions (code, module, description) VALUES (?, ?, ?)`)
+          .bind(code, module, description).run();
       }
-      isDbInitialized = true;
+
+      // Seed roles
+      const roleSeeds = [
+        ['superadmin','global'],
+        ['admin','account'],
+        ['moderator','account'],
+        ['agent','team'],
+      ];
+      for (const [name, scope] of roleSeeds) {
+        await db.prepare(`INSERT OR IGNORE INTO roles (name, scope, is_system, status) VALUES (?, ?, 1, 'active')`)
+          .bind(name, scope).run();
+      }
+
+      console.log('Admin schema created and seeded successfully.');
+    } catch (err2) {
+      console.error('Failed to create admin schema:', err2);
     }
-    await next();
+    isDbInitialized = true;
   }
+
+   await next();
 });
 
 // ── Global Security & Privacy Headers ──
@@ -2002,6 +2022,8 @@ app.get('/api/crisis-resources', (c) => {
       }
     ]
   });
+});
+
 app.get('/api/debug-db', async (c) => {
   const db = c.env.DB;
   try {
@@ -2075,6 +2097,39 @@ app.delete('/api/admin/users/:id', requireAdmin, async (c) => {
   const id = parseInt(c.req.param('id'));
   await db.prepare('DELETE FROM users WHERE id = ?').bind(id).run();
   return c.json({ message: 'User deleted successfully.' });
+});
+
+app.get('/api/admin/users', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const page = parseInt(c.req.query('page') || '1');
+  const limit = parseInt(c.req.query('limit') || '50');
+  const search = c.req.query('search') || '';
+  const offset = (page - 1) * limit;
+  try {
+    let query, binds;
+    if (search) {
+      query = `SELECT id, user_id, full_name, email, account_status, created_at,
+        (SELECT COUNT(*) FROM stories WHERE author_id = users.id AND status = 'published') AS story_count
+        FROM users
+        WHERE full_name LIKE ? OR email LIKE ? OR user_id LIKE ?
+        ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+      const s = '%' + search + '%';
+      binds = [s, s, s, limit, offset];
+    } else {
+      query = `SELECT id, user_id, full_name, email, account_status, created_at,
+        (SELECT COUNT(*) FROM stories WHERE author_id = users.id AND status = 'published') AS story_count
+        FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+      binds = [limit, offset];
+    }
+    const { results } = await db.prepare(query).bind(...binds).all();
+    const total = await db.prepare(search
+      ? `SELECT COUNT(*) as cnt FROM users WHERE full_name LIKE ? OR email LIKE ? OR user_id LIKE ?`
+      : `SELECT COUNT(*) as cnt FROM users`
+    ).bind(...(search ? ['%'+search+'%','%'+search+'%','%'+search+'%'] : [])).first();
+    return c.json({ users: results, total: total?.cnt ?? 0, page, limit });
+  } catch (err) {
+    return c.json({ error: err.message }, 500);
+  }
 });
 
 app.get('/api/admin/stats', requireAdmin, async (c) => {
@@ -2509,7 +2564,6 @@ app.post('/api/admin/canned-responses', requireAdmin, async (c) => {
   const db = c.env.DB;
   const { title, content, category_id } = await c.req.json();
   if (!title || !content) return c.json({ error: 'Title and Content are required.' }, 400);
-
   await db.prepare('INSERT INTO canned_responses (title, content, category_id) VALUES (?, ?, ?)').bind(title, content, category_id || null).run();
   return c.json({ success: true, message: 'Canned response template added.' });
 });
@@ -2539,10 +2593,11 @@ app.post('/api/admin/mfa-setup', requireAdmin, async (c) => {
   const adminPayload = c.get('admin');
   const secret = authenticator.generateSecret();
   const otpauth = authenticator.keyuri(adminPayload.username, 'Midnight Stories Admin', secret);
-  const qrCode = await QRCode.toDataURL(otpauth);
-  
-  // Store secret temporarily (we assume admin will verify immediately)
-  // In a robust system, store it in the DB as unverified until confirmed
+  // Use SVG string — QRCode.toDataURL requires a browser canvas (unavailable in Workers)
+  const qrSvg = await QRCode.toString(otpauth, { type: 'svg' });
+  const qrCode = 'data:image/svg+xml;base64,' + Buffer.from(qrSvg).toString('base64');
+
+  // Store secret temporarily (admin verifies immediately)
   const db = c.env.DB;
   await db.prepare('UPDATE admin_users SET mfa_secret = ? WHERE id = ?').bind(secret, adminPayload.adminId).run();
   
