@@ -225,6 +225,8 @@ app.use('*', async (c, next) => {
             `).bind(uid, fn, em, rl, st).run();
           }
         }
+      } catch(e) { console.error('User seeding error:', e); }
+
       // Seed sample tickets/reports if empty so CRM & Issue Resolution is never blank
       try {
         const rCnt = await db.prepare('SELECT COUNT(*) AS c FROM reports').first();
