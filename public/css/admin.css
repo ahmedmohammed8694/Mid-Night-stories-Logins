@@ -475,6 +475,17 @@ a:hover { text-decoration: underline; }
   overflow-y: auto;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   ADMIN PANELS — hide all, show only active
+   ═══════════════════════════════════════════════════════════ */
+.admin-panel {
+  display: none;
+}
+
+.admin-panel.active {
+  display: block;
+}
+
 .admin-page-title {
   font-family: var(--font-display);
   font-size: 28px;
