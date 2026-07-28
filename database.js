@@ -290,6 +290,20 @@ function initializeDatabase() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS admin_users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL UNIQUE,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      mfa_secret TEXT,
+      mfa_enabled INTEGER DEFAULT 0,
+      role TEXT DEFAULT 'superadmin',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    INSERT OR IGNORE INTO admin_users (username, email, password_hash, mfa_secret, mfa_enabled, role)
+    VALUES ('admin', 'admin@midnightstories.com', '$2a$10$Zu8oMzAP3uh0WqtOWQzexeox2bs6BO60iQWO/FBlOOT.l.YCXuqI6', 'JBSWY3DPEHPK3PXP', 0, 'superadmin');
+
     CREATE TABLE IF NOT EXISTS admin_messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

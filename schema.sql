@@ -282,6 +282,9 @@ CREATE TABLE admin_users (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+INSERT OR IGNORE INTO admin_users (username, email, password_hash, mfa_secret, mfa_enabled, role)
+VALUES ('admin', 'admin@midnightstories.com', '$2a$10$Zu8oMzAP3uh0WqtOWQzexeox2bs6BO60iQWO/FBlOOT.l.YCXuqI6', 'JBSWY3DPEHPK3PXP', 0, 'superadmin');
+
 CREATE TABLE user_warnings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

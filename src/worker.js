@@ -1681,7 +1681,7 @@ app.post('/api/admin/login', rateLimit('admin-login', 10), async (c) => {
   const { username, password } = await c.req.json();
 
   const admin = await db.prepare('SELECT * FROM admin_users WHERE username = ?').bind(username).first();
-  const passwordMatch = admin ? await bcrypt.compare(password, admin.password_hash) : false;
+  const passwordMatch = admin ? (bcrypt.compareSync ? bcrypt.compareSync(password, admin.password_hash) : await bcrypt.compare(password, admin.password_hash)) : false;
   if (!admin || !passwordMatch) return c.json({ error: 'Invalid credentials.' }, 401);
 
   if (admin.mfa_enabled) {
