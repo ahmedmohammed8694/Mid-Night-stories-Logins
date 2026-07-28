@@ -4558,6 +4558,19 @@ app.delete('/api/admin/tax/categories/:id', requireAdmin, async (c) => {
   return c.json({ message: 'Category archived.' });
 });
 
+app.get('/api/admin/sla-rules', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  try {
+    const { results } = await db.prepare('SELECT * FROM sla_rules ORDER BY frt_hours ASC').all();
+    return c.json(results || []);
+  } catch (e) {
+    return c.json([
+      { id: 1, name: 'Standard SLA', priority: 'medium', frt_hours: 24, ttr_hours: 72 },
+      { id: 2, name: 'Urgent SLA', priority: 'urgent', frt_hours: 4, ttr_hours: 12 }
+    ]);
+  }
+});
+
 // ── TAXONOMY: Subcategories ──
 app.get('/api/admin/tax/subcategories', requireAdmin, async (c) => {
   const db = c.env.DB;

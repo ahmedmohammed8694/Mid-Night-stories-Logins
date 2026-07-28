@@ -1203,11 +1203,396 @@
           </div>
         </div>
 
+        <!-- Ticket Taxonomy Panel -->
+        <div class="admin-panel" id="panel-taxonomy">
+          <div class="admin-header-flex">
+            <div>
+              <h1 class="admin-page-title">Ticket Taxonomy</h1>
+              <p class="admin-page-subtitle">Manage ticket categories, sub-categories, and routing defaults.</p>
+            </div>
+            <button class="btn btn--primary" id="openCreateCategoryBtn">＋ Create Category</button>
+          </div>
+
+          <!-- Tabs -->
+          <div class="tab-bar">
+            <button class="tab-btn active" data-tab="tax-categories">📁 Categories</button>
+            <button class="tab-btn" data-tab="tax-subcategories">📂 Sub-Categories</button>
+          </div>
+
+          <!-- Categories Tab -->
+          <div class="tab-content active" id="tab-tax-categories">
+            <div class="filter-row">
+              <div class="filter-row__search">
+                <span class="filter-row__search-icon">🔍</span>
+                <input type="text" class="form-input" id="taxCatSearch" placeholder="Search categories…">
+              </div>
+              <select class="form-input" id="taxCatStatusFilter" style="width:auto;">
+                <option value="">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="draft">Draft</option>
+                <option value="archived">Archived</option>
+              </select>
+              <select class="form-input" id="taxCatScopeFilter" style="width:auto;">
+                <option value="">All Scopes</option>
+                <option value="global">Global</option>
+                <option value="account">Account-Specific</option>
+              </select>
+            </div>
+            <div class="category-cards-grid" id="taxCategoriesGrid">
+              <div class="empty-state-mini"><div class="empty-state-mini__icon">📁</div>Loading categories…</div>
+            </div>
+          </div>
+
+          <!-- Sub-Categories Tab -->
+          <div class="tab-content" id="tab-tax-subcategories">
+            <div class="filter-row">
+              <div class="filter-row__search">
+                <span class="filter-row__search-icon">🔍</span>
+                <input type="text" class="form-input" id="taxSubcatSearch" placeholder="Search sub-categories…">
+              </div>
+              <select class="form-input" id="taxSubcatParentFilter" style="width:auto;">
+                <option value="">All Categories</option>
+              </select>
+            </div>
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead><tr><th>ID</th><th>Category</th><th>Name</th><th>Priority</th><th>Team Override</th><th>SLA Override</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="taxSubcatsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Roles & Permissions Panel -->
+        <div class="admin-panel" id="panel-roles">
+          <div class="admin-header-flex">
+            <div>
+              <h1 class="admin-page-title">Roles &amp; Permissions</h1>
+              <p class="admin-page-subtitle">Define roles, assign permissions, and control access scope.</p>
+            </div>
+            <button class="btn btn--primary" id="openCreateRoleBtn">＋ Create Role</button>
+          </div>
+          <div class="filter-row">
+            <div class="filter-row__search">
+              <span class="filter-row__search-icon">🔍</span>
+              <input type="text" class="form-input" id="rolesSearch" placeholder="Search roles…">
+            </div>
+            <select class="form-input" id="rolesModuleFilter" style="width:auto;">
+              <option value="">All Types</option>
+              <option value="system">System Roles</option>
+              <option value="custom">Custom Roles</option>
+            </select>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead><tr><th>ID</th><th>Name</th><th>Scope</th><th>Type</th><th>Status</th><th>Employees</th><th>Actions</th></tr></thead>
+              <tbody id="rolesBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Teams Panel -->
+        <div class="admin-panel" id="panel-teams">
+          <div class="admin-header-flex">
+            <div>
+              <h1 class="admin-page-title">Teams</h1>
+              <p class="admin-page-subtitle">Manage support teams, their roles, and ticket category coverage.</p>
+            </div>
+            <button class="btn btn--primary" id="openCreateTeamBtn">＋ Create Team</button>
+          </div>
+          <div class="filter-row">
+            <div class="filter-row__search">
+              <span class="filter-row__search-icon">🔍</span>
+              <input type="text" class="form-input" id="teamsSearch" placeholder="Search teams…">
+            </div>
+            <select class="form-input" id="teamsAccountFilter" style="width:auto;">
+              <option value="">All Accounts</option>
+            </select>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead><tr><th>ID</th><th>Name</th><th>Account Scope</th><th>Status</th><th>Members</th><th>Coverage</th><th>Actions</th></tr></thead>
+              <tbody id="teamsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Accounts Panel -->
+        <div class="admin-panel" id="panel-accounts">
+          <div class="admin-header-flex">
+            <div>
+              <h1 class="admin-page-title">Accounts</h1>
+              <p class="admin-page-subtitle">Manage tenant accounts — the tenancy boundary for teams, employees, and categories.</p>
+            </div>
+            <button class="btn btn--primary" id="openCreateAccountBtn">＋ Create Account</button>
+          </div>
+          <div class="filter-row">
+            <div class="filter-row__search">
+              <span class="filter-row__search-icon">🔍</span>
+              <input type="text" class="form-input" id="accountsSearch" placeholder="Search accounts…">
+            </div>
+            <select class="form-input" id="accountsStatusFilter" style="width:auto;">
+              <option value="">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="suspended">Suspended</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead><tr><th>ID</th><th>Name</th><th>Domain</th><th>Status</th><th>Employees</th><th>Teams</th><th>Actions</th></tr></thead>
+              <tbody id="accountsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Employees Panel -->
+        <div class="admin-panel" id="panel-employees">
+          <div class="admin-header-flex">
+            <div>
+              <h1 class="admin-page-title">Employee Provisioning</h1>
+              <p class="admin-page-subtitle">Invite and manage support staff with role-based access control.</p>
+            </div>
+            <button class="btn btn--primary" id="openProvisionEmployeeBtn">＋ Provision Employee</button>
+          </div>
+          <div class="filter-row">
+            <div class="filter-row__search">
+              <span class="filter-row__search-icon">🔍</span>
+              <input type="text" class="form-input" id="employeesSearch" placeholder="Search employees…">
+            </div>
+            <select class="form-input" id="employeesAccountFilter" style="width:auto;">
+              <option value="">All Accounts</option>
+            </select>
+            <select class="form-input" id="employeesStatusFilter" style="width:auto;">
+              <option value="">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="pending_invite">Pending Invite</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Account</th><th>Team</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="employeesBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Employee Permissions Modal -->
+        <div id="empPermsModal" class="modal">
+          <div class="modal__content" style="max-width:760px;">
+            <h2 style="margin-top:0;border-bottom:1px solid var(--border);padding-bottom:1rem;">Effective Permissions</h2>
+            <p id="empPermsName" style="color:var(--text-secondary);margin-bottom:1rem;"></p>
+            <!-- Tabs inside modal -->
+            <div class="tab-bar" style="margin-bottom:16px;">
+              <button class="tab-btn active" data-perms-tab="inherited">Inherited</button>
+              <button class="tab-btn" data-perms-tab="overrides">Overrides</button>
+              <button class="tab-btn" data-perms-tab="effective">Effective Access</button>
+            </div>
+            <div id="permsTab-inherited" class="perms-tab-content active">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                <div><h4 style="color:var(--accent-emerald);margin-bottom:8px;">✅ Allowed from Role</h4><ul id="empPermsAllowed" style="font-size:.85rem;line-height:2;list-style:none;padding:0;"></ul></div>
+                <div><h4 style="color:var(--accent-rose);margin-bottom:8px;">🚫 Denied from Role</h4><ul id="empPermsDenied" style="font-size:.85rem;line-height:2;list-style:none;padding:0;"></ul></div>
+              </div>
+            </div>
+            <div id="permsTab-overrides" class="perms-tab-content" style="display:none;">
+              <div id="empOverridesList"></div>
+              <hr style="border-color:var(--border-subtle);margin:16px 0;">
+              <h4 style="margin-bottom:12px;">Add Override</h4>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:flex-end;">
+                <div><label class="form-label">Permission</label><select class="form-input" id="overridePermSelect"><option value="">Select…</option></select></div>
+                <div><label class="form-label">Effect</label><select class="form-input" id="overrideEffectSelect"><option value="allow">✅ Allow</option><option value="deny">🚫 Deny</option></select></div>
+                <div><label class="form-label">Expires (optional)</label><input type="date" class="form-input" id="overrideExpiryInput"></div>
+                <button class="btn btn--primary" id="addOverrideBtn">Add</button>
+              </div>
+              <div style="margin-top:10px;"><label class="form-label">Reason (required)</label><input type="text" class="form-input" id="overrideReasonInput" placeholder="Brief reason for this override…"></div>
+            </div>
+            <div id="permsTab-effective" class="perms-tab-content" style="display:none;">
+              <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Read-only final result after role permissions + overrides are applied.</p>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                <div><h4 style="color:var(--accent-emerald);margin-bottom:8px;">✅ Effective Allow</h4><ul id="empEffectiveAllowed" style="font-size:.85rem;line-height:2;list-style:none;padding:0;"></ul></div>
+                <div><h4 style="color:var(--accent-rose);margin-bottom:8px;">🚫 Effective Deny</h4><ul id="empEffectiveDenied" style="font-size:.85rem;line-height:2;list-style:none;padding:0;"></ul></div>
+              </div>
+            </div>
+            <div style="text-align:right;margin-top:1.5rem;">
+              <button class="btn btn--secondary" onclick="document.getElementById('empPermsModal').classList.remove('active')">Close</button>
+            </div>
+          </div>
+        </div>
+
       </main>
     </div>
   </div>
 
   <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ══ FORM DRAWER: Create / Edit Category ══ -->
+  <div class="form-drawer-overlay" id="categoryDrawerOverlay">
+    <div class="form-drawer" id="categoryDrawer">
+      <div class="form-drawer__header">
+        <h2 class="form-drawer__title" id="categoryDrawerTitle">Create Category</h2>
+        <button class="form-drawer__close" onclick="closeDrawer('categoryDrawerOverlay')">✕</button>
+      </div>
+      <div class="form-drawer__body">
+        <input type="hidden" id="editCategoryId">
+        <div><label class="form-label">Category Name *</label><input type="text" class="form-input" id="catFormName" placeholder="e.g. Billing"></div>
+        <div><label class="form-label">Description</label><textarea class="form-input" id="catFormDesc" rows="2" placeholder="Optional description"></textarea></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div><label class="form-label">Default Priority</label>
+            <select class="form-input" id="catFormPriority">
+              <option value="low">🟢 Low</option>
+              <option value="medium" selected>🟡 Medium</option>
+              <option value="high">🔴 High</option>
+              <option value="critical">🚨 Critical</option>
+            </select>
+          </div>
+          <div><label class="form-label">Default SLA Rule</label><select class="form-input" id="catFormSla"><option value="">None</option></select></div>
+        </div>
+        <div><label class="form-label">Default Team</label><select class="form-input" id="catFormTeam"><option value="">Unassigned</option></select></div>
+        <div><label class="form-label">Status</label>
+          <select class="form-input" id="catFormStatus">
+            <option value="active">Active</option>
+            <option value="draft">Draft</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
+        <!-- Global toggle -->
+        <div style="padding:14px;background:var(--bg-tertiary);border-radius:var(--radius-md);border:1px solid var(--border-card);">
+          <label class="toggle-switch">
+            <input type="checkbox" id="catFormIsGlobal" checked onchange="toggleCatAccountSection()">
+            <span class="toggle-switch__track"><span class="toggle-switch__thumb"></span></span>
+            <span style="font-size:14px;font-weight:500;">Global Category</span>
+          </label>
+          <p style="font-size:12px;color:var(--text-muted);margin:6px 0 0 54px;">Visible to all accounts. Uncheck to restrict to selected accounts.</p>
+        </div>
+        <!-- Account Access (shown when non-global) -->
+        <div id="catAccountSection" style="display:none;">
+          <label class="form-label">Account Access</label>
+          <div class="multi-check-list" id="catFormAccountList"></div>
+        </div>
+        <!-- Routing Preview -->
+        <div>
+          <label class="form-label">Routing Preview</label>
+          <div class="routing-preview" id="catRoutingPreview">
+            <span class="routing-preview__label">Preview</span>
+            <span style="color:var(--text-muted);font-size:12px;">Select a team and priority to see routing.</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-drawer__footer">
+        <button class="btn btn--secondary" onclick="closeDrawer('categoryDrawerOverlay')">Cancel</button>
+        <button class="btn btn--primary" id="saveCategoryBtn" onclick="saveCategory()">Save Category</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FORM DRAWER: Create / Edit Role ══ -->
+  <div class="form-drawer-overlay" id="roleDrawerOverlay">
+    <div class="form-drawer" id="roleDrawer">
+      <div class="form-drawer__header">
+        <h2 class="form-drawer__title" id="roleDrawerTitle">Create Role</h2>
+        <button class="form-drawer__close" onclick="closeDrawer('roleDrawerOverlay')">✕</button>
+      </div>
+      <div class="form-drawer__body">
+        <input type="hidden" id="editRoleId">
+        <div><label class="form-label">Role Name *</label><input type="text" class="form-input" id="roleFormName" placeholder="e.g. Support Agent"></div>
+        <div><label class="form-label">Description</label><input type="text" class="form-input" id="roleFormDesc" placeholder="Optional"></div>
+        <div><label class="form-label">Scope</label>
+          <select class="form-input" id="roleFormScope">
+            <option value="global">Global</option>
+            <option value="account">Account-scoped</option>
+          </select>
+        </div>
+        <!-- Permission Matrix (shown after creation / when editing) -->
+        <div id="rolePermMatrixSection" style="display:none;">
+          <label class="form-label">Permissions <span style="color:var(--text-muted);font-weight:400;">(grouped by module)</span></label>
+          <div class="perm-matrix" id="rolePermMatrix"></div>
+        </div>
+      </div>
+      <div class="form-drawer__footer">
+        <button class="btn btn--secondary" onclick="closeDrawer('roleDrawerOverlay')">Cancel</button>
+        <button class="btn btn--primary" id="saveRoleBtn" onclick="saveRole()">Save Role</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FORM DRAWER: Create / Edit Team ══ -->
+  <div class="form-drawer-overlay" id="teamDrawerOverlay">
+    <div class="form-drawer" id="teamDrawer">
+      <div class="form-drawer__header">
+        <h2 class="form-drawer__title" id="teamDrawerTitle">Create Team</h2>
+        <button class="form-drawer__close" onclick="closeDrawer('teamDrawerOverlay')">✕</button>
+      </div>
+      <div class="form-drawer__body">
+        <input type="hidden" id="editTeamId">
+        <div><label class="form-label">Team Name *</label><input type="text" class="form-input" id="teamFormName" placeholder="e.g. Billing Team"></div>
+        <div><label class="form-label">Account Scope</label><select class="form-input" id="teamFormAccount"><option value="">Platform-wide (no account restriction)</option></select></div>
+        <div><label class="form-label">Status</label>
+          <select class="form-input" id="teamFormStatus">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Roles Assigned to Team</label>
+          <div class="multi-check-list" id="teamFormRoleList"></div>
+        </div>
+        <div>
+          <label class="form-label">Category Coverage</label>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">Tickets in checked categories will route to this team by default.</p>
+          <div class="multi-check-list" id="teamFormCategoryList"></div>
+        </div>
+        <!-- Coverage Summary Preview -->
+        <div id="teamCoverageSummarySection" style="display:none;">
+          <label class="form-label">Coverage Summary</label>
+          <div class="coverage-summary" id="teamCoverageSummary"></div>
+        </div>
+      </div>
+      <div class="form-drawer__footer">
+        <button class="btn btn--secondary" onclick="closeDrawer('teamDrawerOverlay')">Cancel</button>
+        <button class="btn btn--primary" id="saveTeamBtn" onclick="saveTeam()">Save Team</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FORM DRAWER: Provision Employee ══ -->
+  <div class="form-drawer-overlay" id="employeeDrawerOverlay">
+    <div class="form-drawer" id="employeeDrawer">
+      <div class="form-drawer__header">
+        <h2 class="form-drawer__title" id="employeeDrawerTitle">Provision Employee</h2>
+        <button class="form-drawer__close" onclick="closeDrawer('employeeDrawerOverlay')">✕</button>
+      </div>
+      <div class="form-drawer__body">
+        <input type="hidden" id="editEmployeeId">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div><label class="form-label">Full Name *</label><input type="text" class="form-input" id="empFormName" placeholder="Jane Smith"></div>
+          <div><label class="form-label">Phone</label><input type="text" class="form-input" id="empFormPhone" placeholder="+1 555 0100"></div>
+        </div>
+        <div><label class="form-label">Work Email *</label><input type="email" class="form-input" id="empFormEmail" placeholder="jane@company.com"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div><label class="form-label">Account *</label><select class="form-input" id="empFormAccount" onchange="filterTeamsByAccount()"><option value="">Select account…</option></select></div>
+          <div><label class="form-label">Team</label><select class="form-input" id="empFormTeam" onchange="updateAccessPreview()"><option value="">Select team…</option></select></div>
+        </div>
+        <div><label class="form-label">Role *</label><select class="form-input" id="empFormRole" onchange="updateAccessPreview()"><option value="">Select role…</option></select></div>
+        <div><label class="form-label">Employment Status</label>
+          <select class="form-input" id="empFormStatus">
+            <option value="pending_invite">Send Invite Email</option>
+            <option value="active">Active (no invite)</option>
+          </select>
+        </div>
+        <!-- Live Inherited Access Preview -->
+        <div class="access-preview-panel" id="empAccessPreviewPanel">
+          <div class="access-preview-panel__title">🔍 Inherited Access Preview</div>
+          <p style="font-size:12px;color:var(--text-muted);">Select a role to see what permissions this employee will inherit.</p>
+          <div id="empAccessPreviewContent"></div>
+        </div>
+      </div>
+      <div class="form-drawer__footer">
+        <button class="btn btn--secondary" onclick="closeDrawer('employeeDrawerOverlay')">Cancel</button>
+        <button class="btn btn--primary" id="saveEmployeeBtn" onclick="saveEmployee()">Save &amp; Invite</button>
+      </div>
+    </div>
+  </div></div>
 
   <script src="/js/app.js"></script>
   <script>
