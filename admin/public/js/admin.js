@@ -134,16 +134,24 @@
     try {
       const stats = await api('/api/admin/stats');
 
-      document.getElementById('statTotalStories').textContent = stats.totalStories;
-      document.getElementById('statPending').textContent = stats.pendingStories;
-      document.getElementById('statApproved').textContent = stats.approvedStories;
-      document.getElementById('statRejected').textContent = stats.rejectedStories;
-      document.getElementById('statReports').textContent = stats.openReports;
-      document.getElementById('statComments').textContent = stats.totalComments;
-      document.getElementById('statPendingComments').textContent = stats.pendingComments;
-      document.getElementById('statLikes').textContent = stats.totalLikes;
-      document.getElementById('statBans').textContent = stats.bannedIPs;
-      document.getElementById('statUsers').textContent = stats.totalUsers;
+      const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = (val !== undefined && val !== null) ? val : '0';
+      };
+
+      setVal('statTotalStories', stats.totalStories);
+      setVal('statPending', stats.pendingStories);
+      setVal('statApproved', stats.approvedStories);
+      setVal('statRejected', stats.rejectedStories);
+      setVal('statReports', stats.openReports);
+      setVal('statComments', stats.totalComments);
+      setVal('statPendingComments', stats.pendingComments);
+      setVal('statLikes', stats.totalLikes);
+      setVal('statBans', stats.bannedIPs);
+      setVal('statBannedIPs', stats.bannedIPs);
+      setVal('statUsers', stats.totalUsers);
+      setVal('statPendingBooks', stats.pendingBooks);
+      setVal('statCategories', stats.totalCategories);
 
       // Update sidebar badges
       updateBadge('pendingStoriesBadge', stats.pendingStories);
@@ -154,7 +162,7 @@
         handleLogout();
         return;
       }
-      showToast('Failed to load stats.', 'error');
+      console.error('Failed to load stats:', err);
     }
   }
 
@@ -761,8 +769,15 @@
     if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
 
     // Panel navigation
-    document.querySelectorAll('.admin-nav-item[data-panel]').forEach(item => {
-      item.addEventListener('click', () => switchPanel(item.dataset.panel));
+    document.addEventListener('click', (e) => {
+      const navItem = e.target.closest('.admin-nav-item');
+      if (navItem) {
+        const panelName = navItem.getAttribute('data-panel');
+        if (panelName) {
+          e.preventDefault();
+          switchPanel(panelName);
+        }
+      }
     });
 
     // Stories queue filter chips

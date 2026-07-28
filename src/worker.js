@@ -1695,8 +1695,8 @@ app.post('/api/admin/login', rateLimit('admin-login', 10), async (c) => {
 
 app.get('/api/admin/users', requireAdmin, async (c) => {
   const db = c.env.DB;
-  const { results } = await db.prepare('SELECT id, user_id, full_name, email, account_status, created_at FROM users ORDER BY created_at DESC').all();
-  return c.json(results);
+  const { results } = await db.prepare('SELECT id, user_id, full_name, email, account_status, created_at FROM users ORDER BY created_at DESC').all().catch(() => ({ results: [] }));
+  return c.json(results || []);
 });
 
 app.delete('/api/admin/users/:id', requireAdmin, async (c) => {
@@ -1709,14 +1709,6 @@ app.delete('/api/admin/users/:id', requireAdmin, async (c) => {
 app.get('/api/admin/stats', requireAdmin, async (c) => {
   const db = c.env.DB;
 
-  const totalStories = (await db.prepare('SELECT COUNT(*) as c FROM stories').first()).c;
-  const pendingStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'pending'").first()).c;
-  const approvedStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'approved'").first()).c;
-  const rejectedStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'rejected'").first()).c;
-  const totalComments = (await db.prepare('SELECT COUNT(*) as c FROM comments').first()).c;
-  const pendingComments = (await db.prepare("SELECT COUNT(*) as c FROM comments WHERE status = 'pending'").first()).c;
-  const totalUsers = (await db.prepare('SELECT COUNT(*) as c FROM users').first()).c;
-  const totalLikes = (await db.prepare('SELECT COALESCE(SUM(like_count), 0) as c FROM stories').first()).c;
   const openReports = (await db.prepare("SELECT COUNT(*) as c FROM reports WHERE ticket_status != 'resolved' AND ticket_status != 'closed'").first()).c;
   const bannedIPs = (await db.prepare('SELECT COUNT(*) as c FROM banned_identifiers').first()).c;
   
