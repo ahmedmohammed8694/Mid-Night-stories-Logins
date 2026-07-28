@@ -43,7 +43,7 @@ async function api(url, options = {}) {
   if (!(options.body instanceof FormData)) {
     defaultHeaders['Content-Type'] = 'application/json';
   }
-  const adminToken = sessionStorage.getItem('adminToken');
+  const adminToken = sessionStorage.getItem('adminToken') || localStorage.getItem('adminToken');
   if (adminToken) {
     defaultHeaders['X-Admin-Token'] = adminToken;
   }

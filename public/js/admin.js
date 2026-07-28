@@ -3576,7 +3576,21 @@ window.switchPanel = switchPanel;
 window.checkAuth = checkAuth;
 
 function initAdminPanel() {
-  checkAuth();
+  const loginForm = document.getElementById('loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      handleLogin(e);
+    });
+  }
+
+  const mfaSubmitBtn = document.getElementById('mfaSubmitBtn');
+  if (mfaSubmitBtn) {
+    mfaSubmitBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      handleMFA();
+    });
+  }
 
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
@@ -3597,6 +3611,8 @@ function initAdminPanel() {
       }
     }
   });
+
+  checkAuth();
 }
 
 if (document.readyState === 'loading') {
