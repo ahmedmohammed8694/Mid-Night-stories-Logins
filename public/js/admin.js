@@ -4411,11 +4411,13 @@ function renderEmployeesTable() {
 
 async function openEmployeeDrawer(id = null) {
   const [accounts, teams, roles] = await Promise.all([
-    api('/api/admin/accounts'),
-    api('/api/admin/teams'),
-    api('/api/admin/roles'),
+    api('/api/admin/accounts').catch(() => []),
+    api('/api/admin/teams').catch(() => []),
+    api('/api/admin/roles').catch(() => []),
   ]);
-  _allAccounts = accounts; _allTeams = teams; _allRoles = roles;
+  _allAccounts = Array.isArray(accounts) ? accounts : [];
+  _allTeams = Array.isArray(teams) ? teams : [];
+  _allRoles = Array.isArray(roles) ? roles : [];
 
   const acctSel = document.getElementById('empFormAccount');
   acctSel.innerHTML = '<option value="">Select account…</option>' + accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
