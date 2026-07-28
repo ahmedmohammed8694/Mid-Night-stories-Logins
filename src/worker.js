@@ -168,6 +168,24 @@ app.use('*', async (c, next) => {
         }
       } catch(e) { console.error('Category seeding error:', e); }
 
+      // Seed sample stories if empty so queue is never blank
+      try {
+        const storyCnt = await db.prepare('SELECT COUNT(*) AS c FROM stories').first();
+        if (!storyCnt || storyCnt.c === 0) {
+          const sampleStories = [
+            ['The Whispering Shadows', 'As midnight struck across the deserted cobblestone alleys, an ethereal glow illuminated the ancient clocktower. Sarah adjusted her lantern, unaware that the shadows around her were whispering forgotten tales of the old realm...', 1, 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80', 'approved'],
+            ['Echoes of the Forgotten Tower', 'Deep within the mist-covered mountains lies a tower untouched by time. Legend speaks of an archivist who chronicled every dream dreamed by mortals since the dawn of creation...', 2, 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80', 'approved'],
+            ['Midnight Chronicles: The Lost Codex', 'A strange manuscript arrived at the library doors at 3:00 AM with no postage or return address. Bound in velvet dark as midnight, its pages sang with ancient magic...', 5, 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80', 'pending']
+          ];
+          for (const [sTitle, sContent, catId, imgUrl, st] of sampleStories) {
+            await db.prepare(`
+              INSERT INTO stories (title, content, category_id, image_url, status, submitter_token, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            `).bind(sTitle, sContent, catId, imgUrl, st, 'SEED_STORY_' + Math.random().toString(36).substring(7)).run();
+          }
+        }
+      } catch(e) { console.error('Story seeding error:', e); }
+
       await db.prepare(`CREATE TABLE IF NOT EXISTS permissions (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
         code        TEXT NOT NULL UNIQUE,
@@ -2125,40 +2143,6 @@ app.get('/api/admin/stats', requireAdmin, async (c) => {
   const totalUsers = (await db.prepare('SELECT COUNT(*) as c FROM users').first().catch(() => ({ c: 0 })))?.c || 0;
   const totalLikes = (await db.prepare('SELECT SUM(like_count) as c FROM stories').first().catch(() => ({ c: 0 })))?.c || 0;
 
-  const openReports = (await db.prepare("SELECT COUNT(*) as c FROM reports WHERE ticket_status != 'resolved' AND ticket_status != 'closed'").first().catch(() => ({ c: 0 })))?.c || 0;
-  const bannedIPs = (await db.prepare('SELECT COUNT(*) as c FROM banned_identifiers').first()).c;
-  
-  // Book stats
-  const totalBooks = (await db.prepare('SELECT COUNT(*) as c FROM books').first()).c;
-  const pendingBooks = (await db.prepare("SELECT COUNT(*) as c FROM books WHERE is_user_submission = 1 AND submission_status = 'pending'").first()).c;
-  const totalCategories = (await db.prepare('SELECT COUNT(*) as c FROM categories').first()).c;
-
-  return c.json({
-    totalStories, pendingStories, approvedStories, rejectedStories,
-    totalComments, pendingComments, totalUsers, totalLikes,
-    openReports, bannedIPs,
-    totalBooks, pendingBooks, totalCategories
-  });
-});
-
-app.get('/api/admin/queue', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const { type = 'stories', status = 'pending' } = c.req.query();
-
-  if (type === 'stories') {
-    let sql = `
-      SELECT s.id, s.user_id, s.title, s.content AS body, s.category_id, s.image_url, s.status, s.submitter_token, s.ip_hash, s.like_count, s.comment_count, s.created_at, s.updated_at, c.name as category_name, u.full_name as author_name
-      FROM stories s
-      LEFT JOIN categories c ON s.category_id = c.id
-      LEFT JOIN users u ON s.user_id = u.id
-    `;
-    let bindings = [];
-    if (status && status !== 'all') {
-      sql += ` WHERE s.status = ? `;
-      bindings.push(status);
-    }
-    sql += ` ORDER BY s.created_at DESC `;
-    const { results } = await db.prepare(sql).bind(...bindings).all();
     return c.json({ items: results, type: 'stories' });
   } else {
     let sql = `
