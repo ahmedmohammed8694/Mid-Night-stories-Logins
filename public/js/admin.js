@@ -713,11 +713,18 @@
       const descHtml = ticket.report_description ? escapeHtml(ticket.report_description) : (ticket.reason ? escapeHtml(ticket.reason) : '<i>[No description provided]</i>');
       const attachHtml = ticket.attachment_url ? `<div style="margin-top: 0.75rem;"><a href="${ticket.attachment_url}" target="_blank" style="color: var(--primary); text-decoration: underline;">View File Attachment 📁</a></div>` : '';
       
+      const attachments = Array.isArray(data.attachments) ? data.attachments : [];
+      const attachmentListHtml = attachments.length ? `
+        <div style="margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.1);">
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.4rem; font-weight: 700; text-transform: uppercase;">Attachments (${attachments.length})</div>
+          ${attachments.map(attachment => `<a href="${attachment.download_url}" target="_blank" style="display: block; color: var(--primary); text-decoration: underline; font-size: 0.85rem; margin: 0.35rem 0;">Attachment: ${escapeHtml(attachment.file_name || 'Download attachment')}</a>`).join('')}
+        </div>` : '';
+
       container.innerHTML += `
         <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
           <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem;">Original Ticket Submission from ${escapeHtml(ticket.user_name || ('User #' + (ticket.reporter_id || ticket.user_id || 'User')))}</div>
           <div style="font-weight: bold; margin-bottom: 0.4rem;">Subject: ${escapeHtml(ticket.subject || ticket.reason || 'No Subject')}</div>
-          <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">${descHtml}${attachHtml}</div>
+          <div style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap;">${descHtml}${attachHtml}${attachmentListHtml}</div>
         </div>
       `;
 
