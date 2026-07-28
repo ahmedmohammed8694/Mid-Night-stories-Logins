@@ -7,6 +7,7 @@ import { cors } from 'hono/cors';
 import { authenticator } from 'otplib';
 import QRCode from 'qrcode';
 import bcrypt from 'bcryptjs';
+import { getEffectivePermissions, hasPermission, writeAuditLog } from './permissions.js';
 
 // ── Native JWT using Web Crypto API ──
 async function signJWT(payload, secret) {
@@ -186,13 +187,23 @@ const requirePermission = (resource, action) => {
 const getAccountIdFromContext = async (c) => {
   const admin = c.get('admin');
   if (!admin) return null;
-  
   const db = c.env.DB;
-  const result = await db.prepare(
-    'SELECT account_id FROM admin_users WHERE id = ?'
-  ).bind(admin.adminId).first();
-  
+  const result = await db.prepare('SELECT account_id FROM admin_users WHERE id = ?').bind(admin.adminId).first();
   return result ? result.account_id : null;
+};
+
+// ── Employee Auth Middleware ──
+const requireEmployee = async (c, next) => {
+  const token = c.req.header('x-employee-token');
+  if (!token) return c.json({ error: 'Unauthorized' }, 401);
+  try {
+    const payload = await verifyJWT(token, getAdminJwtSecret(c));
+    if (!payload.employeeId) return c.json({ error: 'Invalid token type' }, 401);
+    c.set('employee', payload);
+    await next();
+  } catch {
+    return c.json({ error: 'Unauthorized. Session expired or invalid.' }, 401);
+  }
 };
 
 // ═════════════════════════════════════════════════════════
@@ -918,18 +929,288 @@ app.get('/api/admin/employees/invites', requireAdmin, async (c) => {
 app.post('/api/admin/employees/invite', requireAdmin, async (c) => {
   const db = c.env.DB;
   const adminPayload = c.get('admin');
-  const { email, first_name, last_name, team_id, role_id } = await c.req.json();
-  if (!email) return c.json({ error: 'Email is required.' }, 400);
+  const { email, full_name, team_id, role_id, account_id } = await c.req.json();
+  if (!email || !full_name || !account_id) return c.json({ error: 'email, full_name, and account_id are required.' }, 400);
   const token = crypto.randomUUID();
-  const expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  try {
+    const r = await db.prepare(
+      'INSERT INTO employee_users (email, full_name, account_id, team_id, role_id, invite_token, invite_expires, employment_status) VALUES (?, ?, ?, ?, ?, ?, ?, \'pending_invite\')'
+    ).bind(email, full_name, account_id, team_id || null, role_id || null, token, expires).run();
+    await writeAuditLog(db, { actorId: adminPayload.adminId, actorType: 'admin', action: 'employee.invite', targetType: 'employee', targetId: r.meta.last_row_id, newValue: { email, full_name, account_id } });
+    return c.json({ message: 'Invite created.', token, id: r.meta.last_row_id }, 201);
+  } catch {
+    return c.json({ error: 'Employee with this email already exists.' }, 400);
+  }
+});
+
+// ═════════════════════════════════════════════════════════
+// ██  EMPLOYEE USERS CRUD
+// ═════════════════════════════════════════════════════════
+app.get('/api/admin/employees', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { results } = await db.prepare(`
+    SELECT eu.id, eu.full_name, eu.email, eu.phone, eu.employment_status,
+           eu.last_login_at, eu.created_at, eu.account_id, eu.team_id, eu.role_id,
+           t.name as team_name, r.name as role_name, a.name as account_name
+    FROM employee_users eu
+    LEFT JOIN teams t ON eu.team_id = t.id
+    LEFT JOIN roles r ON eu.role_id = r.id
+    LEFT JOIN accounts a ON eu.account_id = a.id
+    ORDER BY eu.created_at DESC
+  `).all();
+  return c.json(results);
+});
+
+app.get('/api/admin/employees/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const id = parseInt(c.req.param('id'));
+  const emp = await db.prepare(`
+    SELECT eu.*, t.name as team_name, r.name as role_name, a.name as account_name
+    FROM employee_users eu
+    LEFT JOIN teams t ON eu.team_id = t.id
+    LEFT JOIN roles r ON eu.role_id = r.id
+    LEFT JOIN accounts a ON eu.account_id = a.id
+    WHERE eu.id = ?
+  `).bind(id).first();
+  if (!emp) return c.json({ error: 'Employee not found.' }, 404);
+  const perms = await getEffectivePermissions(db, id);
+  return c.json({ ...emp, effectivePermissions: perms });
+});
+
+app.put('/api/admin/employees/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const id = parseInt(c.req.param('id'));
+  const { full_name, team_id, role_id, employment_status, phone } = await c.req.json();
+  const old = await db.prepare('SELECT * FROM employee_users WHERE id = ?').bind(id).first();
+  if (!old) return c.json({ error: 'Employee not found.' }, 404);
+  await db.prepare(
+    'UPDATE employee_users SET full_name=?, team_id=?, role_id=?, employment_status=?, phone=?, updated_at=CURRENT_TIMESTAMP WHERE id=?'
+  ).bind(full_name ?? old.full_name, team_id ?? old.team_id, role_id ?? old.role_id, employment_status ?? old.employment_status, phone ?? old.phone, id).run();
+  await writeAuditLog(db, { actorId: adminPayload.adminId, actorType: 'admin', action: 'employee.update', targetType: 'employee', targetId: id, oldValue: old, newValue: { full_name, team_id, role_id, employment_status } });
+  return c.json({ message: 'Employee updated.' });
+});
+
+app.delete('/api/admin/employees/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const id = parseInt(c.req.param('id'));
+  const emp = await db.prepare('SELECT id, email FROM employee_users WHERE id = ?').bind(id).first();
+  if (!emp) return c.json({ error: 'Employee not found.' }, 404);
+  await db.prepare('DELETE FROM employee_users WHERE id = ?').bind(id).run();
+  await writeAuditLog(db, { actorId: adminPayload.adminId, actorType: 'admin', action: 'employee.delete', targetType: 'employee', targetId: id, oldValue: { email: emp.email } });
+  return c.json({ message: 'Employee deleted.' });
+});
+
+// ── Employee: accept invite & set password ──
+app.post('/api/employee/accept-invite', async (c) => {
+  const db = c.env.DB;
+  const { token, password } = await c.req.json();
+  if (!token || !password) return c.json({ error: 'token and password are required.' }, 400);
+  const emp = await db.prepare(
+    "SELECT * FROM employee_users WHERE invite_token = ? AND employment_status = 'pending_invite'"
+  ).bind(token).first();
+  if (!emp) return c.json({ error: 'Invalid or expired invite.' }, 400);
+  if (emp.invite_expires && new Date(emp.invite_expires) < new Date()) return c.json({ error: 'Invite has expired.' }, 400);
+  const hash = await bcrypt.hash(password, 10);
+  await db.prepare(
+    "UPDATE employee_users SET password_hash=?, invite_token=NULL, invite_expires=NULL, employment_status='active', updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(hash, emp.id).run();
+  return c.json({ message: 'Account activated. You can now log in.' });
+});
+
+// ── Employee: login ──
+app.post('/api/employee/login', rateLimit('employee-login', 10), async (c) => {
+  const db = c.env.DB;
+  const { email, password } = await c.req.json();
+  const emp = await db.prepare("SELECT * FROM employee_users WHERE email = ? AND employment_status = 'active'").bind(email).first();
+  const ok = emp ? await bcrypt.compare(password, emp.password_hash || '') : false;
+  if (!ok) return c.json({ error: 'Invalid credentials.' }, 401);
+  await db.prepare('UPDATE employee_users SET last_login_at=CURRENT_TIMESTAMP WHERE id=?').bind(emp.id).run();
+  const token = await signJWT({ employeeId: emp.id, email: emp.email, accountId: emp.account_id, roleId: emp.role_id, exp: Math.floor(Date.now() / 1000) + 28800 }, getAdminJwtSecret(c));
+  return c.json({ token, employeeId: emp.id, email: emp.email });
+});
+
+// ── Employee: get own effective permissions ──
+app.get('/api/employee/me/permissions', requireEmployee, async (c) => {
+  const emp = c.get('employee');
+  const perms = await getEffectivePermissions(c.env.DB, emp.employeeId);
+  return c.json(perms);
+});
+
+// ═════════════════════════════════════════════════════════
+// ██  PERMISSION OVERRIDES API
+// ═════════════════════════════════════════════════════════
+app.get('/api/admin/employees/:id/overrides', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const id = parseInt(c.req.param('id'));
+  const { results } = await db.prepare(`
+    SELECT epo.*, p.code, p.description, p.module
+    FROM employee_permission_overrides epo
+    JOIN permissions p ON p.id = epo.permission_id
+    WHERE epo.employee_id = ?
+    ORDER BY p.module, p.code
+  `).bind(id).all();
+  return c.json(results);
+});
+
+app.post('/api/admin/employees/:id/overrides', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const employeeId = parseInt(c.req.param('id'));
+  const { permission_id, effect, reason, expires_at } = await c.req.json();
+  if (!permission_id || !effect || !reason) return c.json({ error: 'permission_id, effect, and reason are required.' }, 400);
+  if (!['allow', 'deny'].includes(effect)) return c.json({ error: 'effect must be allow or deny.' }, 400);
   try {
     await db.prepare(
-      'INSERT INTO employee_invites (email, first_name, last_name, team_id, role_id, token, expires_at, invited_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).bind(email, first_name || null, last_name || null, team_id || null, role_id || null, token, expires_at, adminPayload.adminId).run();
-    return c.json({ message: 'Invite created.', token }, 201);
+      'INSERT INTO employee_permission_overrides (employee_id, permission_id, effect, reason, granted_by, expires_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(employee_id, permission_id) DO UPDATE SET effect=excluded.effect, reason=excluded.reason, granted_by=excluded.granted_by, expires_at=excluded.expires_at'
+    ).bind(employeeId, permission_id, effect, reason, adminPayload.adminId, expires_at || null).run();
+    await writeAuditLog(db, { actorId: adminPayload.adminId, actorType: 'admin', action: 'permission.override', targetType: 'employee', targetId: employeeId, newValue: { permission_id, effect, reason } });
+    return c.json({ message: 'Override saved.' });
   } catch (e) {
-    return c.json({ error: 'Invite already exists for this email.' }, 400);
+    return c.json({ error: 'Failed to save override.' }, 500);
   }
+});
+
+app.delete('/api/admin/employees/:id/overrides/:permId', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const employeeId = parseInt(c.req.param('id'));
+  const permId = parseInt(c.req.param('permId'));
+  await db.prepare('DELETE FROM employee_permission_overrides WHERE employee_id=? AND permission_id=?').bind(employeeId, permId).run();
+  await writeAuditLog(db, { actorId: adminPayload.adminId, actorType: 'admin', action: 'permission.override.remove', targetType: 'employee', targetId: employeeId, oldValue: { permission_id: permId } });
+  return c.json({ message: 'Override removed.' });
+});
+
+// ── Get effective permissions for any employee ──
+app.get('/api/admin/employees/:id/effective-permissions', requireAdmin, async (c) => {
+  const id = parseInt(c.req.param('id'));
+  const perms = await getEffectivePermissions(c.env.DB, id);
+  return c.json(perms);
+});
+
+// ═════════════════════════════════════════════════════════
+// ██  ACCOUNTS API
+// ═════════════════════════════════════════════════════════
+app.get('/api/admin/accounts', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { results } = await db.prepare(`
+    SELECT a.*,
+      (SELECT COUNT(*) FROM employee_users WHERE account_id = a.id) as employee_count,
+      (SELECT COUNT(*) FROM teams WHERE account_id = a.id) as team_count
+    FROM accounts a ORDER BY a.name
+  `).all();
+  return c.json(results);
+});
+
+app.post('/api/admin/accounts', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const { name, domain } = await c.req.json();
+  if (!name) return c.json({ error: 'name is required.' }, 400);
+  try {
+    const r = await db.prepare('INSERT INTO accounts (name, domain) VALUES (?, ?)').bind(name, domain || null).run();
+    await writeAuditLog(db, { actorId: adminPayload.adminId, actorType: 'admin', action: 'account.create', targetType: 'account', targetId: r.meta.last_row_id, newValue: { name } });
+    return c.json({ id: r.meta.last_row_id, message: 'Account created.' }, 201);
+  } catch {
+    return c.json({ error: 'Account name or domain already exists.' }, 400);
+  }
+});
+
+app.get('/api/admin/accounts/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const id = parseInt(c.req.param('id'));
+  const account = await db.prepare('SELECT * FROM accounts WHERE id = ?').bind(id).first();
+  if (!account) return c.json({ error: 'Account not found.' }, 404);
+  const { results: teams } = await db.prepare('SELECT id, name, status FROM teams WHERE account_id = ?').bind(id).all();
+  const { results: employees } = await db.prepare('SELECT id, full_name, email, employment_status, role_id FROM employee_users WHERE account_id = ?').bind(id).all();
+  return c.json({ ...account, teams, employees });
+});
+
+app.put('/api/admin/accounts/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const id = parseInt(c.req.param('id'));
+  const { name, domain, status } = await c.req.json();
+  const old = await db.prepare('SELECT * FROM accounts WHERE id = ?').bind(id).first();
+  if (!old) return c.json({ error: 'Account not found.' }, 404);
+  await db.prepare(
+    'UPDATE accounts SET name=?, domain=?, status=?, updated_at=CURRENT_TIMESTAMP WHERE id=?'
+  ).bind(name ?? old.name, domain ?? old.domain, status ?? old.status, id).run();
+  await writeAuditLog(db, { actorId: adminPayload.adminId, actorType: 'admin', action: 'account.update', targetType: 'account', targetId: id, oldValue: old, newValue: { name, domain, status } });
+  return c.json({ message: 'Account updated.' });
+});
+
+app.delete('/api/admin/accounts/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const id = parseInt(c.req.param('id'));
+  const empCount = (await db.prepare('SELECT COUNT(*) as c FROM employee_users WHERE account_id = ?').bind(id).first()).c;
+  if (empCount > 0) return c.json({ error: 'Remove all employees from this account first.' }, 400);
+  await db.prepare('DELETE FROM accounts WHERE id = ?').bind(id).run();
+  await writeAuditLog(db, { actorId: adminPayload.adminId, actorType: 'admin', action: 'account.delete', targetType: 'account', targetId: id });
+  return c.json({ message: 'Account deleted.' });
+});
+
+// ═════════════════════════════════════════════════════════
+// ██  PERMISSIONS LIST & ROLES MANAGEMENT
+// ═════════════════════════════════════════════════════════
+app.get('/api/admin/permissions', requireAdmin, async (c) => {
+  const { results } = await c.env.DB.prepare('SELECT * FROM permissions ORDER BY module, code').all();
+  return c.json(results);
+});
+
+app.get('/api/admin/roles/:id/permissions', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const id = parseInt(c.req.param('id'));
+  const { results } = await db.prepare(`
+    SELECT rp.permission_id, rp.effect, p.code, p.module, p.description
+    FROM role_permissions rp JOIN permissions p ON p.id = rp.permission_id
+    WHERE rp.role_id = ?
+  `).bind(id).all();
+  return c.json(results);
+});
+
+app.put('/api/admin/roles/:id/permissions', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const roleId = parseInt(c.req.param('id'));
+  // Body: [{ permission_id, effect }]
+  const perms = await c.req.json();
+  if (!Array.isArray(perms)) return c.json({ error: 'Expected array of { permission_id, effect }.' }, 400);
+  const role = await db.prepare('SELECT is_system FROM roles WHERE id = ?').bind(roleId).first();
+  if (!role) return c.json({ error: 'Role not found.' }, 404);
+  // Replace all permissions for this role
+  const stmts = [db.prepare('DELETE FROM role_permissions WHERE role_id = ?').bind(roleId)];
+  for (const { permission_id, effect } of perms) {
+    if (!['allow', 'deny'].includes(effect)) continue;
+    stmts.push(db.prepare('INSERT INTO role_permissions (role_id, permission_id, effect) VALUES (?, ?, ?)').bind(roleId, permission_id, effect));
+  }
+  await db.batch(stmts);
+  await writeAuditLog(db, { actorId: adminPayload.adminId, actorType: 'admin', action: 'role.permissions.update', targetType: 'role', targetId: roleId, newValue: perms });
+  return c.json({ message: 'Role permissions updated.' });
+});
+
+// ═════════════════════════════════════════════════════════
+// ██  AUDIT LOG (RBAC)
+// ═════════════════════════════════════════════════════════
+app.get('/api/admin/rbac/audit-log', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const limit = Math.min(parseInt(c.req.query('limit') || '100'), 500);
+  const offset = parseInt(c.req.query('offset') || '0');
+  const actorType = c.req.query('actor_type');
+  const action = c.req.query('action');
+
+  let query = 'SELECT * FROM audit_log WHERE 1=1';
+  const binds = [];
+  if (actorType) { query += ' AND actor_type = ?'; binds.push(actorType); }
+  if (action)    { query += ' AND action LIKE ?';   binds.push(`%${action}%`); }
+  query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+  binds.push(limit, offset);
+
+  const { results } = await db.prepare(query).bind(...binds).all();
+  return c.json(results);
 });
 
 export default app;
