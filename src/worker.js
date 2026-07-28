@@ -2568,13 +2568,6 @@ app.post('/api/admin/users/:id/reset-password', requireAdmin, async (c) => {
   await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(new_password, id).run();
 
   await writeAuditLog(db, {
-    actorId: adminPayload.adminId,
-    actorType: 'admin',
-    action: 'user.password_reset',
-    targetType: 'user',
-    targetId: id
-  });
-
   return c.json({ success: true, message: 'User password reset successfully.' });
 });
 
@@ -2611,13 +2604,19 @@ app.get('/api/admin/stats', requireAdmin, async (c) => {
   const totalUsers = (await db.prepare('SELECT COUNT(*) as c FROM users').first().catch(() => ({ c: 0 })))?.c || 0;
   const totalLikes = (await db.prepare('SELECT SUM(like_count) as c FROM stories').first().catch(() => ({ c: 0 })))?.c || 0;
 
-      sql += ` WHERE cm.status = ? `;
-      bindings.push(status);
-    }
-    sql += ` ORDER BY cm.created_at DESC `;
-    const { results } = await db.prepare(sql).bind(...bindings).all();
-    return c.json({ items: results, type: 'comments' });
-  }
+  const openReports = (await db.prepare("SELECT COUNT(*) as c FROM reports WHERE ticket_status != 'resolved' AND ticket_status != 'closed'").first().catch(() => ({ c: 0 })))?.c || 0;
+  const bannedIPs = (await db.prepare('SELECT COUNT(*) as c FROM banned_identifiers').first().catch(() => ({ c: 0 })))?.c || 0;
+  
+  const totalBooks = (await db.prepare('SELECT COUNT(*) as c FROM books').first().catch(() => ({ c: 0 })))?.c || 0;
+  const pendingBooks = (await db.prepare("SELECT COUNT(*) as c FROM books WHERE is_user_submission = 1 AND submission_status = 'pending'").first().catch(() => ({ c: 0 })))?.c || 0;
+  const totalCategories = (await db.prepare('SELECT COUNT(*) as c FROM ticket_categories').first().catch(() => ({ c: 0 })))?.c || 0;
+
+  return c.json({
+    totalStories, pendingStories, approvedStories, rejectedStories,
+    totalComments, pendingComments, totalUsers, totalLikes,
+    openReports, bannedIPs,
+    totalBooks, pendingBooks, totalCategories
+  });
 });
 
 app.post('/api/admin/moderate', requireAdmin, async (c) => {

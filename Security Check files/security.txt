@@ -1,0 +1,28 @@
+# security.txt for [Company Name]
+# Spec: RFC 9116 — https://www.rfc-editor.org/rfc/rfc9116
+# File must be placed at: https://[yourdomain.com]/.well-known/security.txt
+
+# How to report a vulnerability to us
+Contact: mailto:security@yourdomain.com
+Contact: https://yourdomain.com/security/report
+
+# When this file's information should be considered stale (ISO 8601, update at least annually)
+Expires: 2027-07-28T00:00:00.000Z
+
+# Link to your PGP key for encrypted vulnerability reports (optional but recommended)
+Encryption: https://yourdomain.com/.well-known/pgp-key.txt
+
+# Link to your vulnerability disclosure / responsible disclosure policy
+Policy: https://yourdomain.com/security-policy
+
+# Link to a page crediting researchers who've reported valid issues (optional)
+Acknowledgments: https://yourdomain.com/security/hall-of-fame
+
+# Preferred language(s) for reports, IETF language tags, comma-separated
+Preferred-Languages: en
+
+# Canonical URI(s) of this file itself (recommended, helps researchers confirm authenticity)
+Canonical: https://yourdomain.com/.well-known/security.txt
+
+# Link to security-related job openings (optional)
+# Hiring: https://yourdomain.com/careers?dept=security
