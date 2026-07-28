@@ -462,7 +462,7 @@
       const empty = document.getElementById('noStoriesQueue');
       if (!tbody) return;
       tbody.innerHTML = '';
-      currentStoriesList = data.items || [];
+      currentStoriesList = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []);
 
       const wrapper = document.getElementById('storiesQueueTable')?.closest('.admin-table-wrapper');
 
@@ -742,7 +742,7 @@
       const empty = document.getElementById('noCommentsQueue');
       if (!tbody) return;
       tbody.innerHTML = '';
-      currentCommentsList = data.items || [];
+      currentCommentsList = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []);
 
       const wrapper = document.getElementById('commentsQueueTable')?.closest('.admin-table-wrapper');
 

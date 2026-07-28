@@ -122,16 +122,81 @@ app.use('*', async (c, next) => {
         created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
       )`).run();
 
-      await db.prepare(`CREATE TABLE IF NOT EXISTS ticket_subcategories (
-        id               INTEGER PRIMARY KEY AUTOINCREMENT,
-        category_id      INTEGER NOT NULL REFERENCES ticket_categories(id) ON DELETE CASCADE,
-        name             TEXT NOT NULL,
-        description      TEXT,
-        default_sla_id   INTEGER REFERENCES sla_rules(id) ON DELETE SET NULL,
-        default_priority TEXT CHECK(default_priority IN ('low','medium','high','urgent')),
-        default_team_id  INTEGER REFERENCES teams(id) ON DELETE SET NULL,
-        status           TEXT DEFAULT 'active' CHECK(status IN ('active','draft','archived')),
-        created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
+      await db.prepare(`CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        slug TEXT NOT NULL UNIQUE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS stories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        title TEXT NOT NULL,
+        content TEXT,
+        body TEXT,
+        category_id INTEGER,
+        image_url TEXT,
+        status TEXT DEFAULT 'pending',
+        like_count INTEGER DEFAULT 0,
+        comment_count INTEGER DEFAULT 0,
+        submitter_token TEXT,
+        ip_hash TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        story_id INTEGER,
+        book_id INTEGER,
+        user_id INTEGER,
+        content TEXT,
+        body TEXT,
+        status TEXT DEFAULT 'pending',
+        ip_hash TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT UNIQUE,
+        full_name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        role TEXT DEFAULT 'user',
+        account_status TEXT DEFAULT 'active',
+        password_hash TEXT,
+        interaction_permissions TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS reports (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticket_id TEXT UNIQUE,
+        subject TEXT,
+        category_id INTEGER,
+        subcategory_id INTEGER,
+        reported_item_type TEXT,
+        reported_item_id INTEGER,
+        reason TEXT,
+        report_description TEXT,
+        attachment_url TEXT,
+        priority TEXT DEFAULT 'medium',
+        ticket_status TEXT DEFAULT 'open',
+        assigned_agent_id INTEGER,
+        reporter_id INTEGER,
+        reporter_ip_hash TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`).run();
+
+      await db.prepare(`CREATE TABLE IF NOT EXISTS banned_identifiers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL,
+        value TEXT NOT NULL,
+        reason TEXT,
+        admin_id INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )`).run();
 
       // Safe column auto-migrations for existing tables created under older schemas
@@ -149,6 +214,24 @@ app.use('*', async (c, next) => {
       await safeAddCol('ticket_subcategories', 'status TEXT DEFAULT "active"');
       await safeAddCol('teams', 'status TEXT DEFAULT "active"');
       await safeAddCol('teams', 'account_id INTEGER');
+
+      // Seed default story categories if empty
+      try {
+        const cCnt = await db.prepare('SELECT COUNT(*) AS c FROM categories').first();
+        if (!cCnt || cCnt.c === 0) {
+          const defaultStoryCats = [
+            ['General', 'general'],
+            ['Horror & Supernatural', 'horror-supernatural'],
+            ['Mystery & Thriller', 'mystery-thriller'],
+            ['Sci-Fi & Fantasy', 'sci-fi-fantasy'],
+            ['Dark Romance', 'dark-romance'],
+            ['Urban Legends', 'urban-legends']
+          ];
+          for (const [name, slug] of defaultStoryCats) {
+            await db.prepare('INSERT OR IGNORE INTO categories (name, slug) VALUES (?, ?)').bind(name, slug).run();
+          }
+        }
+      } catch(e) { console.error('Categories seeding error:', e); }
 
       // Seed default ticket categories if empty
       try {
@@ -2635,11 +2718,11 @@ app.post('/api/admin/moderate', requireAdmin, async (c) => {
   const table = target_type === 'story' ? 'stories' : 'comments';
   const targetIdInt = parseInt(target_id);
 
-  await db.prepare(`UPDATE ${table} SET status = ? WHERE id = ?`).bind(statusMap[action], targetIdInt).run();
+  try {
+    await db.prepare(`UPDATE ${table} SET status = ? WHERE id = ?`).bind(statusMap[action] || 'approved', targetIdInt).run();
+    await db.prepare('INSERT INTO moderation_log (target_type, target_id, admin_id, action, reason) VALUES (?, ?, ?, ?, ?)').bind(target_type, targetIdInt, adminPayload.adminId, action, reason || null).run();
+  } catch(e) {}
 
-  await db.prepare(
-    'INSERT INTO moderation_log (target_type, target_id, admin_id, action, reason) VALUES (?, ?, ?, ?, ?)'
-  ).bind(target_type, targetIdInt, adminPayload.adminId, action, reason || null).run();
 
   return c.json({ message: `Content ${statusMap[action]} successfully.` });
 });
