@@ -1,4 +1,4 @@
-// admin.js — Admin dashboard: login, MFA, moderation queues, reports, categories, bans, settings, audit log
+﻿// admin.js — Admin dashboard: login, MFA, moderation queues, reports, categories, bans, settings, audit log
 
 (function () {
   let adminToken = sessionStorage.getItem('adminToken');
@@ -115,6 +115,7 @@
       case 'bans': loadBans(); break;
       case 'settings': loadSettings(); break;
       case 'audit-log': loadAuditLog(); break;
+      case 'accounts': loadAccounts(); break;
       case 'taxonomy': loadTaxonomy(); break;
       case 'roles': loadRoles(); break;
       case 'teams': loadTeams(); break;
@@ -929,21 +930,98 @@ window.deleteTeam = async function(id) {
 };
 
 // ── Employees ──
-async function loadEmployees() {
-  await loadTeams(); // populate invite dropdown
+async function loadAccounts() {
   try {
-    const invites = await api('/api/admin/employees/invites');
-    const tbody = document.getElementById('employeesBody');
-    tbody.innerHTML = invites.map(i => `
+    const accounts = await api('/api/admin/accounts');
+    const tbody = document.getElementById('accountsBody');
+    tbody.innerHTML = accounts.map(a => `
       <tr>
-        <td>${i.id}</td>
-        <td>${escapeHtml((i.first_name || '') + ' ' + (i.last_name || ''))}</td>
-        <td>${escapeHtml(i.email)}</td>
-        <td>${escapeHtml(i.team_name || '—')}</td>
-        <td><span class="status-badge status-badge--${i.status === 'accepted' ? 'approved' : i.status === 'pending' ? 'pending' : 'rejected'}">${i.status}</span></td>
-        <td>${formatDate(i.invited_at)}</td>
-      </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;opacity:.5">No invites yet.</td></tr>';
-  } catch (err) { showToast('Failed to load employees.', 'error'); }
+        <td>${a.id}</td>
+        <td>${escapeHtml(a.name)}</td>
+        <td>${escapeHtml(a.domain || '\u2014')}</td>
+        <td><span class="status-badge status-badge--${a.status === 'active' ? 'approved' : 'rejected'}">${a.status}</span></td>
+        <td>${a.employee_count ?? 0}</td>
+        <td>${a.team_count ?? 0}</td>
+        <td>
+          <button class="btn btn--ghost btn--sm" onclick="toggleAccountStatus(${a.id},'${a.status === 'active' ? 'suspended' : 'active'}','${escapeHtml(a.name)}')">${a.status === 'active' ? 'Suspend' : 'Activate'}</button>
+          <button class="btn btn--danger btn--sm" onclick="deleteAccount(${a.id})">Delete</button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;opacity:.5">No accounts yet.</td></tr>';
+  } catch { showToast('Failed to load accounts.', 'error'); }
+}
+
+window.toggleAccountStatus = async (id, newStatus, name) => {
+  if (!confirm(`Set account "${name}" to ${newStatus}?`)) return;
+  try {
+    await api(`/api/admin/accounts/${id}`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
+    showToast('Account updated.', 'success');
+    loadAccounts();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.deleteAccount = async (id) => {
+  if (!confirm('Delete this account? All employees must be removed first.')) return;
+  try {
+    await api(`/api/admin/accounts/${id}`, { method: 'DELETE' });
+    showToast('Account deleted.', 'success');
+    loadAccounts();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+async function loadEmployees() {
+  try {
+    const [accounts, teams, roles, employees] = await Promise.all([
+      api('/api/admin/accounts'),
+      api('/api/admin/teams'),
+      api('/api/admin/roles'),
+      api('/api/admin/employees'),
+    ]);
+    const acctSel = document.getElementById('inviteAccount');
+    const teamSel = document.getElementById('inviteTeam');
+    const roleSel = document.getElementById('inviteRole');
+    acctSel.innerHTML = '<option value="">Select account...</option>' + accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+    teamSel.innerHTML = '<option value="">Select team...</option>' + teams.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+    roleSel.innerHTML = '<option value="">Select role...</option>' + roles.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
+    const tbody = document.getElementById('employeesBody');
+    tbody.innerHTML = employees.map(e => `
+      <tr>
+        <td>${e.id}</td>
+        <td>${escapeHtml(e.full_name)}</td>
+        <td>${escapeHtml(e.email)}</td>
+        <td>${escapeHtml(e.account_name || '\u2014')}</td>
+        <td>${escapeHtml(e.team_name || '\u2014')}</td>
+        <td>${escapeHtml(e.role_name || '\u2014')}</td>
+        <td><span class="status-badge status-badge--${e.employment_status === 'active' ? 'approved' : e.employment_status === 'pending_invite' ? 'pending' : 'rejected'}">${e.employment_status}</span></td>
+        <td style="display:flex;gap:6px;">
+          <button class="btn btn--ghost btn--sm" onclick="viewEmployeePerms(${e.id},'${escapeHtml(e.full_name)}')">Permissions</button>
+          <button class="btn btn--danger btn--sm" onclick="deleteEmployee(${e.id})">Remove</button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;opacity:.5">No employees yet.</td></tr>';
+  } catch { showToast('Failed to load employees.', 'error'); }
+}
+
+window.viewEmployeePerms = async (id, name) => {
+  try {
+    const perms = await api(`/api/admin/employees/${id}/effective-permissions`);
+    document.getElementById('empPermsName').textContent = name;
+    document.getElementById('empPermsAllowed').innerHTML = perms.allowed.length
+      ? perms.allowed.map(p => `<li><code>${p}</code></li>`).join('')
+      : '<li style="opacity:.5">None</li>';
+    document.getElementById('empPermsDenied').innerHTML = perms.denied.length
+      ? perms.denied.map(p => `<li><code>${p}</code></li>`).join('')
+      : '<li style="opacity:.5">None</li>';
+    document.getElementById('empPermsModal').classList.add('active');
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.deleteEmployee = async (id) => {
+  if (!confirm('Remove this employee? This cannot be undone.')) return;
+  try {
+    await api(`/api/admin/employees/${id}`, { method: 'DELETE' });
+    showToast('Employee removed.', 'success');
+    loadEmployees();
+  } catch (err) { showToast(err.message, 'error'); }
+}catch (err) { showToast('Failed to load employees.', 'error'); }
 }
 
 // ── Event bindings for new panels ──
@@ -999,19 +1077,38 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) { showToast(err.message, 'error'); }
   });
 
-  document.getElementById('sendInviteBtn')?.addEventListener('click', async () => {
-    const email = document.getElementById('inviteEmail').value.trim();
-    const first_name = document.getElementById('inviteFirstName').value.trim();
-    const last_name = document.getElementById('inviteLastName').value.trim();
-    const team_id = document.getElementById('inviteTeam').value;
-    if (!email) return showToast('Email is required.', 'warning');
+  document.getElementById('addAccountBtn')?.addEventListener('click', async () => {
+    const name = document.getElementById('newAccountName').value.trim();
+    const domain = document.getElementById('newAccountDomain').value.trim();
+    if (!name) return showToast('Account name is required.', 'warning');
     try {
-      await api('/api/admin/employees/invite', { method: 'POST', body: JSON.stringify({ email, first_name, last_name, team_id: team_id ? parseInt(team_id) : null }) });
+      await api('/api/admin/accounts', { method: 'POST', body: JSON.stringify({ name, domain: domain || undefined }) });
+      document.getElementById('newAccountName').value = '';
+      document.getElementById('newAccountDomain').value = '';
+      showToast('Account created.', 'success');
+      loadAccounts();
+    } catch (err) { showToast(err.message, 'error'); }
+  });
+
+  document.getElementById('sendInviteBtn')?.addEventListener('click', async () => {
+    const full_name = document.getElementById('inviteFullName').value.trim();
+    const email = document.getElementById('inviteEmail').value.trim();
+    const account_id = document.getElementById('inviteAccount').value;
+    const team_id = document.getElementById('inviteTeam').value;
+    const role_id = document.getElementById('inviteRole').value;
+    if (!full_name || !email || !account_id) return showToast('Full name, email, and account are required.', 'warning');
+    try {
+      const res = await api('/api/admin/employees/invite', { method: 'POST', body: JSON.stringify({
+        full_name, email,
+        account_id: parseInt(account_id),
+        team_id: team_id ? parseInt(team_id) : null,
+        role_id: role_id ? parseInt(role_id) : null
+      })});
+      document.getElementById('inviteFullName').value = '';
       document.getElementById('inviteEmail').value = '';
-      document.getElementById('inviteFirstName').value = '';
-      document.getElementById('inviteLastName').value = '';
-      showToast('Invite sent.', 'success');
+      showToast(`Invite sent. Token: ${res.token}`, 'success');
       loadEmployees();
     } catch (err) { showToast(err.message, 'error'); }
   });
+
 });
