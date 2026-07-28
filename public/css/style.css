@@ -2293,22 +2293,7 @@ select option:hover {
   /* Footer: 2-column layout */
   .footer__grid { grid-template-columns: 1fr 1fr; gap: 24px; }
 
-  /* Admin sidebar goes horizontal */
-  .admin-layout { grid-template-columns: 1fr; }
-  .admin-sidebar {
-    position: static;
-    height: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--border-subtle);
-    padding: 16px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    overflow-x: auto;
-  }
-  .admin-sidebar__section { margin-bottom: 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-  .admin-sidebar__heading { display: none; }
-  .admin-nav-item { padding: 8px 12px; white-space: nowrap; }
+
 }
 
 /* ═══════════════════════════════════════════════════════════

@@ -2758,8 +2758,8 @@ app.get('/api/admin/categories', requireAdmin, async (c) => {
 
 app.post('/api/admin/categories', requireAdmin, async (c) => {
   const db = c.env.DB;
-  const { name } = await c.req.json();
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+  const { name } = await c.req.json().catch(() => ({}));
+  const slug = (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
   try {
     await db.prepare('INSERT INTO categories (name, slug) VALUES (?, ?)').bind(name, slug).run();
     return c.json({ message: 'Category added.' });
@@ -2771,8 +2771,197 @@ app.post('/api/admin/categories', requireAdmin, async (c) => {
 app.delete('/api/admin/categories/:id', requireAdmin, async (c) => {
   const db = c.env.DB;
   const id = parseInt(c.req.param('id'));
-  await db.prepare('DELETE FROM categories WHERE id = ?').bind(id).run();
+  try {
+    await db.prepare('DELETE FROM categories WHERE id = ?').bind(id).run();
+  } catch(e) {}
   return c.json({ message: 'Category deleted.' });
+});
+
+app.put('/api/admin/settings', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const updates = await c.req.json().catch(() => ({}));
+  try {
+    const stmts = [];
+    for (const [key, value] of Object.entries(updates)) {
+      const strValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      stmts.push(db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').bind(key, strValue));
+    }
+    await db.batch(stmts);
+  } catch(e) {}
+  return c.json({ message: 'Settings saved successfully.' });
+});
+
+app.get('/api/user/ticket-categories', async (c) => {
+  const db = c.env.DB;
+  try {
+    const { results } = await db.prepare('SELECT id, name, description FROM ticket_categories WHERE is_active = 1 ORDER BY id ASC').all();
+    return c.json(results || []);
+  } catch(e) {
+    return c.json([]);
+  }
+});
+
+app.post('/api/user/tickets/create', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+
+  try {
+    const formData = await c.req.formData();
+    const subject = formData.get('subject') || 'Support Request';
+    const category_id = parseInt(formData.get('category_id')) || 1;
+    const priority = formData.get('priority') || 'medium';
+    const details = formData.get('details') || '';
+    const tracking_number = 'TKT-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + Math.floor(1000 + Math.random() * 9000);
+
+    const reportRes = await db.prepare(`
+      INSERT INTO reports (ticket_id, subject, category_id, reported_item_type, reason, report_description, priority, ticket_status, reporter_id)
+      VALUES (?, ?, ?, 'support', ?, ?, ?, 'open', ?)
+    `).bind(tracking_number, subject, category_id, subject, details, priority, user.id).run();
+
+    return c.json({ success: true, ticket_id: tracking_number, id: reportRes.meta.last_row_id });
+  } catch (err) {
+    console.error('POST /api/user/tickets/create ERROR:', err);
+    return c.json({ success: false, error: 'Internal Server Error: ' + err.message }, 500);
+  }
+});
+
+app.post('/api/reports', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+
+  try {
+    const formData = await c.req.formData();
+    const target_type = formData.get('target_type') || formData.get('reported_item_type') || 'support';
+    const target_id = parseInt(formData.get('target_id') || formData.get('reported_item_id')) || 0;
+    const reason = formData.get('reason') || 'General Report';
+    const details = formData.get('details') || null;
+    const ticket_id = 'TKT-' + Math.floor(1000 + Math.random() * 9000) + '-' + Date.now().toString().slice(-4);
+
+    await db.prepare('INSERT INTO reports (ticket_id, subject, reported_item_type, reported_item_id, reason, report_description, reporter_id, ticket_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(ticket_id, reason, target_type, target_id, reason, details, user.id, 'open')
+      .run();
+
+    return c.json({ success: true, ticket_id });
+  } catch (err) {
+    console.error('POST /api/reports ERROR:', err);
+    return c.json({ success: false, error: 'Internal Server Error' }, 500);
+  }
+});
+
+app.get('/api/admin/reports', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const status = c.req.query('status') || 'all';
+  const priority = c.req.query('priority');
+  const category_id = c.req.query('category_id');
+  const search = c.req.query('search');
+
+  try {
+    let query = `
+      SELECT r.*,
+             COALESCE(r.ticket_id, 'TKT-' || r.id) as ticket_id,
+             COALESCE(r.ticket_status, 'open') as ticket_status,
+             COALESCE(r.priority, 'medium') as priority,
+             CASE WHEN r.reported_item_type = 'story' THEN (SELECT title FROM stories WHERE id = r.reported_item_id)
+                  WHEN r.reported_item_type = 'comment' THEN (SELECT content FROM comments WHERE id = r.reported_item_id)
+                  ELSE NULL END as target_preview,
+             u.full_name as reporter_name, u.email as reporter_email,
+             tc.name as category_name,
+             au.username as assigned_agent_name
+      FROM reports r
+      LEFT JOIN users u ON r.reporter_id = u.id
+      LEFT JOIN ticket_categories tc ON r.category_id = tc.id
+      LEFT JOIN admin_users au ON r.assigned_agent_id = au.id
+      WHERE 1=1
+    `;
+    const params = [];
+
+    if (status && status !== 'all') {
+      if (status === 'open') {
+        query += " AND (r.ticket_status = 'open' OR r.ticket_status = 'investigating' OR r.ticket_status = 'waiting_on_user' OR r.ticket_status IS NULL OR r.ticket_status = '')";
+      } else {
+        query += " AND r.ticket_status = ?";
+        params.push(status);
+      }
+    }
+
+    if (priority && priority !== 'all') {
+      query += " AND r.priority = ?";
+      params.push(priority);
+    }
+
+    if (category_id && category_id !== 'all') {
+      query += " AND r.category_id = ?";
+      params.push(parseInt(category_id));
+    }
+
+    if (search) {
+      query += " AND (r.ticket_id LIKE ? OR r.subject LIKE ? OR r.reason LIKE ? OR u.full_name LIKE ? OR u.email LIKE ?)";
+      const searchPattern = `%${search}%`;
+      params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
+    }
+
+    query += " ORDER BY r.created_at DESC";
+
+    const { results } = await db.prepare(query).bind(...params).all();
+    return c.json(results || []);
+  } catch (err) {
+    console.error('GET /api/admin/reports ERROR:', err);
+    return c.json([]);
+  }
+});
+
+app.post('/api/admin/reports/:id/status', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const id = parseInt(c.req.param('id'));
+  const { status, priority, category_id, action } = await c.req.json().catch(() => ({}));
+
+  const oldReport = await db.prepare('SELECT ticket_status, priority, category_id FROM reports WHERE id = ?').bind(id).first();
+  if (!oldReport) return c.json({ error: 'Ticket not found' }, 404);
+
+  const updates = [];
+  const binds = [];
+
+  if (status) {
+    updates.push('ticket_status = ?');
+    binds.push(status);
+    if (status === 'resolved' || status === 'closed') {
+      updates.push('resolved_by = ?');
+      binds.push(adminPayload.adminId);
+      updates.push('resolved_at = CURRENT_TIMESTAMP');
+    }
+  }
+
+  if (priority) {
+    updates.push('priority = ?');
+    binds.push(priority);
+  }
+
+  if (category_id) {
+    updates.push('category_id = ?');
+    binds.push(parseInt(category_id));
+  }
+
+  if (action !== undefined) {
+    updates.push('enforcement_action = ?');
+    binds.push(action);
+  }
+
+  updates.push('updated_at = CURRENT_TIMESTAMP');
+
+  if (updates.length > 0) {
+    binds.push(id);
+    await db.prepare(`UPDATE reports SET ${updates.join(', ')} WHERE id = ?`).bind(...binds).run();
+  }
+
+  try {
+    await db.prepare(`
+      INSERT INTO ticket_audit_logs (ticket_id, actor_id, actor_type, action_type, old_value, new_value)
+      VALUES (?, ?, 'admin', 'update_properties', ?, ?)
+    `).bind(id, adminPayload.adminId, JSON.stringify(oldReport), JSON.stringify({ status, priority, category_id })).run();
+  } catch(e) {}
+
+  return c.json({ message: 'Ticket updated successfully.' });
 });
 
 // ── Bans ──
@@ -2806,6 +2995,7 @@ app.delete('/api/admin/bans/:id', requireAdmin, async (c) => {
   return c.json({ message: 'Ban removed successfully.' });
 });
 
+// ── Settings ──
 app.get('/api/admin/settings', requireAdmin, async (c) => {
   const db = c.env.DB;
   try {
@@ -2816,61 +3006,6 @@ app.get('/api/admin/settings', requireAdmin, async (c) => {
   } catch(e) {
     return c.json({});
   }
-});
-app.put('/api/admin/settings', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const updates = await c.req.json();
-  
-  const stmts = [];
-  for (const [key, value] of Object.entries(updates)) {
-    const strValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
-    stmts.push(db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').bind(key, strValue));
-  }
-  await db.batch(stmts);
-  return c.json({ message: 'Settings saved.' });
-});
-
-// ── ENTERPRISE HELPDESK & TICKETING ENDPOINTS ──
-
-app.get('/api/user/ticket-categories', async (c) => {
-  const db = c.env.DB;
-  const { results } = await db.prepare('SELECT id, name, description FROM ticket_categories WHERE is_active = 1 ORDER BY id ASC').all();
-  return c.json(results);
-});
-
-app.post('/api/user/tickets/create', requireUser, async (c) => {
-  const db = c.env.DB;
-  const user = c.get('user');
-
-  try {
-    const formData = await c.req.formData();
-    const subject = formData.get('subject') || 'Support Request';
-    const category_id = parseInt(formData.get('category_id')) || 1;
-    const priority = formData.get('priority') || 'medium';
-    const details = formData.get('details') || '';
-    const file = formData.get('attachment');
-    let attachment_url = null;
-    let attachmentRecord = null;
-  } catch (err) {
-    console.error('POST /api/user/tickets/create ERROR:', err);
-    return c.json({ success: false, error: 'Internal Server Error: ' + err.message }, 500);
-  }
-});
-    return c.json({ success: true, ticket_id });
-  } catch (err) {
-    console.error('POST /api/reports ERROR:', err);
-    return c.json({ success: false, error: 'Internal Server Error' }, 500);
-  }
-});
-
-app.get('/api/admin/reports', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const status = c.req.query('status') || 'open';
-  const priority = c.req.query('priority');
-  const category_id = c.req.query('category_id');
-  const search = c.req.query('search');
-  
-  try {
     await db.prepare("UPDATE reports SET ticket_status = 'open' WHERE ticket_status IS NULL OR ticket_status = ''").run();
   } catch (e) {}
 

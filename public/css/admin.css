@@ -394,13 +394,19 @@ a:hover { text-decoration: underline; }
    ADMIN LAYOUT
    ═══════════════════════════════════════════════════════════ */
 .admin-layout {
-  display: grid;
-  grid-template-columns: 260px 1fr;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  width: 100% !important;
   min-height: calc(100vh - var(--header-height));
   margin-top: var(--header-height);
 }
 
 .admin-sidebar {
+  width: 260px !important;
+  min-width: 260px !important;
+  max-width: 260px !important;
+  flex-shrink: 0 !important;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border-subtle);
   padding: 24px 16px;
@@ -408,6 +414,7 @@ a:hover { text-decoration: underline; }
   top: var(--header-height);
   height: calc(100vh - var(--header-height));
   overflow-y: auto;
+  z-index: 10;
 }
 
 .admin-sidebar__section { margin-bottom: 24px; }
@@ -459,7 +466,14 @@ a:hover { text-decoration: underline; }
 /* ═══════════════════════════════════════════════════════════
    ADMIN MAIN CONTENT
    ═══════════════════════════════════════════════════════════ */
-.admin-main { padding: 32px; overflow-y: auto; }
+.admin-main {
+  flex: 1 !important;
+  min-width: 0 !important;
+  width: calc(100% - 260px) !important;
+  padding: 32px;
+  height: calc(100vh - var(--header-height));
+  overflow-y: auto;
+}
 
 .admin-page-title {
   font-family: var(--font-display);
