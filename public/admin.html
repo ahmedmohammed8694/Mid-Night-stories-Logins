@@ -51,7 +51,8 @@
             <label class="form-label">Password</label>
             <input type="password" class="form-input" id="loginPassword" placeholder="Enter password" required autocomplete="current-password">
           </div>
-          <button type="submit" class="btn btn--primary" style="width: 100%;">Login</button>
+          <div id="loginError" style="display:none; color: #ff5050; margin-bottom: 1rem; font-size: 0.9rem; background: rgba(255,80,80,0.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,80,80,0.2);"></div>
+          <button type="submit" id="loginBtn" class="btn btn--primary" style="width: 100%;">Login</button>
         </form>
 
         <!-- MFA Step -->
@@ -1211,24 +1212,32 @@
   <script src="/js/app.js"></script>
   <script>
     // ── Standalone Admin Login Handler ──
-    // This runs AFTER app.js loads and is NOT inside an IIFE, so it's always accessible.
-    async function adminHandleLogin() {
-      const username = (document.getElementById('loginUsername').value || '').trim();
-      const password = document.getElementById('loginPassword').value || '';
+    async function adminHandleLogin(e) {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      const username = (document.getElementById('loginUsername')?.value || '').trim();
+      const password = document.getElementById('loginPassword')?.value || '';
       const errorEl = document.getElementById('loginError');
       const btn = document.getElementById('loginBtn');
 
-      errorEl.style.display = 'none';
-      errorEl.textContent = '';
+      if (errorEl) {
+        errorEl.style.display = 'none';
+        errorEl.textContent = '';
+      }
 
       if (!username || !password) {
-        errorEl.textContent = 'Please enter username and password.';
-        errorEl.style.display = 'block';
+        if (errorEl) {
+          errorEl.textContent = 'Please enter username and password.';
+          errorEl.style.display = 'block';
+        } else if (typeof showToast === 'function') {
+          showToast('Please enter username and password.', 'warning');
+        }
         return;
       }
 
-      btn.disabled = true;
-      btn.textContent = 'Logging in...';
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Logging in...';
+      }
 
       try {
         const res = await fetch('/api/admin/login', {
@@ -1244,43 +1253,42 @@
         }
 
         if (data.requireMFA) {
-          // Store preToken for MFA step
           window._adminPreToken = data.preToken;
-          document.getElementById('loginForm').classList.add('hidden');
-          document.getElementById('mfaStep').classList.remove('hidden');
-          document.getElementById('mfaCode').focus();
+          document.getElementById('loginForm')?.classList.add('hidden');
+          document.getElementById('mfaStep')?.classList.remove('hidden');
+          document.getElementById('mfaCode')?.focus();
           if (typeof showToast === 'function') showToast('Enter your MFA code.', 'info');
         } else {
-          // Store token and show dashboard
           sessionStorage.setItem('adminToken', data.token);
           if (typeof showToast === 'function') showToast('Welcome back, ' + data.username + '!', 'success');
-          document.getElementById('loginSection').classList.add('hidden');
-          document.getElementById('dashboardSection').classList.remove('hidden');
-          document.getElementById('logoutBtn').classList.remove('hidden');
-          // Trigger dashboard data load if admin.js is available
+          document.getElementById('loginSection')?.classList.add('hidden');
+          document.getElementById('dashboardSection')?.classList.remove('hidden');
+          document.getElementById('logoutBtn')?.classList.remove('hidden');
           if (typeof loadDashboardData === 'function') {
             loadDashboardData();
           }
         }
       } catch (err) {
-        errorEl.textContent = err.message || 'Login failed. Please try again.';
-        errorEl.style.display = 'block';
+        if (errorEl) {
+          errorEl.textContent = err.message || 'Login failed. Please try again.';
+          errorEl.style.display = 'block';
+        }
+        if (typeof showToast === 'function') {
+          showToast(err.message || 'Login failed. Please try again.', 'error');
+        }
       } finally {
-        btn.disabled = false;
-        btn.textContent = 'Login';
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Login';
+        }
       }
     }
 
-    // Allow pressing Enter in password field to submit
     document.addEventListener('DOMContentLoaded', function() {
-      const passwordInput = document.getElementById('loginPassword');
-      const usernameInput = document.getElementById('loginUsername');
-      if (passwordInput) passwordInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') adminHandleLogin();
-      });
-      if (usernameInput) usernameInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') adminHandleLogin();
-      });
+      const loginForm = document.getElementById('loginForm');
+      if (loginForm) {
+        loginForm.addEventListener('submit', adminHandleLogin);
+      }
     });
   </script>
   <script src="/js/admin.js"></script>
