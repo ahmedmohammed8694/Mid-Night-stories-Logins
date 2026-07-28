@@ -2568,6 +2568,13 @@ app.post('/api/admin/users/:id/reset-password', requireAdmin, async (c) => {
   await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(new_password, id).run();
 
   await writeAuditLog(db, {
+    actorId: adminPayload.adminId,
+    actorType: 'admin',
+    action: 'user.password_reset',
+    targetType: 'user',
+    targetId: id
+  });
+
   return c.json({ success: true, message: 'User password reset successfully.' });
 });
 
