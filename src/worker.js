@@ -2999,6 +2999,8 @@ app.get('/api/admin/settings', requireAdmin, async (c) => {
   } catch(e) {
     return c.json({});
   }
+});
+
 
     if (search) {
       // clean line 3011
