@@ -76,6 +76,186 @@ async function createNotification(db, userId, actorId, type, targetId, content) 
 
 const app = new Hono();
 
+// ── DB Schema Auto-Initialization Middleware ──
+let isDbInitialized = false;
+app.use('*', async (c, next) => {
+  if (!isDbInitialized) {
+    const db = c.env.DB;
+    console.log('Unconditionally creating any missing D1 database schema tables...');
+    try {
+      await db.exec(`
+          CREATE TABLE IF NOT EXISTS sla_rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            priority TEXT NOT NULL UNIQUE CHECK(priority IN ('urgent', 'high', 'medium', 'low')),
+            frt_hours REAL NOT NULL,
+            ttr_hours REAL NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+          CREATE TABLE IF NOT EXISTS accounts (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            name       TEXT NOT NULL,
+            domain     TEXT UNIQUE,
+            status     TEXT DEFAULT 'active' CHECK(status IN ('active','suspended','inactive')),
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+          CREATE TABLE IF NOT EXISTS teams (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            name       TEXT NOT NULL,
+            account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+            status     TEXT DEFAULT 'active' CHECK(status IN ('active','inactive')),
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+          CREATE TABLE IF NOT EXISTS ticket_categories (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            name             TEXT NOT NULL UNIQUE,
+            description      TEXT,
+            is_global        INTEGER DEFAULT 1,
+            default_sla_id   INTEGER REFERENCES sla_rules(id) ON DELETE SET NULL,
+            default_priority TEXT DEFAULT 'medium' CHECK(default_priority IN ('low','medium','high','urgent')),
+            default_team_id  INTEGER REFERENCES teams(id) ON DELETE SET NULL,
+            status           TEXT DEFAULT 'active' CHECK(status IN ('active','draft','archived')),
+            created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+          CREATE TABLE IF NOT EXISTS ticket_subcategories (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_id      INTEGER NOT NULL REFERENCES ticket_categories(id) ON DELETE CASCADE,
+            name             TEXT NOT NULL,
+            description      TEXT,
+            default_sla_id   INTEGER REFERENCES sla_rules(id) ON DELETE SET NULL,
+            default_priority TEXT CHECK(default_priority IN ('low','medium','high','urgent')),
+            default_team_id  INTEGER REFERENCES teams(id) ON DELETE SET NULL,
+            status           TEXT DEFAULT 'active' CHECK(status IN ('active','draft','archived')),
+            created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+          CREATE TABLE IF NOT EXISTS permissions (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            code        TEXT NOT NULL UNIQUE,
+            module      TEXT NOT NULL,
+            description TEXT
+          );
+          CREATE TABLE IF NOT EXISTS roles (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            name       TEXT NOT NULL UNIQUE,
+            scope      TEXT DEFAULT 'account' CHECK(scope IN ('global','account','team')),
+            is_system  INTEGER DEFAULT 0,
+            status     TEXT DEFAULT 'active' CHECK(status IN ('active','inactive')),
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+          CREATE TABLE IF NOT EXISTS role_permissions (
+            role_id       INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+            permission_id INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+            effect        TEXT NOT NULL DEFAULT 'allow' CHECK(effect IN ('allow','deny')),
+            PRIMARY KEY (role_id, permission_id)
+          );
+          CREATE TABLE IF NOT EXISTS team_roles (
+            team_id    INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+            role_id    INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+            is_default INTEGER DEFAULT 0,
+            PRIMARY KEY (team_id, role_id)
+          );
+          CREATE TABLE IF NOT EXISTS employee_users (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            account_id        INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+            team_id           INTEGER REFERENCES teams(id) ON DELETE SET NULL,
+            role_id           INTEGER REFERENCES roles(id) ON DELETE SET NULL,
+            full_name         TEXT NOT NULL,
+            email             TEXT NOT NULL UNIQUE,
+            phone             TEXT,
+            password_hash     TEXT,
+            invite_token      TEXT UNIQUE,
+            invite_expires    DATETIME,
+            employment_status TEXT DEFAULT 'pending_invite' CHECK(employment_status IN ('active','suspended','deactivated','pending_invite')),
+            last_login_at     DATETIME,
+            created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+          CREATE TABLE IF NOT EXISTS employee_permission_overrides (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            employee_id   INTEGER NOT NULL REFERENCES employee_users(id) ON DELETE CASCADE,
+            permission_id INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+            effect        TEXT NOT NULL CHECK(effect IN ('allow','deny')),
+            reason        TEXT NOT NULL,
+            granted_by    INTEGER NOT NULL REFERENCES employee_users(id),
+            expires_at    DATETIME,
+            created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(employee_id, permission_id)
+          );
+          CREATE TABLE IF NOT EXISTS audit_log (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            actor_id    INTEGER NOT NULL,
+            actor_type  TEXT NOT NULL CHECK(actor_type IN ('admin','employee','system')),
+            action      TEXT NOT NULL,
+            target_type TEXT,
+            target_id   INTEGER,
+            details     TEXT,
+            ip_address  TEXT,
+            created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+          );
+          CREATE TABLE IF NOT EXISTS account_category_access (
+            account_id  INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+            category_id INTEGER NOT NULL REFERENCES ticket_categories(id) ON DELETE CASCADE,
+            enabled     INTEGER NOT NULL DEFAULT 1,
+            PRIMARY KEY (account_id, category_id)
+          );
+          CREATE TABLE IF NOT EXISTS account_subcategory_access (
+            account_id     INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+            subcategory_id INTEGER NOT NULL REFERENCES ticket_subcategories(id) ON DELETE CASCADE,
+            enabled        INTEGER NOT NULL DEFAULT 1,
+            PRIMARY KEY (account_id, subcategory_id)
+          );
+          CREATE TABLE IF NOT EXISTS team_category_assignments (
+            team_id        INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+            category_id    INTEGER NOT NULL REFERENCES ticket_categories(id) ON DELETE CASCADE,
+            subcategory_id INTEGER REFERENCES ticket_subcategories(id) ON DELETE CASCADE,
+            PRIMARY KEY (team_id, category_id, subcategory_id)
+          );
+        `);
+
+        // Seed permissions
+        await db.exec(`
+          INSERT OR IGNORE INTO permissions (code, module, description) VALUES
+          ('stories.read', 'stories', 'Read all stories'),
+          ('stories.create', 'stories', 'Submit a new story'),
+          ('stories.approve', 'stories', 'Approve pending stories'),
+          ('stories.reject', 'stories', 'Reject pending stories'),
+          ('comments.read', 'comments', 'Read comments'),
+          ('comments.create', 'comments', 'Post a comment'),
+          ('comments.moderate', 'comments', 'Moderate and remove comments'),
+          ('reports.view', 'reports', 'View ticket reports'),
+          ('reports.resolve', 'reports', 'Resolve ticket reports'),
+          ('users.view', 'users', 'View users list'),
+          ('users.delete', 'users', 'Delete/ban users'),
+          ('categories.manage', 'categories', 'Create and delete categories'),
+          ('bans.manage', 'bans', 'Manage IP bans'),
+          ('settings.manage', 'settings', 'Manage platform settings'),
+          ('accounts.manage', 'accounts', 'Provision accounts'),
+          ('teams.manage', 'teams', 'Manage teams'),
+          ('employees.manage', 'employees', 'Provision and update employees'),
+          ('roles.manage', 'roles', 'Manage roles and permissions'),
+          ('audit.view', 'audit', 'View audit log');
+        `);
+
+        // Seed roles
+        await db.exec(`
+          INSERT OR IGNORE INTO roles (name, scope, is_system, status) VALUES
+          ('superadmin', 'global', 1, 'active'),
+          ('admin', 'account', 1, 'active'),
+          ('moderator', 'account', 1, 'active'),
+          ('agent', 'team', 1, 'active');
+        `);
+        console.log('Admin schema created and seeded successfully.');
+      } catch (err2) {
+        console.error('Failed to create admin schema:', err2);
+      }
+    }
+    isDbInitialized = true;
+  }
+  await next();
+});
+
 // ── Global Security & Privacy Headers ──
 app.use('*', async (c, next) => {
   await next();
@@ -1693,10 +1873,193 @@ app.post('/api/admin/login', rateLimit('admin-login', 10), async (c) => {
   return c.json({ token, username: admin.username, role: admin.role, mfaEnabled: false });
 });
 
-app.get('/api/admin/users', requireAdmin, async (c) => {
+
+
+
+
+
+app.post('/api/users/:id/follow', requireUser, async (c) => {
+  const userPayload = c.get('user');
+  if (userPayload.permissions && userPayload.permissions.follow === false) return c.json({ error: 'You are restricted from following users.' }, 403);
   const db = c.env.DB;
-  const { results } = await db.prepare('SELECT id, user_id, full_name, email, account_status, created_at FROM users ORDER BY created_at DESC').all().catch(() => ({ results: [] }));
-  return c.json(results || []);
+  const loggedInUser = c.get('user');
+  const targetId = parseInt(c.req.param('id'));
+
+  if (loggedInUser.id === targetId) return c.json({ error: 'You cannot follow yourself.' }, 400);
+
+  const blockCheck1 = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(loggedInUser.id, targetId).first();
+  const blockCheck2 = await db.prepare('SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?').bind(targetId, loggedInUser.id).first();
+  if (blockCheck1 || blockCheck2) {
+    return c.json({ error: 'Action blocked by safety preferences.' }, 403);
+  }
+
+  const target = await db.prepare('SELECT id FROM users WHERE id = ?').bind(targetId).first();
+  if (!target) return c.json({ error: 'User not found.' }, 404);
+
+  const existing = await db.prepare('SELECT id FROM follows WHERE follower_id = ? AND following_id = ?').bind(loggedInUser.id, targetId).first();
+
+  if (existing) {
+    await db.prepare('DELETE FROM follows WHERE id = ?').bind(existing.id).run();
+    return c.json({ following: false });
+  }
+
+  await db.prepare('INSERT INTO follows (follower_id, following_id) VALUES (?, ?)').bind(loggedInUser.id, targetId).run();
+  await createNotification(db, targetId, loggedInUser.id, 'follow', loggedInUser.id, 'started following you');
+  return c.json({ following: true });
+});
+
+// GET /api/notifications - Get notifications
+app.get('/api/notifications', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const userId = Number(user.id);
+
+  try {
+    const { results: notifications } = await db.prepare(`
+      SELECT n.*, 
+             u.full_name as actor_name, u.profile_pic as actor_pic, u.user_id as actor_user_id
+      FROM notifications n
+      LEFT JOIN users u ON u.id = n.actor_id
+      WHERE n.user_id = ?
+      ORDER BY n.created_at DESC
+      LIMIT 50
+    `).bind(userId).all();
+    return c.json(notifications || []);
+  } catch (err) {
+    try {
+      const { results: fallbackNotifs } = await db.prepare(
+        'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50'
+      ).bind(userId).all();
+      return c.json(fallbackNotifs || []);
+    } catch (e) {
+      return c.json([]);
+    }
+  }
+});
+
+// POST /api/notifications/read - Mark all as read
+app.post('/api/notifications/read', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const userId = Number(user.id);
+
+  await db.prepare('UPDATE notifications SET is_read = 1 WHERE user_id = ?').bind(userId).run();
+  return c.json({ success: true });
+});
+
+// POST /api/notifications/:id/read - Mark single as read
+app.post('/api/notifications/:id/read', requireUser, async (c) => {
+  const db = c.env.DB;
+  const user = c.get('user');
+  const userId = Number(user.id);
+  const notifId = parseInt(c.req.param('id'));
+
+  await db.prepare('UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?').bind(notifId, userId).run();
+  return c.json({ success: true });
+});
+
+// Stats public block fallback
+app.get('/api/stats/public', async (c) => {
+  const db = c.env.DB;
+  const [storyStats, visitorRow, commentRow] = await Promise.all([
+    db.prepare(`
+      SELECT
+        COALESCE(SUM(like_count), 0)    AS total_likes,
+        COUNT(*)                         AS total_stories
+      FROM stories WHERE status = 'approved'
+    `).first(),
+    db.prepare("SELECT value FROM settings WHERE key = 'total_visitors'").first(),
+    db.prepare("SELECT COUNT(*) as cnt FROM comments WHERE status = 'approved'").first()
+  ]);
+
+  return c.json({
+    totalLikes:    Number(storyStats?.total_likes    ?? 0),
+    totalStories:  Number(storyStats?.total_stories  ?? 0),
+    totalComments: Number(commentRow?.cnt             ?? 0),
+    totalVisitors: Number(visitorRow?.value           ?? 0)
+  });
+});
+
+app.post('/api/stats/visit', async (c) => {
+  const db = c.env.DB;
+  await db.prepare(`
+    INSERT INTO settings (key, value) VALUES ('total_visitors', '1')
+    ON CONFLICT(key) DO UPDATE SET value = CAST(CAST(value AS INTEGER) + 1 AS TEXT)
+  `).run();
+  return c.json({ ok: true });
+});
+
+// ── GET /api/crisis-resources ──
+app.get('/api/crisis-resources', (c) => {
+  return c.json({
+    disclaimer: 'This platform is peer support, NOT therapy or crisis intervention.',
+    resources: [
+      {
+        category: 'United States Support',
+        items: [
+          { name: '988 Suicide & Crisis Lifeline', contact: '988', type: 'Call or Text', region: 'US', hours: '24/7' }
+        ]
+      }
+    ]
+  });
+});
+
+// ═════════════════════════════════════════════════════════
+// ██  ADMIN API ROUTES (UPGRADED FOR D1 RELATIONSHIPS)
+// ═════════════════════════════════════════════════════════
+
+// ── ONE-TIME ADMIN SETUP ENDPOINT ──
+// POST /api/admin/setup  { secret: "MIDNIGHT_SETUP_2026" }
+// Creates the default admin user if none exists yet.
+// Auto-disabled once any admin user exists in the DB.
+app.post('/api/admin/setup', async (c) => {
+  const db = c.env.DB;
+  const { secret } = await c.req.json().catch(() => ({}));
+
+  // Verify the setup secret
+  if (secret !== 'MIDNIGHT_SETUP_2026') {
+    return c.json({ error: 'Forbidden.' }, 403);
+  }
+
+  // Only allow if NO admin users exist yet
+  const existing = await db.prepare('SELECT COUNT(*) as cnt FROM admin_users').first();
+  if (existing && existing.cnt > 0) {
+    return c.json({ error: 'Admin already configured. Endpoint disabled.' }, 409);
+  }
+
+  const password = 'Admin@2026!';
+  const hash = await bcrypt.hash(password, 10);
+  const mfaSecret = 'JBSWY3DPEHPK3PXP'; // fixed placeholder; user can enable MFA later
+
+  await db.prepare(
+    `INSERT INTO admin_users (username, email, password_hash, mfa_secret, mfa_enabled, role)
+     VALUES ('admin', 'admin@midnightstories.com', ?, ?, 0, 'superadmin')`
+  ).bind(hash, mfaSecret).run();
+
+  return c.json({
+    success: true,
+    message: 'Admin user created successfully.',
+    username: 'admin',
+    password: password,
+    note: 'This endpoint is now permanently disabled (admin already exists).'
+  });
+});
+
+app.post('/api/admin/login', rateLimit('admin-login', 10), async (c) => {
+  const db = c.env.DB;
+  const { username, password } = await c.req.json();
+
+  const admin = await db.prepare('SELECT * FROM admin_users WHERE username = ?').bind(username).first();
+  const passwordMatch = admin ? (bcrypt.compareSync ? bcrypt.compareSync(password, admin.password_hash) : await bcrypt.compare(password, admin.password_hash)) : false;
+  if (!admin || !passwordMatch) return c.json({ error: 'Invalid credentials.' }, 401);
+
+  if (admin.mfa_enabled) {
+    const preToken = await signJWT({ adminId: admin.id, username: admin.username, step: 'mfa', exp: Math.floor(Date.now() / 1000) + 300 }, getAdminJwtSecret(c));
+    return c.json({ requireMFA: true, preToken });
+  }
+
+  const token = await signJWT({ adminId: admin.id, username: admin.username, role: admin.role, exp: Math.floor(Date.now() / 1000) + 28800 }, getAdminJwtSecret(c));
+  return c.json({ token, username: admin.username, role: admin.role, mfaEnabled: false });
 });
 
 app.delete('/api/admin/users/:id', requireAdmin, async (c) => {
@@ -1709,7 +2072,17 @@ app.delete('/api/admin/users/:id', requireAdmin, async (c) => {
 app.get('/api/admin/stats', requireAdmin, async (c) => {
   const db = c.env.DB;
 
-  const openReports = (await db.prepare("SELECT COUNT(*) as c FROM reports WHERE ticket_status != 'resolved' AND ticket_status != 'closed'").first()).c;
+  const totalStories = (await db.prepare('SELECT COUNT(*) as c FROM stories').first().catch(() => ({ c: 0 })))?.c || 0;
+  const pendingStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'pending'").first().catch(() => ({ c: 0 })))?.c || 0;
+  const approvedStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'approved'").first().catch(() => ({ c: 0 })))?.c || 0;
+  const rejectedStories = (await db.prepare("SELECT COUNT(*) as c FROM stories WHERE status = 'rejected'").first().catch(() => ({ c: 0 })))?.c || 0;
+
+  const totalComments = (await db.prepare('SELECT COUNT(*) as c FROM comments').first().catch(() => ({ c: 0 })))?.c || 0;
+  const pendingComments = (await db.prepare("SELECT COUNT(*) as c FROM comments WHERE status = 'pending'").first().catch(() => ({ c: 0 })))?.c || 0;
+  const totalUsers = (await db.prepare('SELECT COUNT(*) as c FROM users').first().catch(() => ({ c: 0 })))?.c || 0;
+  const totalLikes = (await db.prepare('SELECT SUM(like_count) as c FROM stories').first().catch(() => ({ c: 0 })))?.c || 0;
+
+  const openReports = (await db.prepare("SELECT COUNT(*) as c FROM reports WHERE ticket_status != 'resolved' AND ticket_status != 'closed'").first().catch(() => ({ c: 0 })))?.c || 0;
   const bannedIPs = (await db.prepare('SELECT COUNT(*) as c FROM banned_identifiers').first()).c;
   
   // Book stats

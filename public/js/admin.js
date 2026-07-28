@@ -906,12 +906,6 @@
       showToast(err.message, 'error');
     }
   };
-      loadReports();
-      loadStats();
-    } catch (err) {
-      showToast(err.message, 'error');
-    }
-  };
 
   // ── Categories ──
   async function loadCategories() {
@@ -957,6 +951,7 @@
     }
   }
 
+  function initAdminPanel() {
     const btnBooksListTab = document.getElementById('btnBooksListTab');
     const btnBooksUploadTab = document.getElementById('btnBooksUploadTab');
     const btnBooksBulkUploadTab = document.getElementById('btnBooksBulkUploadTab');
@@ -1113,6 +1108,47 @@
         }
       });
     }
+
+    // Login form
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        handleLogin(e);
+      });
+    }
+
+    // MFA submit
+    const mfaSubmitBtn = document.getElementById('mfaSubmitBtn');
+    if (mfaSubmitBtn) {
+      mfaSubmitBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        handleMFA();
+      });
+    }
+
+    // Logout
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        handleLogout();
+      });
+    }
+
+    // Panel navigation click handler
+    document.addEventListener('click', (e) => {
+      const navItem = e.target.closest('.admin-nav-item');
+      if (navItem) {
+        const panelName = navItem.getAttribute('data-panel');
+        if (panelName) {
+          e.preventDefault();
+          switchPanel(panelName);
+        }
+      }
+    });
+
+    checkAuth();
   }
 
   if (document.readyState === 'loading') {
@@ -3578,46 +3614,6 @@ async function updateTaskStatus(id, status) {
 // Global Exports
 window.switchPanel = switchPanel;
 window.checkAuth = checkAuth;
-
-function initAdminPanel() {
-  const loginForm = document.getElementById('loginForm');
-  if (loginForm) {
-    loginForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      handleLogin(e);
-    });
-  }
-
-  const mfaSubmitBtn = document.getElementById('mfaSubmitBtn');
-  if (mfaSubmitBtn) {
-    mfaSubmitBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      handleMFA();
-    });
-  }
-
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      handleLogout();
-    });
-  }
-
-  // Sidebar navigation click handler
-  document.addEventListener('click', (e) => {
-    const navItem = e.target.closest('.admin-nav-item');
-    if (navItem) {
-      const panelName = navItem.getAttribute('data-panel');
-      if (panelName) {
-        e.preventDefault();
-        switchPanel(panelName);
-      }
-    }
-  });
-
-  checkAuth();
-}
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initAdminPanel);

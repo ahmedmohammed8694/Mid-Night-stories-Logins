@@ -264,7 +264,7 @@ function createStoryCard(story) {
 }
 
 // ── Scroll Animations Observer ──
-let scrollObserver;
+var scrollObserver;
 function initScrollObserver() {
   if (typeof IntersectionObserver === 'undefined') return;
   if (scrollObserver) scrollObserver.disconnect();
