@@ -1289,24 +1289,24 @@
         <span id="modalTicketStatus" class="filter-chip">Status</span>
       </div>
       
-      <div style="display: flex; gap: 1.5rem; flex-grow: 1; overflow: hidden; min-height: 500px;">
+      <div class="ticket-workspace">
         
         <!-- Column 1: User Audit & Controls -->
-        <div style="flex: 1; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; padding-right: 0.5rem; min-width: 0;">
-          <h3 style="margin-top: 0; font-size: 1rem; color: var(--text-primary); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">User Audit & Controls</h3>
+        <div class="ticket-reporter-panel">
+          <h3 style="margin-top: 0; font-size: 1rem; color: var(--text-primary); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Reporter Profile & Controls</h3>
           
           <div style="padding: 1rem; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border);">
-            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Core Profile</h4>
+            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Reporter Profile</h4>
             <div id="auditPii" style="font-size: 0.85rem; line-height: 1.7; color: var(--text-secondary);">Loading...</div>
           </div>
           
           <div style="padding: 1rem; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border);">
-            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Content Aggregation</h4>
+            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Community Activity</h4>
             <div id="auditContent" style="font-size: 0.85rem; line-height: 1.7; color: var(--text-secondary);">Loading...</div>
           </div>
           
           <div style="padding: 1rem; background: var(--bg-card); border-radius: 8px; border: 1px solid rgba(255,80,80,0.3);">
-            <h4 style="margin: 0 0 0.75rem 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--danger);">Full Control Node</h4>
+            <h4 style="margin: 0 0 0.75rem 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--danger);">Account Controls</h4>
             <div id="auditControls" style="display: flex; flex-direction: column; gap: 0.6rem;">
               <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; cursor: pointer;">Allow Liking <input type="checkbox" id="permLike" onchange="window.updateInteractionPermissions()"></label>
               <label style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; cursor: pointer;">Allow Commenting <input type="checkbox" id="permComment" onchange="window.updateInteractionPermissions()"></label>
@@ -1319,7 +1319,7 @@
           </div>
 
           <div style="padding: 1rem; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border);">
-            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Login Ledger</h4>
+            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Sign-in History</h4>
             <div style="max-height: 130px; overflow-y: auto; font-size: 0.75rem;">
               <table style="width: 100%; border-collapse: collapse; text-align: left;">
                 <thead>
@@ -1336,11 +1336,11 @@
         </div>
 
         <!-- Column 2: Context & Action -->
-        <div style="flex: 1; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; padding-right: 0.5rem; min-width: 0;">
-          <h3 style="margin-top: 0; font-size: 1rem; color: var(--text-primary); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Report Details</h3>
+        <div class="ticket-summary-panel">
+          <h3 style="margin-top: 0; font-size: 1rem; color: var(--text-primary); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Ticket Overview</h3>
           
           <div style="background: var(--bg-card); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
-            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Reported Content</h4>
+            <h4 style="margin: 0 0 0.5rem 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">User Request</h4>
             <div id="modalTargetPreview" style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.75rem; font-style: italic; line-height: 1.5;"></div>
             <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.8;">
               Item ID: <strong><span id="modalTargetId"></span></strong> (<span id="modalTargetType"></span>)<br>
@@ -1349,7 +1349,7 @@
           </div>
         </div>
         <!-- Column 2: Audit Logs & Property Controls -->
-        <div style="flex: 1; display: flex; flex-direction: column; gap: 1rem;">
+        <div class="ticket-properties-panel">
           <div style="background: var(--bg-card); padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
             <h4 style="margin: 0 0 0.75rem 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary);">⚙️ Ticket Properties</h4>
             
@@ -1405,7 +1405,7 @@
         </div>
         
         <!-- Column 3: Communication Log & Staff Tooling -->
-        <div style="flex: 1.5; display: flex; flex-direction: column; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; min-width: 0;">
+        <div class="ticket-conversation-panel">
           <div style="padding: 1rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
             <h3 style="margin: 0; font-size: 1rem;">💬 Communication Log</h3>
             <div style="display: flex; gap: 10px; align-items: center; font-size: 0.82rem;">
