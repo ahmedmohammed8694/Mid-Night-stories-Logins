@@ -5,13 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard — Midnight Stories</title>
   <meta name="robots" content="noindex, nofollow">
-  <link rel="canonical" href="https://midnightstories.dpdns.org/admin">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/reader.css">
+  <link rel="stylesheet" href="/css/admin.css">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
   <div class="page-wrapper">
@@ -30,7 +28,6 @@
           <a href="/" class="nav-link">← Public Site</a>
         </nav>
         <div class="header__actions">
-          <button class="btn-3d-toggle" id="toggle3D" aria-label="Toggle 3D card style">✦ 3D</button>
           <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
           <button class="btn btn--ghost btn--sm hidden" id="logoutBtn">Logout</button>
         </div>
@@ -45,18 +42,17 @@
         <p class="admin-login__subtitle">Secure access to the moderation dashboard.</p>
 
         <!-- Login Step -->
-        <div class="card card--no-hover" id="loginForm" style="padding: 28px; text-align: left;">
+        <form class="card card--no-hover" id="loginForm" style="padding: 28px; text-align: left;">
           <div class="form-group">
             <label class="form-label">Username</label>
-            <input type="text" class="form-input" id="loginUsername" placeholder="Enter username" autocomplete="username">
+            <input type="text" class="form-input" id="loginUsername" placeholder="Enter username" required autocomplete="username">
           </div>
           <div class="form-group">
             <label class="form-label">Password</label>
-            <input type="password" class="form-input" id="loginPassword" placeholder="Enter password" autocomplete="current-password">
+            <input type="password" class="form-input" id="loginPassword" placeholder="Enter password" required autocomplete="current-password">
           </div>
-          <div id="loginError" style="color:#ef4444;font-size:0.85rem;margin-bottom:8px;display:none;"></div>
-          <button type="button" class="btn btn--primary" id="loginBtn" style="width: 100%;" onclick="adminHandleLogin()">Login</button>
-        </div>
+          <button type="submit" class="btn btn--primary" style="width: 100%;">Login</button>
+        </form>
 
         <!-- MFA Step -->
         <div class="card card--no-hover hidden" id="mfaStep" style="padding: 28px; text-align: left;">
@@ -81,7 +77,7 @@
           </button>
         </div>
         <div class="admin-sidebar__section">
-          <p class="admin-sidebar__heading">Moderation &amp; CRM</p>
+          <p class="admin-sidebar__heading">Moderation</p>
           <button class="admin-nav-item" data-panel="stories-queue">
             <span class="admin-nav-item__icon">📝</span> Stories Queue
             <span class="admin-nav-item__badge hidden" id="pendingStoriesBadge">0</span>
@@ -91,20 +87,14 @@
             <span class="admin-nav-item__badge hidden" id="pendingCommentsBadge">0</span>
           </button>
           <button class="admin-nav-item" data-panel="reports">
-            <span class="admin-nav-item__icon">🎫</span> Helpdesk &amp; CRM Ops
+            <span class="admin-nav-item__icon">🚩</span> Reports
             <span class="admin-nav-item__badge hidden" id="reportsBadge">0</span>
-          </button>
-          <button class="admin-nav-item" data-panel="crm-analytics">
-            <span class="admin-nav-item__icon">📈</span> Executive CRM Analytics
           </button>
         </div>
         <div class="admin-sidebar__section">
           <p class="admin-sidebar__heading">Management</p>
           <button class="admin-nav-item" data-panel="users">
             <span class="admin-nav-item__icon">👥</span> Users
-          </button>
-          <button class="admin-nav-item" data-panel="books">
-            <span class="admin-nav-item__icon">📚</span> Books
           </button>
           <button class="admin-nav-item" data-panel="categories">
             <span class="admin-nav-item__icon">🏷️</span> Categories
@@ -114,6 +104,24 @@
           </button>
           <button class="admin-nav-item" data-panel="settings">
             <span class="admin-nav-item__icon">⚙️</span> Settings
+          </button>
+        </div>
+        <div class="admin-sidebar__section">
+          <p class="admin-sidebar__heading">Administration</p>
+          <button class="admin-nav-item" data-panel="accounts">
+            <span class="admin-nav-item__icon">🏛️</span> Accounts
+          </button>
+          <button class="admin-nav-item" data-panel="taxonomy">
+            <span class="admin-nav-item__icon">🗂️</span> Ticket Taxonomy
+          </button>
+          <button class="admin-nav-item" data-panel="roles">
+            <span class="admin-nav-item__icon">🔐</span> Roles & Permissions
+          </button>
+          <button class="admin-nav-item" data-panel="teams">
+            <span class="admin-nav-item__icon">🏢</span> Teams
+          </button>
+          <button class="admin-nav-item" data-panel="employees">
+            <span class="admin-nav-item__icon">👤</span> Employees
           </button>
         </div>
         <div class="admin-sidebar__section">
@@ -175,11 +183,6 @@
               <p class="stat-card__label">Banned IPs</p>
               <p class="stat-card__value stat-card__value--rose" id="statBans">—</p>
             </div>
-            <div class="stat-card">
-              <p class="stat-card__label">Total Books</p>
-              <p class="stat-card__value stat-card__value--indigo" id="statBooks">—</p>
-            </div>
-            <div class="stat-card">
               <p class="stat-card__label">Pending Book Submissions</p>
               <p class="stat-card__value stat-card__value--amber" id="statPendingBooks">—</p>
             </div>
