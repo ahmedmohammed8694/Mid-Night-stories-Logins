@@ -9,6 +9,7 @@ import bcrypt from 'bcryptjs';
 import {
   moderateText, hashIP, detectCrisisLanguage, detectPII, checkImageSafety
 } from './moderation.js';
+import { getEffectivePermissions, writeAuditLog } from './permissions.js';
 
 // ── Native JWT using Web Crypto API (works natively in Cloudflare Workers) ──
 async function signJWT(payload, secret) {
@@ -4944,7 +4945,7 @@ app.get('/api/admin/employees/:id/overrides', requireAdmin, async (c) => {
   const empId = parseInt(c.req.param('id'));
   const { results } = await db.prepare(`
     SELECT po.id, po.permission_id, po.effect, po.reason, po.expires_at, p.code AS permission_code
-    FROM permission_overrides po LEFT JOIN permissions p ON p.id = po.permission_id
+    FROM employee_permission_overrides po LEFT JOIN permissions p ON p.id = po.permission_id
     WHERE po.employee_id = ? AND (po.expires_at IS NULL OR po.expires_at > datetime('now'))
     ORDER BY po.created_at DESC
   `).bind(empId).all();
@@ -4961,7 +4962,7 @@ app.post('/api/admin/employees/:id/overrides', requireAdmin, async (c) => {
   if (!reason) return c.json({ error: 'reason is required.' }, 400);
 
   await db.prepare(`
-    INSERT INTO permission_overrides (employee_id, permission_id, effect, reason, expires_at, granted_by)
+    INSERT INTO employee_permission_overrides (employee_id, permission_id, effect, reason, expires_at, granted_by)
     VALUES (?, ?, ?, ?, ?, ?)
   `).bind(empId, permission_id, effect, reason, expires_at || null, adminPayload.adminId).run();
 
@@ -4973,7 +4974,7 @@ app.delete('/api/admin/employees/:id/overrides/:overrideId', requireAdmin, async
   const db = c.env.DB;
   const empId = parseInt(c.req.param('id'));
   const overrideId = parseInt(c.req.param('overrideId'));
-  await db.prepare('DELETE FROM permission_overrides WHERE id = ? AND employee_id = ?').bind(overrideId, empId).run();
+  await db.prepare('DELETE FROM employee_permission_overrides WHERE id = ? AND employee_id = ?').bind(overrideId, empId).run();
   return c.json({ message: 'Override removed.' });
 });
 
