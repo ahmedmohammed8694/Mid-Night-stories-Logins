@@ -149,6 +149,52 @@ const requireAdmin = async (c, next) => {
   }
 };
 
+// ── Permission Checking Helpers ──
+const requirePermission = (resource, action) => {
+  return async (c, next) => {
+    const admin = c.get('admin');
+    if (!admin) return c.json({ error: 'Unauthorized' }, 401);
+    
+    // Super admins bypass all checks
+    if (admin.role === 'super_admin') {
+      await next();
+      return;
+    }
+    
+    const db = c.env.DB;
+    const permission = await db.prepare(`
+      SELECT 1 FROM role_permissions rp
+      JOIN roles r ON rp.role_id = r.id
+      JOIN user_roles ur ON r.id = ur.role_id
+      JOIN permissions p ON rp.permission_id = p.id
+      WHERE ur.admin_user_id = ? 
+        AND ur.account_id = (
+          SELECT account_id FROM admin_users WHERE id = ?
+        )
+        AND p.resource = ? AND p.action = ?
+    `).bind(admin.adminId, admin.adminId, resource, action).first();
+    
+    if (!permission) {
+      return c.json({ error: 'Insufficient permissions' }, 403);
+    }
+    
+    await next();
+  };
+};
+
+// ── Account Scoping Helper ──
+const getAccountIdFromContext = async (c) => {
+  const admin = c.get('admin');
+  if (!admin) return null;
+  
+  const db = c.env.DB;
+  const result = await db.prepare(
+    'SELECT account_id FROM admin_users WHERE id = ?'
+  ).bind(admin.adminId).first();
+  
+  return result ? result.account_id : null;
+};
+
 // ═════════════════════════════════════════════════════════
 // ██  MAIN APP
 // ═════════════════════════════════════════════════════════

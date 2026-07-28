@@ -497,6 +497,178 @@ INSERT OR IGNORE INTO sla_rules (id, priority, frt_hours, ttr_hours) VALUES
 (3, 'medium', 12.0, 24.0),
 (4, 'low', 24.0, 72.0);
 
+-- ============================================================
+-- ADMIN-SPECIFIC TABLES (Accounts, Taxonomy, RBAC, Teams, Employee Provisioning)
+-- ============================================================
+
+-- Accounts (multi-tenancy)
+CREATE TABLE accounts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  domain TEXT UNIQUE,
+  status TEXT DEFAULT 'active' CHECK(status IN ('active', 'suspended', 'inactive')),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Taxonomy: Subcategories with account scoping
+CREATE TABLE ticket_subcategory_taxonomy (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  sort_order INTEGER DEFAULT 0,
+  is_active INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(account_id, name)
+);
+
+-- Taxonomy: Custom Fields
+CREATE TABLE ticket_custom_field_taxonomy (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+  subcategory_id INTEGER REFERENCES ticket_subcategory_taxonomy(id) ON DELETE CASCADE,
+  field_name TEXT NOT NULL,
+  field_label TEXT NOT NULL,
+  field_type TEXT NOT NULL DEFAULT 'text' CHECK(field_type IN ('text', 'number', 'select', 'textarea', 'url', 'date', 'boolean')),
+  options_json TEXT,
+  is_required INTEGER DEFAULT 0,
+  is_filterable INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0,
+  placeholder TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(account_id, subcategory_id, field_name)
+);
+
+-- RBAC: Permission Definitions
+CREATE TABLE permissions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  resource TEXT NOT NULL,
+  action TEXT NOT NULL,
+  description TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(resource, action)
+);
+
+-- RBAC: Roles
+CREATE TABLE roles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  is_system INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(account_id, name)
+);
+
+-- RBAC: Role Permissions (many-to-many)
+CREATE TABLE role_permissions (
+  role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
+  permission_id INTEGER REFERENCES permissions(id) ON DELETE CASCADE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (role_id, permission_id)
+);
+
+-- RBAC: User Roles (many-to-many)
+CREATE TABLE user_roles (
+  admin_user_id INTEGER REFERENCES admin_users(id) ON DELETE CASCADE,
+  role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
+  account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+  assigned_by INTEGER REFERENCES admin_users(id),
+  assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (admin_user_id, role_id, account_id)
+);
+
+-- Teams: Team Definitions
+CREATE TABLE teams (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  description TEXT,
+  is_active INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(account_id, name)
+);
+
+-- Teams: Team Members
+CREATE TABLE team_members (
+  team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
+  admin_user_id INTEGER REFERENCES admin_users(id) ON DELETE CASCADE,
+  role_in_team TEXT DEFAULT 'member' CHECK(role_in_team IN ('member', 'manager', 'admin')),
+  joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (team_id, admin_user_id)
+);
+
+-- Teams: Team Permissions Override (team-level permission grants)
+CREATE TABLE team_permissions (
+  team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
+  permission_id INTEGER REFERENCES permissions(id) ON DELETE CASCADE,
+  granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (team_id, permission_id)
+);
+
+-- Employee Provisioning: Invite Tokens
+CREATE TABLE employee_invites (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  first_name TEXT,
+  last_name TEXT,
+  role_id INTEGER REFERENCES roles(id) ON DELETE SET NULL,
+  team_id INTEGER REFERENCES teams(id) ON DELETE SET NULL,
+  token TEXT NOT NULL UNIQUE,
+  expires_at DATETIME NOT NULL,
+  invited_by INTEGER REFERENCES admin_users(id),
+  invited_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'accepted', 'expired', 'revoked')),
+  UNIQUE(account_id, email)
+);
+
+-- Employee Provisioning: Employee Profiles (after invitation accepted)
+CREATE TABLE employee_profiles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+  admin_user_id INTEGER REFERENCES admin_users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL UNIQUE,
+  first_name TEXT,
+  last_name TEXT,
+  role_id INTEGER REFERENCES roles(id) ON DELETE SET NULL,
+  team_id INTEGER REFERENCES teams(id) ON DELETE SET NULL,
+  status TEXT DEFAULT 'active' CHECK(status IN ('active', 'suspended', 'deactivated')),
+  hired_at DATETIME,
+  last_login_at DATETIME,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Staff Scheduling: Shift Schedules
+CREATE TABLE staff_shifts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  employee_profile_id INTEGER REFERENCES employee_profiles(id) ON DELETE CASCADE,
+  team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
+  shift_date DATE NOT NULL,
+  start_time TEXT NOT NULL,
+  end_time TEXT NOT NULL,
+  status TEXT DEFAULT 'scheduled' CHECK(status IN ('scheduled', 'completed', 'cancelled', 'rescheduled')),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(employee_profile_id, shift_date, start_time)
+);
+
+-- Staff Scheduling: Availability Slots
+CREATE TABLE employee_availability (
+   employee_profile_id INTEGER REFERENCES employee_profiles(id) ON DELETE CASCADE,
+   day_of_week INTEGER CHECK(day_of_week BETWEEN 0 AND 6),
+   start_time TEXT NOT NULL,
+   end_time TEXT NOT NULL,
+   is_available INTEGER DEFAULT 1,
+   PRIMARY KEY (employee_profile_id, day_of_week, start_time)
+);
+
 -- Seed Canned Responses
 INSERT OR IGNORE INTO canned_responses (id, title, content, category_id) VALUES 
 (1, 'Need More Information', 'Thank you for reaching out to Midnight Support. Could you please provide additional details or a screenshot of the issue so we can investigate further?', 1),
