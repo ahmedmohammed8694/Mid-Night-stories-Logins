@@ -78,7 +78,7 @@
           </button>
         </div>
         <div class="admin-sidebar__section">
-          <p class="admin-sidebar__heading">Moderation</p>
+          <p class="admin-sidebar__heading">Moderation & CRM</p>
           <button class="admin-nav-item" data-panel="stories-queue">
             <span class="admin-nav-item__icon">📝</span> Stories Queue
             <span class="admin-nav-item__badge hidden" id="pendingStoriesBadge">0</span>
@@ -88,14 +88,20 @@
             <span class="admin-nav-item__badge hidden" id="pendingCommentsBadge">0</span>
           </button>
           <button class="admin-nav-item" data-panel="reports">
-            <span class="admin-nav-item__icon">🚩</span> Reports
+            <span class="admin-nav-item__icon">🎫</span> Helpdesk & CRM Ops
             <span class="admin-nav-item__badge hidden" id="reportsBadge">0</span>
+          </button>
+          <button class="admin-nav-item" data-panel="crm-analytics">
+            <span class="admin-nav-item__icon">📈</span> Executive CRM Analytics
           </button>
         </div>
         <div class="admin-sidebar__section">
           <p class="admin-sidebar__heading">Management</p>
           <button class="admin-nav-item" data-panel="users">
             <span class="admin-nav-item__icon">👥</span> Users
+          </button>
+          <button class="admin-nav-item" data-panel="books">
+            <span class="admin-nav-item__icon">📚</span> Books
           </button>
           <button class="admin-nav-item" data-panel="categories">
             <span class="admin-nav-item__icon">🏷️</span> Categories
@@ -1675,8 +1681,8 @@
     </div>
   </div></div>
 
-  <script src="./js/app.js"></script>
-  <script src="./js/admin.js?v=20260729_crmfix"></script>
+  <script src="./js/app.js?v=20260729_recreate_v2"></script>
+  <script src="./js/admin.js?v=20260729_recreate_v2"></script>
   <!-- Detailed Report Modal (Ticket View) -->
   <div id="reportDetailsModal" class="modal-overlay">
     <div class="modal modal--lg" style="display: flex; flex-direction: column; width: 96vw; height: 94vh; max-width: 96vw; max-height: 94vh; padding: 24px; text-align: left;">

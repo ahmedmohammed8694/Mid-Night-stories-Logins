@@ -118,30 +118,38 @@
     document.querySelectorAll('.admin-nav-item').forEach(n => n.classList.remove('active'));
 
     const panel = document.getElementById(`panel-${panelName}`);
-    if (panel) panel.classList.add('active');
+    if (panel) {
+      panel.classList.add('active');
+    } else {
+      console.warn(`Panel panel-${panelName} not found in DOM`);
+    }
 
     const navItem = document.querySelector(`[data-panel="${panelName}"]`);
     if (navItem) navItem.classList.add('active');
 
-    // Load panel-specific data
-    switch (panelName) {
-      case 'overview': loadStats(); break;
-      case 'books': loadBooks(); break;
-      case 'stories-queue': loadStoriesQueue(); break;
-      case 'comments-queue': loadCommentsQueue(); break;
-      case 'reports': loadReports(); break;
-      case 'crm-analytics': loadCrmAnalytics(); break;
-      case 'users': loadUsers(); break;
-      case 'categories': loadCategories(); break;
-      case 'bans': loadBans(); break;
-      case 'settings': loadSettings(); break;
-      case 'audit-log': loadAuditLog(); break;
-      case 'accounts': loadAccounts(); break;
-      case 'taxonomy': loadTaxonomy(); break;
-      case 'roles': loadRoles(); break;
-      case 'teams': loadTeams(); break;
-      case 'employees': loadEmployees(); break;
-      case 'mfa-setup': loadMFASetup(); break;
+    // Load panel-specific data safely
+    try {
+      switch (panelName) {
+        case 'overview': loadStats(); break;
+        case 'books': loadBooks(); break;
+        case 'stories-queue': loadStoriesQueue(); break;
+        case 'comments-queue': loadCommentsQueue(); break;
+        case 'reports': loadReports(); break;
+        case 'crm-analytics': loadCrmAnalytics(); break;
+        case 'users': loadUsers(); break;
+        case 'categories': loadCategories(); break;
+        case 'bans': loadBans(); break;
+        case 'settings': loadSettings(); break;
+        case 'audit-log': loadAuditLog(); break;
+        case 'accounts': loadAccounts(); break;
+        case 'taxonomy': loadTaxonomy(); break;
+        case 'roles': loadRoles(); break;
+        case 'teams': loadTeams(); break;
+        case 'employees': loadEmployees(); break;
+        case 'mfa-setup': loadMFASetup(); break;
+      }
+    } catch(err) {
+      console.error(`Failed to load panel ${panelName}:`, err);
     }
   }
 
