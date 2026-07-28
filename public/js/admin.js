@@ -1,32 +1,36 @@
 // admin.js — Admin dashboard: login, MFA, moderation queues, reports, categories, bans, settings, audit log
 
 (function () {
-  let adminToken = sessionStorage.getItem('adminToken');
+  let adminToken = sessionStorage.getItem('adminToken') || localStorage.getItem('adminToken');
   let preToken = null;
   let allBooksList = [];
 
   // ── Check Auth State ──
   function checkAuth() {
-    // Sync with the token that may have been set by the inline login handler
-    adminToken = sessionStorage.getItem('adminToken');
+    adminToken = sessionStorage.getItem('adminToken') || localStorage.getItem('adminToken');
     if (adminToken) {
+      sessionStorage.setItem('adminToken', adminToken);
+      localStorage.setItem('adminToken', adminToken);
       showDashboard();
       loadDashboardData();
     }
   }
 
   function showDashboard() {
-    document.getElementById('loginSection').classList.add('hidden');
-    document.getElementById('dashboardSection').classList.remove('hidden');
-    document.getElementById('logoutBtn').classList.remove('hidden');
+    const loginSection = document.getElementById('loginSection');
+    const dashboardSection = document.getElementById('dashboardSection');
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (loginSection) loginSection.classList.add('hidden');
+    if (dashboardSection) dashboardSection.classList.remove('hidden');
+    if (logoutBtn) logoutBtn.classList.remove('hidden');
   }
 
   // ── Login ──
   window.adminHandleLogin = handleLogin;
   async function handleLogin(e) {
     if (e) e.preventDefault();
-    const username = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value;
+    const username = (document.getElementById('loginUsername')?.value || '').trim();
+    const password = document.getElementById('loginPassword')?.value || '';
 
     if (!username || !password) {
       showToast('Please enter username and password.', 'warning');
@@ -41,13 +45,14 @@
 
       if (data.requireMFA) {
         preToken = data.preToken;
-        document.getElementById('loginForm').classList.add('hidden');
-        document.getElementById('mfaStep').classList.remove('hidden');
-        document.getElementById('mfaCode').focus();
+        document.getElementById('loginForm')?.classList.add('hidden');
+        document.getElementById('mfaStep')?.classList.remove('hidden');
+        document.getElementById('mfaCode')?.focus();
         showToast('Enter your MFA code to continue.', 'info');
       } else {
         adminToken = data.token;
         sessionStorage.setItem('adminToken', adminToken);
+        localStorage.setItem('adminToken', adminToken);
         showToast(`Welcome back, ${data.username}!`, 'success');
         showDashboard();
         loadDashboardData();
@@ -59,7 +64,7 @@
 
   // ── MFA Verify ──
   async function handleMFA() {
-    const code = document.getElementById('mfaCode').value.replace(/\s+/g, '');
+    const code = (document.getElementById('mfaCode')?.value || '').replace(/\s+/g, '');
     if (!code || code.length !== 6) {
       showToast('Please enter a valid 6-digit code.', 'warning');
       return;
@@ -73,28 +78,38 @@
 
       adminToken = data.token;
       sessionStorage.setItem('adminToken', adminToken);
+      localStorage.setItem('adminToken', adminToken);
       showToast(`Welcome back, ${data.username}!`, 'success');
       showDashboard();
       loadDashboardData();
     } catch (err) {
       showToast(err.message, 'error');
-      document.getElementById('mfaCode').value = '';
-      document.getElementById('mfaCode').focus();
+      const mfaInput = document.getElementById('mfaCode');
+      if (mfaInput) { mfaInput.value = ''; mfaInput.focus(); }
     }
   }
 
   // ── Logout ──
+  window.handleLogout = handleLogout;
   function handleLogout() {
     adminToken = null;
     sessionStorage.removeItem('adminToken');
-    document.getElementById('loginSection').classList.remove('hidden');
-    document.getElementById('dashboardSection').classList.add('hidden');
-    document.getElementById('logoutBtn').classList.add('hidden');
-    document.getElementById('loginForm').classList.remove('hidden');
-    document.getElementById('mfaStep').classList.add('hidden');
-    document.getElementById('loginUsername').value = '';
-    document.getElementById('loginPassword').value = '';
-    showToast('Logged out.', 'info');
+    localStorage.removeItem('adminToken');
+    const loginSection = document.getElementById('loginSection');
+    const dashboardSection = document.getElementById('dashboardSection');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const loginForm = document.getElementById('loginForm');
+    const mfaStep = document.getElementById('mfaStep');
+
+    if (loginSection) loginSection.classList.remove('hidden');
+    if (dashboardSection) dashboardSection.classList.add('hidden');
+    if (logoutBtn) logoutBtn.classList.add('hidden');
+    if (loginForm) loginForm.classList.remove('hidden');
+    if (mfaStep) mfaStep.classList.add('hidden');
+
+    const u = document.getElementById('loginUsername'); if (u) u.value = '';
+    const p = document.getElementById('loginPassword'); if (p) p.value = '';
+    showToast('Logged out successfully.', 'info');
   }
 
   // ── Panel Navigation ──
@@ -132,10 +147,9 @@
 
   // ── Load Dashboard Data ──
   function loadDashboardData() {
-    adminToken = sessionStorage.getItem('adminToken'); // always refresh from storage
+    adminToken = sessionStorage.getItem('adminToken') || localStorage.getItem('adminToken');
     loadStats();
   }
-  // Expose globally so inline login handler in admin.html can call it
   window.loadDashboardData = loadDashboardData;
 
   // ── Stats ──
@@ -151,12 +165,7 @@
       document.getElementById('statComments').textContent = stats.totalComments;
       document.getElementById('statPendingComments').textContent = stats.pendingComments;
       document.getElementById('statLikes').textContent = stats.totalLikes;
-      document.getElementById('statBans').textContent = stats.bannedIPs;
       document.getElementById('statUsers').textContent = stats.totalUsers;
-      
-      // Populate new book stats
-      const statBooks = document.getElementById('statBooks');
-      if (statBooks) statBooks.textContent = stats.totalBooks !== undefined ? stats.totalBooks : '—';
       const statPendingBooks = document.getElementById('statPendingBooks');
       if (statPendingBooks) statPendingBooks.textContent = stats.pendingBooks !== undefined ? stats.pendingBooks : '—';
       const statCategories = document.getElementById('statCategories');
@@ -3454,6 +3463,147 @@ window.deleteEmployee = async (id) => {
     loadEmployees();
   } catch (err) { showToast(err.message, 'error'); }
 };
+
+// ── Employee Communication & Work Task Assignment ──
+window.loadEmployeeChat = loadEmployeeChat;
+async function loadEmployeeChat() {
+  const chatStream = document.getElementById('empChatStream');
+  if (!chatStream) return;
+  try {
+    const messages = await api('/api/admin/employee-chat').catch(() => []);
+    if (!messages || messages.length === 0) {
+      chatStream.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:0.85rem;margin-top:40px;">No messages yet. Send a message to start communicating with staff!</p>';
+      return;
+    }
+    chatStream.innerHTML = messages.map(m => {
+      if (m.task_title) {
+        const priorityColors = { low: 'var(--accent-emerald)', medium: 'var(--accent-amber)', high: 'var(--accent-rose)', urgent: 'red' };
+        return `
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-weight:600;font-size:0.85rem;">📌 Task: ${escapeHtml(m.task_title)}</span>
+              <span style="font-size:0.75rem;padding:2px 8px;border-radius:12px;background:rgba(255,255,255,0.05);color:${priorityColors[m.priority] || 'var(--text-secondary)'};">${escapeHtml(m.priority || 'medium')}</span>
+            </div>
+            <p style="font-size:0.8rem;color:var(--text-secondary);margin:0 0 8px 0;">Assigned to: <strong>${escapeHtml(m.assigned_to || 'Team')}</strong></p>
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;color:var(--text-muted);">
+              <span>By ${escapeHtml(m.sender_name)}</span>
+              <select onchange="updateTaskStatus(${m.id}, this.value)" style="font-size:0.75rem;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;padding:2px 6px;">
+                <option value="pending" ${m.task_status === 'pending' ? 'selected' : ''}>🟡 Pending</option>
+                <option value="in_progress" ${m.task_status === 'in_progress' ? 'selected' : ''}>🔵 In Progress</option>
+                <option value="completed" ${m.task_status === 'completed' ? 'selected' : ''}>✅ Completed</option>
+              </select>
+            </div>
+          </div>
+        `;
+      }
+      return `
+        <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:8px;padding:10px 12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-weight:600;font-size:0.85rem;color:var(--primary);">${escapeHtml(m.sender_name)}</span>
+            <span style="font-size:0.7rem;color:var(--text-muted);">${new Date(m.created_at || Date.now()).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>
+          </div>
+          <p style="margin:0;font-size:0.85rem;color:var(--text-primary);line-height:1.4;">${escapeHtml(m.message)}</p>
+        </div>
+      `;
+    }).join('');
+    chatStream.scrollTop = chatStream.scrollHeight;
+  } catch (err) {
+    chatStream.innerHTML = `<p style="color:var(--accent-rose);font-size:0.85rem;">Failed to load chat: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+window.sendEmployeeChatMessage = sendEmployeeChatMessage;
+async function sendEmployeeChatMessage() {
+  const input = document.getElementById('empChatMessageInput');
+  const msg = (input?.value || '').trim();
+  if (!msg) return;
+  try {
+    await api('/api/admin/employee-chat', {
+      method: 'POST',
+      body: JSON.stringify({ message: msg })
+    });
+    input.value = '';
+    loadEmployeeChat();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+window.assignWorkTask = assignWorkTask;
+async function assignWorkTask() {
+  const title = (document.getElementById('empTaskTitle')?.value || '').trim();
+  const assignee = document.getElementById('empTaskAssignee')?.value;
+  const priority = document.getElementById('empTaskPriority')?.value || 'medium';
+  const details = (document.getElementById('empTaskDetails')?.value || '').trim();
+
+  if (!title) return showToast('Please enter a task title.', 'warning');
+  if (!assignee) return showToast('Please select an employee to assign.', 'warning');
+
+  try {
+    await api('/api/admin/employee-chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        task_title: title,
+        assigned_to: assignee,
+        priority: priority,
+        message: details || `Work task assigned: ${title}`
+      })
+    });
+    showToast('Task assigned successfully!', 'success');
+    document.getElementById('empTaskTitle').value = '';
+    document.getElementById('empTaskDetails').value = '';
+    loadEmployeeChat();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+window.updateTaskStatus = updateTaskStatus;
+async function updateTaskStatus(id, status) {
+  try {
+    await api(`/api/admin/employee-chat/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status })
+    });
+    showToast('Task status updated.', 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+}
+
+// Global Exports
+window.switchPanel = switchPanel;
+window.checkAuth = checkAuth;
+
+function initAdminPanel() {
+  checkAuth();
+
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      handleLogout();
+    });
+  }
+
+  // Sidebar navigation click handler
+  document.addEventListener('click', (e) => {
+    const navItem = e.target.closest('.admin-nav-item');
+    if (navItem) {
+      const panelName = navItem.getAttribute('data-panel');
+      if (panelName) {
+        e.preventDefault();
+        switchPanel(panelName);
+      }
+    }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAdminPanel);
+} else {
+  initAdminPanel();
+}
 })();
 
 

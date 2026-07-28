@@ -1376,11 +1376,67 @@
               <tbody id="employeesBody"></tbody>
             </table>
           </div>
+
+          <!-- Employee Communication & Work Assignment Workspace -->
+          <div style="margin-top: 32px; padding: 24px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <h3 style="margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">💬 Staff Communication & Work Assignments</h3>
+                <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--text-secondary);">Collaborate with team members, chat in real-time, and assign work tasks.</p>
+              </div>
+              <button class="btn btn--secondary btn--sm" onclick="loadEmployeeChat()">🔄 Refresh Chat</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+              <!-- Left: Chat Stream -->
+              <div style="display: flex; flex-direction: column; background: var(--bg-tertiary); border-radius: var(--radius-md); border: 1px solid var(--border-card); padding: 16px; height: 380px;">
+                <h4 style="margin: 0 0 12px 0; font-size: 0.95rem; color: var(--text-primary); border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">📢 Team Messages</h4>
+                <div id="empChatStream" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px;">
+                  <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-top: 40px;">Loading chat messages...</p>
+                </div>
+                <div style="margin-top: 12px; display: flex; gap: 8px;">
+                  <input type="text" id="empChatMessageInput" class="form-input" placeholder="Type a team message..." style="flex: 1;">
+                  <button class="btn btn--primary btn--sm" onclick="sendEmployeeChatMessage()">Send</button>
+                </div>
+              </div>
+
+              <!-- Right: Work Task Assignment -->
+              <div style="display: flex; flex-direction: column; background: var(--bg-tertiary); border-radius: var(--radius-md); border: 1px solid var(--border-card); padding: 16px;">
+                <h4 style="margin: 0 0 12px 0; font-size: 0.95rem; color: var(--text-primary); border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">📌 Assign Work Task</h4>
+                <form id="empTaskForm" onsubmit="event.preventDefault(); assignWorkTask();" style="display: flex; flex-direction: column; gap: 12px;">
+                  <div>
+                    <label class="form-label" style="font-size: 0.8rem;">Task Title / Work Description *</label>
+                    <input type="text" id="empTaskTitle" class="form-input" placeholder="e.g. Review tickets #104 or setup new SSL" required>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>
+                      <label class="form-label" style="font-size: 0.8rem;">Assign To Employee *</label>
+                      <select id="empTaskAssignee" class="form-input" required><option value="">Select Employee...</option></select>
+                    </div>
+                    <div>
+                      <label class="form-label" style="font-size: 0.8rem;">Priority</label>
+                      <select id="empTaskPriority" class="form-input">
+                        <option value="low">🟢 Low</option>
+                        <option value="medium" selected>🟡 Medium</option>
+                        <option value="high">🔴 High</option>
+                        <option value="urgent">🚨 Critical</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 0.8rem;">Details / Instructions</label>
+                    <textarea id="empTaskDetails" class="form-input" rows="2" placeholder="Optional task instructions..."></textarea>
+                  </div>
+                  <button type="submit" class="btn btn--primary" style="width: 100%;">Create &amp; Assign Task</button>
+                </form>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Employee Permissions Modal -->
-        <div id="empPermsModal" class="modal">
-          <div class="modal__content" style="max-width:760px;">
+        <div id="empPermsModal" class="modal-overlay">
+          <div class="modal modal--lg" style="max-width:760px; text-align: left;">
             <h2 style="margin-top:0;border-bottom:1px solid var(--border);padding-bottom:1rem;">Effective Permissions</h2>
             <p id="empPermsName" style="color:var(--text-secondary);margin-bottom:1rem;"></p>
             <!-- Tabs inside modal -->

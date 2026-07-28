@@ -4998,6 +4998,64 @@ app.get('/api/admin/sla-rules', requireAdmin, async (c) => {
   return c.json(results || []);
 });
 
+// ── EMPLOYEE CHAT & WORK TASKS ──
+app.get('/api/admin/employee-chat', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  try {
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS employee_chat_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sender_name TEXT NOT NULL,
+        message TEXT NOT NULL,
+        task_title TEXT,
+        task_status TEXT DEFAULT 'pending',
+        assigned_to TEXT,
+        priority TEXT DEFAULT 'medium',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
+    const { results } = await db.prepare("SELECT * FROM employee_chat_messages ORDER BY id DESC LIMIT 50").all();
+    return c.json(results || []);
+  } catch (e) {
+    return c.json([]);
+  }
+});
+
+app.post('/api/admin/employee-chat', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const admin = c.get('admin') || {};
+  const { message, task_title, assigned_to, priority } = await c.req.json();
+  const sender_name = admin.username || 'Admin';
+
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS employee_chat_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sender_name TEXT NOT NULL,
+      message TEXT NOT NULL,
+      task_title TEXT,
+      task_status TEXT DEFAULT 'pending',
+      assigned_to TEXT,
+      priority TEXT DEFAULT 'medium',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
+  await db.prepare(`
+    INSERT INTO employee_chat_messages (sender_name, message, task_title, assigned_to, priority)
+    VALUES (?, ?, ?, ?, ?)
+  `).bind(sender_name, message || task_title || '', task_title || null, assigned_to || null, priority || 'medium').run();
+
+  return c.json({ message: 'Posted successfully.' }, 201);
+});
+
+app.put('/api/admin/employee-chat/:id/status', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const id = parseInt(c.req.param('id'));
+  const { status } = await c.req.json();
+  await db.prepare("UPDATE employee_chat_messages SET task_status = ? WHERE id = ?").bind(status, id).run();
+  return c.json({ message: 'Task status updated.' });
+});
+
 app.notFound(async (c) => {
   if (c.env.ASSETS) {
     return c.env.ASSETS.fetch(c.req.raw);
