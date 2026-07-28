@@ -4,10 +4,20 @@ PRAGMA foreign_keys = OFF;
 -- Drop existing tables if they exist
 DROP TABLE IF EXISTS ticket_attachments;
 DROP TABLE IF EXISTS ticket_messages;
+DROP TABLE IF EXISTS employee_permission_overrides;
+DROP TABLE IF EXISTS employee_users;
+DROP TABLE IF EXISTS team_roles;
+DROP TABLE IF EXISTS role_permissions;
+DROP TABLE IF EXISTS roles;
+DROP TABLE IF EXISTS permissions;
+DROP TABLE IF EXISTS team_category_assignments;
+DROP TABLE IF EXISTS account_subcategory_access;
+DROP TABLE IF EXISTS account_category_access;
 DROP TABLE IF EXISTS ticket_subcategories;
 DROP TABLE IF EXISTS ticket_custom_fields;
 DROP TABLE IF EXISTS ticket_ratings;
 DROP TABLE IF EXISTS ticket_audit_logs;
+DROP TABLE IF EXISTS audit_log;
 DROP TABLE IF EXISTS canned_responses;
 DROP TABLE IF EXISTS ticket_categories;
 DROP TABLE IF EXISTS sla_rules;
@@ -30,17 +40,38 @@ DROP TABLE IF EXISTS books;
 DROP TABLE IF EXISTS settings;
 DROP TABLE IF EXISTS banned_identifiers;
 DROP TABLE IF EXISTS user_warnings;
-DROP TABLE IF EXISTS admin_users;
-DROP TABLE IF EXISTS moderation_log;
-DROP TABLE IF EXISTS ticket_conversation_threads;
-DROP TABLE IF EXISTS reports;
-DROP TABLE IF EXISTS likes;
-DROP TABLE IF EXISTS comments;
-DROP TABLE IF EXISTS stories;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS teams;
+DROP TABLE IF EXISTS accounts;
 
 -- Create Tables
+
+-- sla_rules and accounts/teams must come before ticket_categories/subcategories
+CREATE TABLE sla_rules (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  priority TEXT NOT NULL UNIQUE CHECK(priority IN ('urgent', 'high', 'medium', 'low')),
+  frt_hours REAL NOT NULL,
+  ttr_hours REAL NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE accounts (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT NOT NULL,
+  domain     TEXT UNIQUE,
+  status     TEXT DEFAULT 'active' CHECK(status IN ('active','suspended','inactive')),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE teams (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT NOT NULL,
+  account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+  status     TEXT DEFAULT 'active' CHECK(status IN ('active','inactive')),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id TEXT UNIQUE,
@@ -70,12 +101,27 @@ CREATE TABLE categories (
 );
 
 CREATE TABLE ticket_categories (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE,
-  description TEXT,
-  channel_type TEXT DEFAULT 'education',
-  is_active INTEGER DEFAULT 1,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  name             TEXT NOT NULL UNIQUE,
+  description      TEXT,
+  is_global        INTEGER DEFAULT 1,
+  default_sla_id   INTEGER REFERENCES sla_rules(id) ON DELETE SET NULL,
+  default_priority TEXT DEFAULT 'medium' CHECK(default_priority IN ('low','medium','high','urgent')),
+  default_team_id  INTEGER REFERENCES teams(id) ON DELETE SET NULL,
+  status           TEXT DEFAULT 'active' CHECK(status IN ('active','draft','archived')),
+  created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE ticket_subcategories (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  category_id      INTEGER NOT NULL REFERENCES ticket_categories(id) ON DELETE CASCADE,
+  name             TEXT NOT NULL,
+  description      TEXT,
+  default_sla_id   INTEGER REFERENCES sla_rules(id) ON DELETE SET NULL,
+  default_priority TEXT CHECK(default_priority IN ('low','medium','high','urgent')),
+  default_team_id  INTEGER REFERENCES teams(id) ON DELETE SET NULL,
+  status           TEXT DEFAULT 'active' CHECK(status IN ('active','draft','archived')),
+  created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE stories (
@@ -173,14 +219,6 @@ CREATE TABLE ticket_attachments (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE ticket_subcategories (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  category_id INTEGER NOT NULL REFERENCES ticket_categories(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  description TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE ticket_custom_fields (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category_id INTEGER REFERENCES ticket_categories(id) ON DELETE CASCADE,
@@ -191,14 +229,6 @@ CREATE TABLE ticket_custom_fields (
   options_json TEXT,
   is_required INTEGER DEFAULT 0,
   placeholder TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE sla_rules (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  priority TEXT NOT NULL UNIQUE CHECK(priority IN ('urgent', 'high', 'medium', 'low')),
-  frt_hours REAL NOT NULL,
-  ttr_hours REAL NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -498,176 +528,155 @@ INSERT OR IGNORE INTO sla_rules (id, priority, frt_hours, ttr_hours) VALUES
 (4, 'low', 24.0, 72.0);
 
 -- ============================================================
--- ADMIN-SPECIFIC TABLES (Accounts, Taxonomy, RBAC, Teams, Employee Provisioning)
+-- ADMIN-SPECIFIC TABLES (RBAC, Employee Provisioning, Access Control)
 -- ============================================================
 
--- Accounts (multi-tenancy)
-CREATE TABLE accounts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  domain TEXT UNIQUE,
-  status TEXT DEFAULT 'active' CHECK(status IN ('active', 'suspended', 'inactive')),
+-- Account ↔ Category access (non-global categories)
+CREATE TABLE account_category_access (
+  account_id  INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  category_id INTEGER NOT NULL REFERENCES ticket_categories(id) ON DELETE CASCADE,
+  enabled     INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (account_id, category_id)
+);
+
+-- Account ↔ Subcategory access (optional per-account override)
+CREATE TABLE account_subcategory_access (
+  account_id     INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  subcategory_id INTEGER NOT NULL REFERENCES ticket_subcategories(id) ON DELETE CASCADE,
+  enabled        INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (account_id, subcategory_id)
+);
+
+-- Team ↔ Category routing assignments
+CREATE TABLE team_category_assignments (
+  team_id        INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  category_id    INTEGER NOT NULL REFERENCES ticket_categories(id) ON DELETE CASCADE,
+  subcategory_id INTEGER REFERENCES ticket_subcategories(id) ON DELETE CASCADE,
+  PRIMARY KEY (team_id, category_id, subcategory_id)
+);
+
+-- Permissions
+CREATE TABLE permissions (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  code        TEXT NOT NULL UNIQUE,
+  module      TEXT NOT NULL,
+  description TEXT
+);
+
+-- Roles
+CREATE TABLE roles (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT NOT NULL UNIQUE,
+  scope      TEXT DEFAULT 'account' CHECK(scope IN ('global','account','team')),
+  is_system  INTEGER DEFAULT 0,
+  status     TEXT DEFAULT 'active' CHECK(status IN ('active','inactive')),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Taxonomy: Subcategories with account scoping
-CREATE TABLE ticket_subcategory_taxonomy (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  description TEXT,
-  sort_order INTEGER DEFAULT 0,
-  is_active INTEGER DEFAULT 1,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(account_id, name)
-);
-
--- Taxonomy: Custom Fields
-CREATE TABLE ticket_custom_field_taxonomy (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
-  subcategory_id INTEGER REFERENCES ticket_subcategory_taxonomy(id) ON DELETE CASCADE,
-  field_name TEXT NOT NULL,
-  field_label TEXT NOT NULL,
-  field_type TEXT NOT NULL DEFAULT 'text' CHECK(field_type IN ('text', 'number', 'select', 'textarea', 'url', 'date', 'boolean')),
-  options_json TEXT,
-  is_required INTEGER DEFAULT 0,
-  is_filterable INTEGER DEFAULT 0,
-  sort_order INTEGER DEFAULT 0,
-  placeholder TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(account_id, subcategory_id, field_name)
-);
-
--- RBAC: Permission Definitions
-CREATE TABLE permissions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  resource TEXT NOT NULL,
-  action TEXT NOT NULL,
-  description TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(resource, action)
-);
-
--- RBAC: Roles
-CREATE TABLE roles (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  description TEXT,
-  is_system INTEGER DEFAULT 0,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(account_id, name)
-);
-
--- RBAC: Role Permissions (many-to-many)
+-- Role ↔ Permissions
 CREATE TABLE role_permissions (
-  role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
-  permission_id INTEGER REFERENCES permissions(id) ON DELETE CASCADE,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  role_id       INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+  permission_id INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+  effect        TEXT NOT NULL DEFAULT 'allow' CHECK(effect IN ('allow','deny')),
   PRIMARY KEY (role_id, permission_id)
 );
 
--- RBAC: User Roles (many-to-many)
-CREATE TABLE user_roles (
-  admin_user_id INTEGER REFERENCES admin_users(id) ON DELETE CASCADE,
-  role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
-  account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
-  assigned_by INTEGER REFERENCES admin_users(id),
-  assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (admin_user_id, role_id, account_id)
+-- Team ↔ Roles (roles approved for a team)
+CREATE TABLE team_roles (
+  team_id    INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  role_id    INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+  is_default INTEGER DEFAULT 0,
+  PRIMARY KEY (team_id, role_id)
 );
 
--- Teams: Team Definitions
-CREATE TABLE teams (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  description TEXT,
-  is_active INTEGER DEFAULT 1,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(account_id, name)
+-- Employee users (provisioned staff)
+CREATE TABLE employee_users (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id        INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+  team_id           INTEGER REFERENCES teams(id) ON DELETE SET NULL,
+  role_id           INTEGER REFERENCES roles(id) ON DELETE SET NULL,
+  full_name         TEXT NOT NULL,
+  email             TEXT NOT NULL UNIQUE,
+  phone             TEXT,
+  password_hash     TEXT,
+  invite_token      TEXT UNIQUE,
+  invite_expires    DATETIME,
+  employment_status TEXT DEFAULT 'pending_invite' CHECK(employment_status IN ('active','suspended','deactivated','pending_invite')),
+  last_login_at     DATETIME,
+  created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Teams: Team Members
-CREATE TABLE team_members (
-  team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
-  admin_user_id INTEGER REFERENCES admin_users(id) ON DELETE CASCADE,
-  role_in_team TEXT DEFAULT 'member' CHECK(role_in_team IN ('member', 'manager', 'admin')),
-  joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (team_id, admin_user_id)
+-- Employee permission overrides (exceptional, audited)
+CREATE TABLE employee_permission_overrides (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  employee_id   INTEGER NOT NULL REFERENCES employee_users(id) ON DELETE CASCADE,
+  permission_id INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+  effect        TEXT NOT NULL CHECK(effect IN ('allow','deny')),
+  reason        TEXT NOT NULL,
+  granted_by    INTEGER NOT NULL REFERENCES employee_users(id),
+  expires_at    DATETIME,
+  created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(employee_id, permission_id)
 );
 
--- Teams: Team Permissions Override (team-level permission grants)
-CREATE TABLE team_permissions (
-  team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
-  permission_id INTEGER REFERENCES permissions(id) ON DELETE CASCADE,
-  granted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (team_id, permission_id)
+-- Immutable audit log for all access-sensitive actions
+CREATE TABLE audit_log (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  actor_id    INTEGER NOT NULL,
+  actor_type  TEXT NOT NULL CHECK(actor_type IN ('employee','admin','system')),
+  action      TEXT NOT NULL,
+  target_type TEXT,
+  target_id   INTEGER,
+  old_value   TEXT,
+  new_value   TEXT,
+  ip_hash     TEXT,
+  created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Employee Provisioning: Invite Tokens
-CREATE TABLE employee_invites (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
-  email TEXT NOT NULL,
-  first_name TEXT,
-  last_name TEXT,
-  role_id INTEGER REFERENCES roles(id) ON DELETE SET NULL,
-  team_id INTEGER REFERENCES teams(id) ON DELETE SET NULL,
-  token TEXT NOT NULL UNIQUE,
-  expires_at DATETIME NOT NULL,
-  invited_by INTEGER REFERENCES admin_users(id),
-  invited_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'accepted', 'expired', 'revoked')),
-  UNIQUE(account_id, email)
-);
+-- Seed ticket_categories with new columns
+UPDATE ticket_categories SET is_global = 1, status = 'active' WHERE status IS NULL;
 
--- Employee Provisioning: Employee Profiles (after invitation accepted)
-CREATE TABLE employee_profiles (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
-  admin_user_id INTEGER REFERENCES admin_users(id) ON DELETE CASCADE,
-  email TEXT NOT NULL UNIQUE,
-  first_name TEXT,
-  last_name TEXT,
-  role_id INTEGER REFERENCES roles(id) ON DELETE SET NULL,
-  team_id INTEGER REFERENCES teams(id) ON DELETE SET NULL,
-  status TEXT DEFAULT 'active' CHECK(status IN ('active', 'suspended', 'deactivated')),
-  hired_at DATETIME,
-  last_login_at DATETIME,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+-- Seed Permissions
+INSERT OR IGNORE INTO permissions (code, module, description) VALUES
+  ('ticket.view',       'tickets',  'View tickets'),
+  ('ticket.assign',     'tickets',  'Assign tickets to agents'),
+  ('ticket.reply',      'tickets',  'Reply to tickets'),
+  ('ticket.resolve',    'tickets',  'Mark tickets as resolved'),
+  ('ticket.reopen',     'tickets',  'Reopen closed tickets'),
+  ('ticket.delete',     'tickets',  'Delete tickets'),
+  ('category.create',   'taxonomy', 'Create ticket categories'),
+  ('category.edit',     'taxonomy', 'Edit ticket categories'),
+  ('category.archive',  'taxonomy', 'Archive ticket categories'),
+  ('category.delete',   'taxonomy', 'Delete ticket categories'),
+  ('account.view',      'accounts', 'View account settings'),
+  ('account.manage',    'accounts', 'Manage account settings'),
+  ('user.create',       'users',    'Create users'),
+  ('user.deactivate',   'users',    'Deactivate users'),
+  ('user.manage_roles', 'users',    'Manage user roles'),
+  ('report.view',       'reports',  'View analytics reports'),
+  ('report.export',     'reports',  'Export analytics reports');
 
--- Staff Scheduling: Shift Schedules
-CREATE TABLE staff_shifts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  employee_profile_id INTEGER REFERENCES employee_profiles(id) ON DELETE CASCADE,
-  team_id INTEGER REFERENCES teams(id) ON DELETE CASCADE,
-  shift_date DATE NOT NULL,
-  start_time TEXT NOT NULL,
-  end_time TEXT NOT NULL,
-  status TEXT DEFAULT 'scheduled' CHECK(status IN ('scheduled', 'completed', 'cancelled', 'rescheduled')),
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(employee_profile_id, shift_date, start_time)
-);
+-- Seed default roles
+INSERT OR IGNORE INTO roles (name, scope, is_system, status) VALUES
+  ('Super Admin', 'global',  1, 'active'),
+  ('Admin',       'account', 1, 'active'),
+  ('Agent',       'team',    1, 'active'),
+  ('Viewer',      'team',    1, 'active');
 
--- Staff Scheduling: Availability Slots
-CREATE TABLE employee_availability (
-   employee_profile_id INTEGER REFERENCES employee_profiles(id) ON DELETE CASCADE,
-   day_of_week INTEGER CHECK(day_of_week BETWEEN 0 AND 6),
-   start_time TEXT NOT NULL,
-   end_time TEXT NOT NULL,
-   is_available INTEGER DEFAULT 1,
-   PRIMARY KEY (employee_profile_id, day_of_week, start_time)
-);
+-- Agent: ticket.view + ticket.reply + ticket.resolve + ticket.reopen
+INSERT OR IGNORE INTO role_permissions (role_id, permission_id, effect)
+SELECT r.id, p.id, 'allow' FROM roles r, permissions p
+WHERE r.name = 'Agent' AND p.code IN ('ticket.view','ticket.reply','ticket.resolve','ticket.reopen');
+
+-- Admin: all permissions
+INSERT OR IGNORE INTO role_permissions (role_id, permission_id, effect)
+SELECT r.id, p.id, 'allow' FROM roles r, permissions p WHERE r.name = 'Admin';
+
+-- Super Admin: all permissions
+INSERT OR IGNORE INTO role_permissions (role_id, permission_id, effect)
+SELECT r.id, p.id, 'allow' FROM roles r, permissions p WHERE r.name = 'Super Admin';
 
 -- Seed Canned Responses
 INSERT OR IGNORE INTO canned_responses (id, title, content, category_id) VALUES 

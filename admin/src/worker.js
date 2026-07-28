@@ -785,4 +785,151 @@ app.post('/api/admin/messages/send', requireAdmin, async (c) => {
   return c.json({ message: 'Message sent successfully.' });
 });
 
+// ═════════════════════════════════════════════════════════
+// ██  TICKET TAXONOMY API
+// ═════════════════════════════════════════════════════════
+app.get('/api/admin/tax/categories', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { results } = await db.prepare('SELECT * FROM ticket_categories ORDER BY name').all();
+  return c.json(results);
+});
+
+app.post('/api/admin/tax/categories', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { name, description } = await c.req.json();
+  if (!name) return c.json({ error: 'Name is required.' }, 400);
+  try {
+    const r = await db.prepare('INSERT INTO ticket_categories (name, description) VALUES (?, ?)').bind(name, description || null).run();
+    return c.json({ id: r.meta.last_row_id, message: 'Category created.' }, 201);
+  } catch (e) {
+    return c.json({ error: 'Category already exists.' }, 400);
+  }
+});
+
+app.delete('/api/admin/tax/categories/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const id = parseInt(c.req.param('id'));
+  const active = await db.prepare("SELECT COUNT(*) as c FROM ticket_subcategories WHERE category_id = ?").bind(id).first();
+  if (active.c > 0) return c.json({ error: 'Archive or delete sub-categories first.' }, 400);
+  await db.prepare('DELETE FROM ticket_categories WHERE id = ?').bind(id).run();
+  return c.json({ message: 'Category deleted.' });
+});
+
+app.get('/api/admin/tax/subcategories', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { results } = await db.prepare(`
+    SELECT s.*, c.name as category_name FROM ticket_subcategories s
+    LEFT JOIN ticket_categories c ON s.category_id = c.id ORDER BY c.name, s.name
+  `).all();
+  return c.json(results);
+});
+
+app.post('/api/admin/tax/subcategories', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { category_id, name, description } = await c.req.json();
+  if (!category_id || !name) return c.json({ error: 'category_id and name are required.' }, 400);
+  const r = await db.prepare('INSERT INTO ticket_subcategories (category_id, name, description) VALUES (?, ?, ?)').bind(category_id, name, description || null).run();
+  return c.json({ id: r.meta.last_row_id, message: 'Sub-category created.' }, 201);
+});
+
+app.delete('/api/admin/tax/subcategories/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const id = parseInt(c.req.param('id'));
+  await db.prepare('DELETE FROM ticket_subcategories WHERE id = ?').bind(id).run();
+  return c.json({ message: 'Sub-category deleted.' });
+});
+
+// ═════════════════════════════════════════════════════════
+// ██  ROLES API
+// ═════════════════════════════════════════════════════════
+app.get('/api/admin/roles', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { results } = await db.prepare('SELECT * FROM roles ORDER BY name').all();
+  return c.json(results);
+});
+
+app.post('/api/admin/roles', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { name, description } = await c.req.json();
+  if (!name) return c.json({ error: 'Name is required.' }, 400);
+  try {
+    const r = await db.prepare('INSERT INTO roles (name, description) VALUES (?, ?)').bind(name, description || null).run();
+    return c.json({ id: r.meta.last_row_id, message: 'Role created.' }, 201);
+  } catch (e) {
+    return c.json({ error: 'Role already exists.' }, 400);
+  }
+});
+
+app.delete('/api/admin/roles/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const id = parseInt(c.req.param('id'));
+  const role = await db.prepare('SELECT is_system FROM roles WHERE id = ?').bind(id).first();
+  if (!role) return c.json({ error: 'Role not found.' }, 404);
+  if (role.is_system) return c.json({ error: 'Cannot delete system roles.' }, 400);
+  const inUse = await db.prepare('SELECT COUNT(*) as c FROM user_roles WHERE role_id = ?').bind(id).first();
+  if (inUse.c > 0) return c.json({ error: 'Role is assigned to users. Reassign first.' }, 400);
+  await db.prepare('DELETE FROM roles WHERE id = ?').bind(id).run();
+  return c.json({ message: 'Role deleted.' });
+});
+
+// ═════════════════════════════════════════════════════════
+// ██  TEAMS API
+// ═════════════════════════════════════════════════════════
+app.get('/api/admin/teams', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { results } = await db.prepare('SELECT * FROM teams ORDER BY name').all();
+  return c.json(results);
+});
+
+app.post('/api/admin/teams', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { name, description } = await c.req.json();
+  if (!name) return c.json({ error: 'Name is required.' }, 400);
+  try {
+    const r = await db.prepare('INSERT INTO teams (name, description) VALUES (?, ?)').bind(name, description || null).run();
+    return c.json({ id: r.meta.last_row_id, message: 'Team created.' }, 201);
+  } catch (e) {
+    return c.json({ error: 'Team already exists.' }, 400);
+  }
+});
+
+app.delete('/api/admin/teams/:id', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const id = parseInt(c.req.param('id'));
+  const members = await db.prepare('SELECT COUNT(*) as c FROM team_members WHERE team_id = ?').bind(id).first();
+  if (members.c > 0) return c.json({ error: 'Remove all team members first.' }, 400);
+  await db.prepare('DELETE FROM teams WHERE id = ?').bind(id).run();
+  return c.json({ message: 'Team deleted.' });
+});
+
+// ═════════════════════════════════════════════════════════
+// ██  EMPLOYEE PROVISIONING API
+// ═════════════════════════════════════════════════════════
+app.get('/api/admin/employees/invites', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const { results } = await db.prepare(`
+    SELECT i.*, t.name as team_name FROM employee_invites i
+    LEFT JOIN teams t ON i.team_id = t.id
+    ORDER BY i.invited_at DESC
+  `).all();
+  return c.json(results);
+});
+
+app.post('/api/admin/employees/invite', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const adminPayload = c.get('admin');
+  const { email, first_name, last_name, team_id, role_id } = await c.req.json();
+  if (!email) return c.json({ error: 'Email is required.' }, 400);
+  const token = crypto.randomUUID();
+  const expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  try {
+    await db.prepare(
+      'INSERT INTO employee_invites (email, first_name, last_name, team_id, role_id, token, expires_at, invited_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(email, first_name || null, last_name || null, team_id || null, role_id || null, token, expires_at, adminPayload.adminId).run();
+    return c.json({ message: 'Invite created.', token }, 201);
+  } catch (e) {
+    return c.json({ error: 'Invite already exists for this email.' }, 400);
+  }
+});
+
 export default app;

@@ -107,6 +107,21 @@
           </button>
         </div>
         <div class="admin-sidebar__section">
+          <p class="admin-sidebar__heading">Administration</p>
+          <button class="admin-nav-item" data-panel="taxonomy">
+            <span class="admin-nav-item__icon">🗂️</span> Ticket Taxonomy
+          </button>
+          <button class="admin-nav-item" data-panel="roles">
+            <span class="admin-nav-item__icon">🔐</span> Roles & Permissions
+          </button>
+          <button class="admin-nav-item" data-panel="teams">
+            <span class="admin-nav-item__icon">🏢</span> Teams
+          </button>
+          <button class="admin-nav-item" data-panel="employees">
+            <span class="admin-nav-item__icon">👤</span> Employees
+          </button>
+        </div>
+        <div class="admin-sidebar__section">
           <p class="admin-sidebar__heading">System</p>
           <button class="admin-nav-item" data-panel="audit-log">
             <span class="admin-nav-item__icon">📋</span> Audit Log
@@ -400,6 +415,92 @@
                 </tr>
               </thead>
               <tbody id="auditBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Ticket Taxonomy Panel -->
+        <div class="admin-panel" id="panel-taxonomy">
+          <h1 class="admin-page-title">Ticket Taxonomy</h1>
+          <p class="admin-page-subtitle">Manage ticket categories and sub-categories.</p>
+          <div style="display:flex;gap:12px;margin-bottom:20px;align-items:flex-end;">
+            <div style="flex:1;"><label class="form-label">Category Name</label><input type="text" class="form-input" id="newTaxCategoryName" placeholder="e.g. Billing"></div>
+            <div style="flex:1;"><label class="form-label">Description</label><input type="text" class="form-input" id="newTaxCategoryDesc" placeholder="Optional description"></div>
+            <button class="btn btn--primary" id="addTaxCategoryBtn">Add Category</button>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead><tr><th>ID</th><th>Name</th><th>Description</th><th>Active</th><th>Actions</th></tr></thead>
+              <tbody id="taxCategoriesBody"></tbody>
+            </table>
+          </div>
+          <hr style="margin:24px 0;border-color:var(--border);">
+          <h2 style="font-size:1.1rem;margin-bottom:12px;">Sub-Categories</h2>
+          <div style="display:flex;gap:12px;margin-bottom:20px;align-items:flex-end;">
+            <div style="flex:1;"><label class="form-label">Parent Category</label><select class="form-input" id="newSubcatParent"><option value="">Select category...</option></select></div>
+            <div style="flex:1;"><label class="form-label">Sub-Category Name</label><input type="text" class="form-input" id="newSubcatName" placeholder="e.g. Refund Request"></div>
+            <button class="btn btn--primary" id="addSubcatBtn">Add Sub-Category</button>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead><tr><th>ID</th><th>Category</th><th>Name</th><th>Actions</th></tr></thead>
+              <tbody id="taxSubcatsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Roles & Permissions Panel -->
+        <div class="admin-panel" id="panel-roles">
+          <h1 class="admin-page-title">Roles & Permissions</h1>
+          <p class="admin-page-subtitle">Define roles and assign permissions.</p>
+          <div style="display:flex;gap:12px;margin-bottom:20px;align-items:flex-end;">
+            <div style="flex:1;"><label class="form-label">Role Name</label><input type="text" class="form-input" id="newRoleName" placeholder="e.g. Support Agent"></div>
+            <div style="flex:1;"><label class="form-label">Description</label><input type="text" class="form-input" id="newRoleDesc" placeholder="Optional"></div>
+            <button class="btn btn--primary" id="addRoleBtn">Create Role</button>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead><tr><th>ID</th><th>Name</th><th>Description</th><th>System</th><th>Actions</th></tr></thead>
+              <tbody id="rolesBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Teams Panel -->
+        <div class="admin-panel" id="panel-teams">
+          <h1 class="admin-page-title">Teams</h1>
+          <p class="admin-page-subtitle">Manage support teams and their members.</p>
+          <div style="display:flex;gap:12px;margin-bottom:20px;align-items:flex-end;">
+            <div style="flex:1;"><label class="form-label">Team Name</label><input type="text" class="form-input" id="newTeamName" placeholder="e.g. Billing Team"></div>
+            <div style="flex:1;"><label class="form-label">Description</label><input type="text" class="form-input" id="newTeamDesc" placeholder="Optional"></div>
+            <button class="btn btn--primary" id="addTeamBtn">Create Team</button>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead><tr><th>ID</th><th>Name</th><th>Description</th><th>Active</th><th>Actions</th></tr></thead>
+              <tbody id="teamsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Employees Panel -->
+        <div class="admin-panel" id="panel-employees">
+          <h1 class="admin-page-title">Employee Provisioning</h1>
+          <p class="admin-page-subtitle">Invite and manage support staff.</p>
+          <div class="card card--flat card--no-hover" style="padding:20px;margin-bottom:20px;">
+            <h3 style="margin-bottom:12px;">Invite Employee</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:flex-end;">
+              <div><label class="form-label">Email</label><input type="email" class="form-input" id="inviteEmail" placeholder="agent@company.com"></div>
+              <div><label class="form-label">First Name</label><input type="text" class="form-input" id="inviteFirstName"></div>
+              <div><label class="form-label">Last Name</label><input type="text" class="form-input" id="inviteLastName"></div>
+              <div><label class="form-label">Team</label><select class="form-input" id="inviteTeam"><option value="">Select team...</option></select></div>
+              <button class="btn btn--primary" id="sendInviteBtn">Send Invite</button>
+            </div>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-table">
+              <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Team</th><th>Status</th><th>Invited</th></tr></thead>
+              <tbody id="employeesBody"></tbody>
             </table>
           </div>
         </div>

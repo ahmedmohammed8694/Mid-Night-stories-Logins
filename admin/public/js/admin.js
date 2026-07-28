@@ -115,6 +115,10 @@
       case 'bans': loadBans(); break;
       case 'settings': loadSettings(); break;
       case 'audit-log': loadAuditLog(); break;
+      case 'taxonomy': loadTaxonomy(); break;
+      case 'roles': loadRoles(); break;
+      case 'teams': loadTeams(); break;
+      case 'employees': loadEmployees(); break;
       case 'mfa-setup': loadMFASetup(); break;
     }
   }
@@ -810,3 +814,204 @@
   }
 })();
 
+
+// ── Ticket Taxonomy ──
+async function loadTaxonomy() {
+  try {
+    const [cats, subcats] = await Promise.all([
+      api('/api/admin/tax/categories'),
+      api('/api/admin/tax/subcategories')
+    ]);
+
+    // Populate categories table
+    const catBody = document.getElementById('taxCategoriesBody');
+    catBody.innerHTML = cats.map(c => `
+      <tr>
+        <td>${c.id}</td>
+        <td>${escapeHtml(c.name)}</td>
+        <td>${escapeHtml(c.description || '—')}</td>
+        <td><span class="status-badge status-badge--${c.is_active ? 'approved' : 'rejected'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
+        <td><button class="btn btn--danger btn--sm" onclick="deleteTaxCategory(${c.id})">Delete</button></td>
+      </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;opacity:.5">No categories yet.</td></tr>';
+
+    // Populate parent select
+    const parentSelect = document.getElementById('newSubcatParent');
+    parentSelect.innerHTML = '<option value="">Select category...</option>' +
+      cats.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+
+    // Populate subcategories table
+    const subBody = document.getElementById('taxSubcatsBody');
+    subBody.innerHTML = subcats.map(s => `
+      <tr>
+        <td>${s.id}</td>
+        <td>${escapeHtml(s.category_name || '—')}</td>
+        <td>${escapeHtml(s.name)}</td>
+        <td><button class="btn btn--danger btn--sm" onclick="deleteTaxSubcat(${s.id})">Delete</button></td>
+      </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;opacity:.5">No sub-categories yet.</td></tr>';
+  } catch (err) {
+    showToast('Failed to load taxonomy.', 'error');
+  }
+}
+
+window.deleteTaxCategory = async function(id) {
+  if (!confirm('Delete this category?')) return;
+  try {
+    await api(`/api/admin/tax/categories/${id}`, { method: 'DELETE' });
+    showToast('Category deleted.', 'success');
+    loadTaxonomy();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.deleteTaxSubcat = async function(id) {
+  if (!confirm('Delete this sub-category?')) return;
+  try {
+    await api(`/api/admin/tax/subcategories/${id}`, { method: 'DELETE' });
+    showToast('Sub-category deleted.', 'success');
+    loadTaxonomy();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+// ── Roles ──
+async function loadRoles() {
+  try {
+    const roles = await api('/api/admin/roles');
+    const tbody = document.getElementById('rolesBody');
+    tbody.innerHTML = roles.map(r => `
+      <tr>
+        <td>${r.id}</td>
+        <td>${escapeHtml(r.name)}</td>
+        <td>${escapeHtml(r.description || '—')}</td>
+        <td>${r.is_system ? '🔒 System' : 'Custom'}</td>
+        <td>${!r.is_system ? `<button class="btn btn--danger btn--sm" onclick="deleteRole(${r.id})">Delete</button>` : '—'}</td>
+      </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;opacity:.5">No roles yet.</td></tr>';
+  } catch (err) { showToast('Failed to load roles.', 'error'); }
+}
+
+window.deleteRole = async function(id) {
+  if (!confirm('Delete this role?')) return;
+  try {
+    await api(`/api/admin/roles/${id}`, { method: 'DELETE' });
+    showToast('Role deleted.', 'success');
+    loadRoles();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+// ── Teams ──
+async function loadTeams() {
+  try {
+    const teams = await api('/api/admin/teams');
+    const tbody = document.getElementById('teamsBody');
+    tbody.innerHTML = teams.map(t => `
+      <tr>
+        <td>${t.id}</td>
+        <td>${escapeHtml(t.name)}</td>
+        <td>${escapeHtml(t.description || '—')}</td>
+        <td><span class="status-badge status-badge--${t.is_active ? 'approved' : 'rejected'}">${t.is_active ? 'Active' : 'Inactive'}</span></td>
+        <td><button class="btn btn--danger btn--sm" onclick="deleteTeam(${t.id})">Delete</button></td>
+      </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;opacity:.5">No teams yet.</td></tr>';
+
+    // Populate invite team select
+    const inviteTeam = document.getElementById('inviteTeam');
+    if (inviteTeam) {
+      inviteTeam.innerHTML = '<option value="">Select team...</option>' +
+        teams.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+    }
+  } catch (err) { showToast('Failed to load teams.', 'error'); }
+}
+
+window.deleteTeam = async function(id) {
+  if (!confirm('Delete this team?')) return;
+  try {
+    await api(`/api/admin/teams/${id}`, { method: 'DELETE' });
+    showToast('Team deleted.', 'success');
+    loadTeams();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+// ── Employees ──
+async function loadEmployees() {
+  await loadTeams(); // populate invite dropdown
+  try {
+    const invites = await api('/api/admin/employees/invites');
+    const tbody = document.getElementById('employeesBody');
+    tbody.innerHTML = invites.map(i => `
+      <tr>
+        <td>${i.id}</td>
+        <td>${escapeHtml((i.first_name || '') + ' ' + (i.last_name || ''))}</td>
+        <td>${escapeHtml(i.email)}</td>
+        <td>${escapeHtml(i.team_name || '—')}</td>
+        <td><span class="status-badge status-badge--${i.status === 'accepted' ? 'approved' : i.status === 'pending' ? 'pending' : 'rejected'}">${i.status}</span></td>
+        <td>${formatDate(i.invited_at)}</td>
+      </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;opacity:.5">No invites yet.</td></tr>';
+  } catch (err) { showToast('Failed to load employees.', 'error'); }
+}
+
+// ── Event bindings for new panels ──
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('addTaxCategoryBtn')?.addEventListener('click', async () => {
+    const name = document.getElementById('newTaxCategoryName').value.trim();
+    const description = document.getElementById('newTaxCategoryDesc').value.trim();
+    if (!name) return showToast('Name is required.', 'warning');
+    try {
+      await api('/api/admin/tax/categories', { method: 'POST', body: JSON.stringify({ name, description }) });
+      document.getElementById('newTaxCategoryName').value = '';
+      document.getElementById('newTaxCategoryDesc').value = '';
+      showToast('Category added.', 'success');
+      loadTaxonomy();
+    } catch (err) { showToast(err.message, 'error'); }
+  });
+
+  document.getElementById('addSubcatBtn')?.addEventListener('click', async () => {
+    const category_id = document.getElementById('newSubcatParent').value;
+    const name = document.getElementById('newSubcatName').value.trim();
+    if (!category_id || !name) return showToast('Select a category and enter a name.', 'warning');
+    try {
+      await api('/api/admin/tax/subcategories', { method: 'POST', body: JSON.stringify({ category_id: parseInt(category_id), name }) });
+      document.getElementById('newSubcatName').value = '';
+      showToast('Sub-category added.', 'success');
+      loadTaxonomy();
+    } catch (err) { showToast(err.message, 'error'); }
+  });
+
+  document.getElementById('addRoleBtn')?.addEventListener('click', async () => {
+    const name = document.getElementById('newRoleName').value.trim();
+    const description = document.getElementById('newRoleDesc').value.trim();
+    if (!name) return showToast('Role name is required.', 'warning');
+    try {
+      await api('/api/admin/roles', { method: 'POST', body: JSON.stringify({ name, description }) });
+      document.getElementById('newRoleName').value = '';
+      document.getElementById('newRoleDesc').value = '';
+      showToast('Role created.', 'success');
+      loadRoles();
+    } catch (err) { showToast(err.message, 'error'); }
+  });
+
+  document.getElementById('addTeamBtn')?.addEventListener('click', async () => {
+    const name = document.getElementById('newTeamName').value.trim();
+    const description = document.getElementById('newTeamDesc').value.trim();
+    if (!name) return showToast('Team name is required.', 'warning');
+    try {
+      await api('/api/admin/teams', { method: 'POST', body: JSON.stringify({ name, description }) });
+      document.getElementById('newTeamName').value = '';
+      document.getElementById('newTeamDesc').value = '';
+      showToast('Team created.', 'success');
+      loadTeams();
+    } catch (err) { showToast(err.message, 'error'); }
+  });
+
+  document.getElementById('sendInviteBtn')?.addEventListener('click', async () => {
+    const email = document.getElementById('inviteEmail').value.trim();
+    const first_name = document.getElementById('inviteFirstName').value.trim();
+    const last_name = document.getElementById('inviteLastName').value.trim();
+    const team_id = document.getElementById('inviteTeam').value;
+    if (!email) return showToast('Email is required.', 'warning');
+    try {
+      await api('/api/admin/employees/invite', { method: 'POST', body: JSON.stringify({ email, first_name, last_name, team_id: team_id ? parseInt(team_id) : null }) });
+      document.getElementById('inviteEmail').value = '';
+      document.getElementById('inviteFirstName').value = '';
+      document.getElementById('inviteLastName').value = '';
+      showToast('Invite sent.', 'success');
+      loadEmployees();
+    } catch (err) { showToast(err.message, 'error'); }
+  });
+});
