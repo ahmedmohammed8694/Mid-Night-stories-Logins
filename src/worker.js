@@ -4411,6 +4411,7 @@ app.post('/api/admin/helpdesk/tickets/:id/reply', requireAdmin, async (c) => {
   const extraFields = (newStatus === 'resolved' || newStatus === 'closed')
     ? `, resolved_at = datetime('now'), can_reopen = 1` : '';
 
+
   await db.prepare(`
     UPDATE reports
     SET ticket_status = ?, last_activity_at = datetime('now'), latest_message_preview = ?,
@@ -4420,73 +4421,6 @@ app.post('/api/admin/helpdesk/tickets/:id/reply', requireAdmin, async (c) => {
 
   return c.json({ success: true, message: 'Admin reply posted.' });
 });
-
-// GET /api/admin/canned-responses
-app.get('/api/admin/canned-responses', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const { results } = await db.prepare('SELECT * FROM canned_responses ORDER BY title ASC').all().catch(() => ({ results: [] }));
-  return c.json(results || []);
-});
-
-// POST /api/admin/messages/send — Admin broadcast message
-app.post('/api/admin/messages/send', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const admin = c.get('admin');
-  const { title, body, recipient_user_id } = await c.req.json();
-
-  if (!title || !body) return c.json({ error: 'Title and body are required.' }, 400);
-
-  await db.prepare(`
-    INSERT INTO admin_broadcasts (sender_admin_id, recipient_user_id, title, body, created_at)
-    VALUES (?, ?, ?, ?, datetime('now'))
-  `).bind(admin.adminId || 0, recipient_user_id || null, title, body).run();
-
-  return c.json({ success: true });
-});
-
-// GET /api/admin/analytics — Executive CRM Analytics
-app.get('/api/admin/analytics', requireAdmin, async (c) => {
-  const db = c.env.DB;
-
-  const total = await db.prepare("SELECT COUNT(*) as c FROM reports WHERE type = 'support_ticket' OR ticket_id IS NOT NULL").first().catch(() => ({ c: 0 }));
-  const openT = await db.prepare("SELECT COUNT(*) as c FROM reports WHERE COALESCE(ticket_status,'open') = 'open'").first().catch(() => ({ c: 0 }));
-  const resolvedT = await db.prepare("SELECT COUNT(*) as c FROM reports WHERE ticket_status = 'resolved'").first().catch(() => ({ c: 0 }));
-  const slaCompliant = await db.prepare("SELECT COUNT(*) as c FROM reports WHERE ticket_id IS NOT NULL AND (sla_due_at IS NULL OR frt_responded_at <= sla_due_at)").first().catch(() => ({ c: 0 }));
-  const csatData = await db.prepare("SELECT AVG(csat_rating) as avg_csat, COUNT(csat_rating) as cnt FROM reports WHERE csat_rating IS NOT NULL").first().catch(() => null);
-
-  const totalCount = (total && total.c) || 0;
-  const slaTotal = (resolvedT && resolvedT.c) || 0;
-  const slaOk = (slaCompliant && slaCompliant.c) || 0;
-  const slaRate = slaTotal > 0 ? Math.round((slaOk / slaTotal) * 100) : 100;
-
-  const { results: topCats } = await db.prepare(`
-    SELECT tc.name as category_name, COUNT(r.id) as ticket_count
-    FROM reports r
-    LEFT JOIN ticket_categories tc ON tc.id = r.category_id
-    WHERE r.ticket_id IS NOT NULL
-    GROUP BY r.category_id
-    ORDER BY ticket_count DESC
-    LIMIT 6
-  `).all().catch(() => ({ results: [] }));
-
-  return c.json({
-    summary: {
-      total_tickets: totalCount,
-      open_tickets: (openT && openT.c) || 0,
-      resolved_tickets: (resolvedT && resolvedT.c) || 0,
-      sla_compliance_pct: slaRate,
-      csat_score: csatData && csatData.avg_csat ? parseFloat(csatData.avg_csat).toFixed(1) : '5.0',
-      csat_count: (csatData && csatData.cnt) || 0,
-    },
-    topCategories: topCats || []
-  });
-});
-
-
-
-// ═════════════════════════════════════════════════════════
-// ██  RBAC, TAXONOMY, ACCOUNTS & EMPLOYEES ENDPOINTS
-// ═════════════════════════════════════════════════════════
 
 // ── TAXONOMY: Categories ──
 app.get('/api/admin/tax/categories', requireAdmin, async (c) => {
@@ -4547,11 +4481,6 @@ app.delete('/api/admin/tax/categories/:id', requireAdmin, async (c) => {
   const db = c.env.DB;
   const adminPayload = c.get('admin');
   const id = parseInt(c.req.param('id'));
-
-  const activeSubcats = await db.prepare("SELECT COUNT(*) as c FROM ticket_subcategories WHERE category_id = ? AND status = 'active'").bind(id).first();
-  if (activeSubcats && activeSubcats.c > 0) {
-    return c.json({ error: 'Cannot archive/delete category while active sub-categories exist. Archive sub-categories first.' }, 400);
-  }
 
   await db.prepare("UPDATE ticket_categories SET status = 'archived' WHERE id = ?").bind(id).run();
   await writeAuditLog(db, { actorId: adminPayload.adminId, actorType: 'admin', action: 'category.archive', targetType: 'ticket_category', targetId: id });
@@ -4673,30 +4602,6 @@ app.delete('/api/admin/accounts/:id', requireAdmin, async (c) => {
   return c.json({ message: 'Account deleted.' });
 });
 
-app.get('/api/admin/accounts/:id/categories', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const accountId = parseInt(c.req.param('id'));
-  const { results } = await db.prepare(`
-    SELECT tc.id, tc.name, tc.is_global,
-           COALESCE(aca.enabled, 0) AS enabled
-    FROM ticket_categories tc
-    LEFT JOIN account_category_access aca ON aca.category_id = tc.id AND aca.account_id = ?
-    ORDER BY tc.name
-  `).bind(accountId).all();
-  return c.json(results || []);
-});
-
-app.put('/api/admin/accounts/:id/categories', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const accountId = parseInt(c.req.param('id'));
-  const { category_id, enabled } = await c.req.json();
-  await db.prepare(`
-    INSERT INTO account_category_access (account_id, category_id, enabled) VALUES (?, ?, ?)
-    ON CONFLICT(account_id, category_id) DO UPDATE SET enabled = excluded.enabled
-  `).bind(accountId, category_id, enabled ? 1 : 0).run();
-  return c.json({ message: 'Category access updated.' });
-});
-
 // ── ROLES & PERMISSIONS ──
 app.get('/api/admin/roles', requireAdmin, async (c) => {
   const db = c.env.DB;
@@ -4711,7 +4616,7 @@ app.post('/api/admin/roles', requireAdmin, async (c) => {
   if (!name) return c.json({ error: 'Role name is required.' }, 400);
 
   const res = await db.prepare('INSERT INTO roles (name, description, scope, is_system) VALUES (?, ?, ?, 0)')
-    .bind(name.trim(), description || null, scope || 'global').run();
+    .bind(name.trim(), description || null, scope || 'account').run();
 
   await writeAuditLog(db, { actorId: adminPayload.adminId, actorType: 'admin', action: 'role.create', targetType: 'role', targetId: res.meta.last_row_id });
   return c.json({ message: 'Role created.', id: res.meta.last_row_id }, 201);
@@ -4721,10 +4626,6 @@ app.put('/api/admin/roles/:id', requireAdmin, async (c) => {
   const db = c.env.DB;
   const id = parseInt(c.req.param('id'));
   const { name, description, scope } = await c.req.json();
-  const role = await db.prepare('SELECT is_system FROM roles WHERE id = ?').bind(id).first();
-  if (!role) return c.json({ error: 'Role not found.' }, 404);
-  if (role.is_system) return c.json({ error: 'Cannot modify system role properties.' }, 403);
-
   await db.prepare('UPDATE roles SET name = COALESCE(?, name), description = COALESCE(?, description), scope = COALESCE(?, scope) WHERE id = ?')
     .bind(name ? name.trim() : null, description, scope, id).run();
   return c.json({ message: 'Role updated.' });
@@ -4733,10 +4634,7 @@ app.put('/api/admin/roles/:id', requireAdmin, async (c) => {
 app.delete('/api/admin/roles/:id', requireAdmin, async (c) => {
   const db = c.env.DB;
   const id = parseInt(c.req.param('id'));
-  const role = await db.prepare('SELECT is_system FROM roles WHERE id = ?').bind(id).first();
-  if (role && role.is_system) return c.json({ error: 'Cannot delete system role.' }, 403);
-
-  await db.prepare('DELETE FROM roles WHERE id = ?').bind(id).run();
+  await db.prepare('DELETE FROM roles WHERE id = ? AND is_system = 0').bind(id).run();
   return c.json({ message: 'Role deleted.' });
 });
 
@@ -4762,17 +4660,7 @@ app.put('/api/admin/roles/:id/permissions', requireAdmin, async (c) => {
   const adminPayload = c.get('admin');
   const roleId = parseInt(c.req.param('id'));
   const body = await c.req.json();
-  const role = await db.prepare('SELECT is_system FROM roles WHERE id = ?').bind(roleId).first();
-  if (!role) return c.json({ error: 'Role not found.' }, 404);
-
-  let perms = [];
-  if (Array.isArray(body)) {
-    perms = body;
-  } else if (body.permission_ids && Array.isArray(body.permission_ids)) {
-    perms = body.permission_ids.map(id => ({ permission_id: id, effect: 'allow' }));
-  } else {
-    return c.json({ error: 'Expected { permission_ids: [...] } or array.' }, 400);
-  }
+  const perms = Array.isArray(body) ? body : (body.permission_ids || []).map(pId => ({ permission_id: pId, effect: 'allow' }));
 
   const stmts = [db.prepare('DELETE FROM role_permissions WHERE role_id = ?').bind(roleId)];
   for (const { permission_id, effect = 'allow' } of perms) {
@@ -4787,7 +4675,8 @@ app.put('/api/admin/roles/:id/permissions', requireAdmin, async (c) => {
 app.get('/api/admin/teams', requireAdmin, async (c) => {
   const db = c.env.DB;
   const { results } = await db.prepare(`
-    SELECT t.*, a.name AS account_name
+    SELECT t.*, a.name AS account_name,
+           (SELECT COUNT(*) FROM employee_users WHERE team_id = t.id) AS member_count
     FROM teams t LEFT JOIN accounts a ON a.id = t.account_id
     ORDER BY t.name ASC
   `).all();
@@ -4820,63 +4709,8 @@ app.put('/api/admin/teams/:id', requireAdmin, async (c) => {
 app.delete('/api/admin/teams/:id', requireAdmin, async (c) => {
   const db = c.env.DB;
   const id = parseInt(c.req.param('id'));
-  const memberCount = await db.prepare('SELECT COUNT(*) as c FROM team_members WHERE team_id = ?').bind(id).first();
-  if (memberCount && memberCount.c > 0) {
-    return c.json({ error: 'Cannot delete team with active members. Reassign members first.' }, 400);
-  }
   await db.prepare('DELETE FROM teams WHERE id = ?').bind(id).run();
   return c.json({ message: 'Team deleted.' });
-});
-
-app.get('/api/admin/teams/:id/roles', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const teamId = parseInt(c.req.param('id'));
-  const { results } = await db.prepare(`
-    SELECT tr.role_id, tr.is_default, r.name AS role_name, r.scope
-    FROM team_roles tr JOIN roles r ON r.id = tr.role_id
-    WHERE tr.team_id = ?
-  `).bind(teamId).all();
-  return c.json(results || []);
-});
-
-app.put('/api/admin/teams/:id/roles', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const teamId = parseInt(c.req.param('id'));
-  const { roles } = await c.req.json();
-  if (!Array.isArray(roles)) return c.json({ error: 'Expected { roles: [...] }' }, 400);
-  const stmts = [db.prepare('DELETE FROM team_roles WHERE team_id = ?').bind(teamId)];
-  for (const { role_id, is_default = false } of roles) {
-    stmts.push(db.prepare('INSERT INTO team_roles (team_id, role_id, is_default) VALUES (?, ?, ?)').bind(teamId, role_id, is_default ? 1 : 0));
-  }
-  await db.batch(stmts);
-  return c.json({ message: 'Team roles updated.' });
-});
-
-app.get('/api/admin/teams/:id/categories', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const teamId = parseInt(c.req.param('id'));
-  const { results } = await db.prepare(`
-    SELECT tca.category_id, tca.subcategory_id,
-           tc.name AS category_name, ts.name AS subcategory_name
-    FROM team_category_assignments tca
-    JOIN ticket_categories tc ON tc.id = tca.category_id
-    LEFT JOIN ticket_subcategories ts ON ts.id = tca.subcategory_id
-    WHERE tca.team_id = ?
-  `).bind(teamId).all();
-  return c.json(results || []);
-});
-
-app.put('/api/admin/teams/:id/categories', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const teamId = parseInt(c.req.param('id'));
-  const { assignments } = await c.req.json();
-  if (!Array.isArray(assignments)) return c.json({ error: 'Expected { assignments: [...] }' }, 400);
-  const stmts = [db.prepare('DELETE FROM team_category_assignments WHERE team_id = ?').bind(teamId)];
-  for (const { category_id, subcategory_id = null } of assignments) {
-    stmts.push(db.prepare('INSERT INTO team_category_assignments (team_id, category_id, subcategory_id) VALUES (?, ?, ?)').bind(teamId, category_id, subcategory_id));
-  }
-  await db.batch(stmts);
-  return c.json({ message: 'Team categories updated.' });
 });
 
 // ── EMPLOYEES ──
@@ -4893,24 +4727,20 @@ app.get('/api/admin/employees', requireAdmin, async (c) => {
   return c.json(results || []);
 });
 
-app.post('/api/admin/employees/invite', requireAdmin, async (c) => {
+app.post('/api/admin/employees', requireAdmin, async (c) => {
   const db = c.env.DB;
   const adminPayload = c.get('admin');
-  const { full_name, email, phone, account_id, team_id, role_id, employment_status } = await c.req.json();
-  if (!full_name || !email || !account_id) return c.json({ error: 'full_name, email, and account_id are required.' }, 400);
+  const { name, full_name, email, phone, account_id, team_id, role_id, employment_status } = await c.req.json();
+  const empName = (name || full_name || '').trim();
+  if (!empName || !email || !account_id) return c.json({ error: 'name, email, and account_id are required.' }, 400);
 
   const inviteToken = crypto.randomUUID();
   const res = await db.prepare(`
     INSERT INTO employee_users (full_name, email, phone, account_id, team_id, role_id, employment_status, invite_token)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(full_name.trim(), email.trim().toLowerCase(), phone ? phone.trim() : null, account_id, team_id || null, role_id || null, employment_status || 'pending_invite', inviteToken).run();
+  `).bind(empName, email.trim().toLowerCase(), phone ? phone.trim() : null, account_id, team_id || null, role_id || null, employment_status || 'pending_invite', inviteToken).run();
 
   const empId = res.meta.last_row_id;
-  if (team_id) {
-    await db.prepare('INSERT OR IGNORE INTO team_members (team_id, employee_id, role_id, inherited) VALUES (?, ?, ?, 1)')
-      .bind(team_id, empId, role_id || null).run();
-  }
-
   await writeAuditLog(db, { actorId: adminPayload.adminId, actorType: 'admin', action: 'employee.provision', targetType: 'employee', targetId: empId, newValue: { email, role_id } });
   return c.json({ message: 'Employee provisioned.', id: empId, token: inviteToken }, 201);
 });
@@ -4918,7 +4748,8 @@ app.post('/api/admin/employees/invite', requireAdmin, async (c) => {
 app.put('/api/admin/employees/:id', requireAdmin, async (c) => {
   const db = c.env.DB;
   const id = parseInt(c.req.param('id'));
-  const { full_name, email, phone, account_id, team_id, role_id, employment_status } = await c.req.json();
+  const { name, full_name, email, phone, account_id, team_id, role_id, employment_status } = await c.req.json();
+  const empName = name || full_name;
 
   await db.prepare(`
     UPDATE employee_users
@@ -4926,13 +4757,7 @@ app.put('/api/admin/employees/:id', requireAdmin, async (c) => {
         account_id = COALESCE(?, account_id), team_id = COALESCE(?, team_id), role_id = COALESCE(?, role_id),
         employment_status = COALESCE(?, employment_status)
     WHERE id = ?
-  `).bind(full_name ? full_name.trim() : null, email ? email.trim().toLowerCase() : null, phone, account_id, team_id, role_id, employment_status, id).run();
-
-  if (team_id) {
-    await db.prepare('DELETE FROM team_members WHERE employee_id = ?').bind(id).run();
-    await db.prepare('INSERT INTO team_members (team_id, employee_id, role_id, inherited) VALUES (?, ?, ?, 1)')
-      .bind(team_id, id, role_id || null).run();
-  }
+  `).bind(empName ? empName.trim() : null, email ? email.trim().toLowerCase() : null, phone, account_id, team_id, role_id, employment_status, id).run();
 
   return c.json({ message: 'Employee updated.' });
 });
@@ -4940,9 +4765,18 @@ app.put('/api/admin/employees/:id', requireAdmin, async (c) => {
 app.delete('/api/admin/employees/:id', requireAdmin, async (c) => {
   const db = c.env.DB;
   const id = parseInt(c.req.param('id'));
-  await db.prepare('DELETE FROM team_members WHERE employee_id = ?').bind(id).run();
   await db.prepare('DELETE FROM employee_users WHERE id = ?').bind(id).run();
   return c.json({ message: 'Employee removed.' });
+});
+
+app.post('/api/admin/employees/:id/reset-password', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const id = parseInt(c.req.param('id'));
+  const newPassword = 'Pass' + Math.random().toString(36).slice(-6) + '!';
+  const salt = await bcrypt.genSalt(10);
+  const hash = await bcrypt.hash(newPassword, salt);
+  await db.prepare('UPDATE employee_users SET password_hash = ? WHERE id = ?').bind(hash, id).run();
+  return c.json({ message: 'Password reset successfully.', newPassword });
 });
 
 app.get('/api/admin/employees/:id/effective-permissions', requireAdmin, async (c) => {
@@ -4989,13 +4823,6 @@ app.delete('/api/admin/employees/:id/overrides/:overrideId', requireAdmin, async
   const overrideId = parseInt(c.req.param('overrideId'));
   await db.prepare('DELETE FROM employee_permission_overrides WHERE id = ? AND employee_id = ?').bind(overrideId, empId).run();
   return c.json({ message: 'Override removed.' });
-});
-
-// ── SLA RULES ──
-app.get('/api/admin/sla-rules', requireAdmin, async (c) => {
-  const db = c.env.DB;
-  const { results } = await db.prepare("SELECT id, name, frt_hours, resolution_hours, status FROM sla_rules WHERE status = 'active' ORDER BY name").all();
-  return c.json(results || []);
 });
 
 // ── EMPLOYEE CHAT & WORK TASKS ──
