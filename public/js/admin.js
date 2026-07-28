@@ -153,9 +153,11 @@
   window.loadDashboardData = loadDashboardData;
 
   // ── Stats ──
+  let _statsFailCount = 0;
   async function loadStats() {
     try {
       const stats = await api('/api/admin/stats');
+      _statsFailCount = 0;
 
       const setVal = (id, val) => {
         const el = document.getElementById(id);
@@ -181,9 +183,17 @@
       updateBadge('reportsBadge', stats.openReports);
     } catch (err) {
       if (err.status === 401) {
-        handleLogout();
+        _statsFailCount++;
+        // Only force-logout after 2 consecutive 401s to avoid false positives
+        if (_statsFailCount >= 2) {
+          showToast('Session expired. Please log in again.', 'warning');
+          setTimeout(() => handleLogout(), 1500);
+        } else {
+          console.warn('Stats 401 (attempt ' + _statsFailCount + ') — will retry before logout');
+        }
         return;
       }
+      _statsFailCount = 0;
       console.error('Failed to load stats:', err);
     }
   }
@@ -3931,15 +3941,9 @@ async function updateTaskStatus(id, status) {
   }
 }
 
-// Global Exports
-window.switchPanel = switchPanel;
-window.checkAuth = checkAuth;
+  // Global Exports
+  window.switchPanel = switchPanel;
+  window.checkAuth = checkAuth;
+  window.loadDashboardData = loadDashboardData;
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initAdminPanel);
-} else {
-  initAdminPanel();
-}
 })();
-
-

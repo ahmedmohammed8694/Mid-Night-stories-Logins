@@ -1889,7 +1889,7 @@ app.post('/api/admin/login', rateLimit('admin-login', 10), async (c) => {
     return c.json({ requireMFA: true, preToken });
   }
 
-  const token = await signJWT({ adminId: admin.id, username: admin.username, role: admin.role, exp: Math.floor(Date.now() / 1000) + 28800 }, getAdminJwtSecret(c));
+  const token = await signJWT({ adminId: admin.id, username: admin.username, role: admin.role, exp: Math.floor(Date.now() / 1000) + 86400 }, getAdminJwtSecret(c));
   return c.json({ token, username: admin.username, role: admin.role, mfaEnabled: false });
 });
 
@@ -2037,60 +2037,6 @@ app.get('/api/debug-db', async (c) => {
 // ═════════════════════════════════════════════════════════
 // ██  ADMIN API ROUTES (UPGRADED FOR D1 RELATIONSHIPS)
 // ═════════════════════════════════════════════════════════
-
-// ── ONE-TIME ADMIN SETUP ENDPOINT ──
-// POST /api/admin/setup  { secret: "MIDNIGHT_SETUP_2026" }
-// Creates the default admin user if none exists yet.
-// Auto-disabled once any admin user exists in the DB.
-app.post('/api/admin/setup', async (c) => {
-  const db = c.env.DB;
-  const { secret } = await c.req.json().catch(() => ({}));
-
-  // Verify the setup secret
-  if (secret !== 'MIDNIGHT_SETUP_2026') {
-    return c.json({ error: 'Forbidden.' }, 403);
-  }
-
-  // Only allow if NO admin users exist yet
-  const existing = await db.prepare('SELECT COUNT(*) as cnt FROM admin_users').first();
-  if (existing && existing.cnt > 0) {
-    return c.json({ error: 'Admin already configured. Endpoint disabled.' }, 409);
-  }
-
-  const password = 'Admin@2026!';
-  const hash = await bcrypt.hash(password, 10);
-  const mfaSecret = 'JBSWY3DPEHPK3PXP'; // fixed placeholder; user can enable MFA later
-
-  await db.prepare(
-    `INSERT INTO admin_users (username, email, password_hash, mfa_secret, mfa_enabled, role)
-     VALUES ('admin', 'admin@midnightstories.com', ?, ?, 0, 'superadmin')`
-  ).bind(hash, mfaSecret).run();
-
-  return c.json({
-    success: true,
-    message: 'Admin user created successfully.',
-    username: 'admin',
-    password: password,
-    note: 'This endpoint is now permanently disabled (admin already exists).'
-  });
-});
-
-app.post('/api/admin/login', rateLimit('admin-login', 10), async (c) => {
-  const db = c.env.DB;
-  const { username, password } = await c.req.json();
-
-  const admin = await db.prepare('SELECT * FROM admin_users WHERE username = ?').bind(username).first();
-  const passwordMatch = admin ? (bcrypt.compareSync ? bcrypt.compareSync(password, admin.password_hash) : await bcrypt.compare(password, admin.password_hash)) : false;
-  if (!admin || !passwordMatch) return c.json({ error: 'Invalid credentials.' }, 401);
-
-  if (admin.mfa_enabled) {
-    const preToken = await signJWT({ adminId: admin.id, username: admin.username, step: 'mfa', exp: Math.floor(Date.now() / 1000) + 300 }, getAdminJwtSecret(c));
-    return c.json({ requireMFA: true, preToken });
-  }
-
-  const token = await signJWT({ adminId: admin.id, username: admin.username, role: admin.role, exp: Math.floor(Date.now() / 1000) + 28800 }, getAdminJwtSecret(c));
-  return c.json({ token, username: admin.username, role: admin.role, mfaEnabled: false });
-});
 
 app.delete('/api/admin/users/:id', requireAdmin, async (c) => {
   const db = c.env.DB;
@@ -2633,7 +2579,7 @@ app.post('/api/admin/mfa-verify', async (c) => {
     const isValid = authenticator.verify({ token: code, secret: admin.mfa_secret });
     if (!isValid) return c.json({ error: 'Invalid code.' }, 401);
     
-    const token = await signJWT({ adminId: admin.id, username: admin.username, role: admin.role, exp: Math.floor(Date.now() / 1000) + 28800 }, getAdminJwtSecret(c));
+    const token = await signJWT({ adminId: admin.id, username: admin.username, role: admin.role, exp: Math.floor(Date.now() / 1000) + 86400 }, getAdminJwtSecret(c));
     return c.json({ token, username: admin.username, role: admin.role, mfaEnabled: true });
   } catch (err) {
     return c.json({ error: 'Invalid session or token.' }, 401);
