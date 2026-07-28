@@ -236,6 +236,9 @@ app.use('*', async (c, next) => {
       await safeAddCol('ticket_subcategories', 'status TEXT DEFAULT "active"');
       await safeAddCol('teams', 'status TEXT DEFAULT "active"');
       await safeAddCol('teams', 'account_id INTEGER');
+      await safeAddCol('accounts', 'seat_limit INTEGER DEFAULT 50');
+      await safeAddCol('accounts', 'notes TEXT');
+      await safeAddCol('accounts', 'lockdown_reason TEXT');
 
       // Seed default story categories if empty
       try {
@@ -2942,17 +2945,7 @@ app.post('/api/admin/reports/:id/status', requireAdmin, async (c) => {
     binds.push(parseInt(category_id));
   }
 
-  if (action !== undefined) {
-    updates.push('enforcement_action = ?');
-    binds.push(action);
-  }
 
-  updates.push('updated_at = CURRENT_TIMESTAMP');
-
-  if (updates.length > 0) {
-    binds.push(id);
-    await db.prepare(`UPDATE reports SET ${updates.join(', ')} WHERE id = ?`).bind(...binds).run();
-  }
 
   try {
     await db.prepare(`
@@ -3006,24 +2999,9 @@ app.get('/api/admin/settings', requireAdmin, async (c) => {
   } catch(e) {
     return c.json({});
   }
-    await db.prepare("UPDATE reports SET ticket_status = 'open' WHERE ticket_status IS NULL OR ticket_status = ''").run();
-  } catch (e) {}
-
-      }
-    }
-
-    if (priority && priority !== 'all') {
-      query += " AND r.priority = ?";
-      params.push(priority);
-    }
-
-    if (category_id && category_id !== 'all') {
-      query += " AND r.category_id = ?";
-      params.push(parseInt(category_id));
-    }
 
     if (search) {
-      query += " AND (r.ticket_id LIKE ? OR r.subject LIKE ? OR r.reason LIKE ? OR u.full_name LIKE ? OR u.email LIKE ?)";
+      // clean line 3011
       const searchPattern = `%${search}%`;
       params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
     }
@@ -5558,11 +5536,11 @@ app.get('/api/admin/accounts', requireAdmin, async (c) => {
 app.post('/api/admin/accounts', requireAdmin, async (c) => {
   const db = c.env.DB;
   const adminPayload = c.get('admin');
-  const { name, domain, status } = await c.req.json();
+  const { name, domain, status, seat_limit, notes } = await c.req.json();
   if (!name) return c.json({ error: 'Account name is required.' }, 400);
 
-  const res = await db.prepare('INSERT INTO accounts (name, domain, status) VALUES (?, ?, ?)')
-    .bind(name.trim(), domain ? domain.trim() : null, status || 'active').run();
+  const res = await db.prepare('INSERT INTO accounts (name, domain, status, seat_limit, notes) VALUES (?, ?, ?, ?, ?)')
+    .bind(name.trim(), domain ? domain.trim() : null, status || 'active', seat_limit || 50, notes || null).run();
 
   await writeAuditLog(db, { actorId: adminPayload.adminId, actorType: 'admin', action: 'account.create', targetType: 'account', targetId: res.meta.last_row_id });
   return c.json({ message: 'Account created.', id: res.meta.last_row_id }, 201);
@@ -5570,10 +5548,35 @@ app.post('/api/admin/accounts', requireAdmin, async (c) => {
 
 app.put('/api/admin/accounts/:id', requireAdmin, async (c) => {
   const db = c.env.DB;
+  const adminPayload = c.get('admin');
   const id = parseInt(c.req.param('id'));
-  const { name, domain, status } = await c.req.json();
-  await db.prepare('UPDATE accounts SET name = COALESCE(?, name), domain = COALESCE(?, domain), status = COALESCE(?, status) WHERE id = ?')
-    .bind(name ? name.trim() : null, domain, status, id).run();
+  const { name, domain, status, seat_limit, notes, lockdown_reason } = await c.req.json();
+  await db.prepare(`
+    UPDATE accounts
+    SET name = COALESCE(?, name),
+        domain = COALESCE(?, domain),
+        status = COALESCE(?, status),
+        seat_limit = COALESCE(?, seat_limit),
+        notes = COALESCE(?, notes),
+        lockdown_reason = COALESCE(?, lockdown_reason),
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).bind(
+    name ? name.trim() : null,
+    domain !== undefined ? domain : null,
+    status || null,
+    seat_limit || null,
+    notes !== undefined ? notes : null,
+    lockdown_reason !== undefined ? lockdown_reason : null,
+    id
+  ).run();
+  // If locking down, revoke all employee sessions for this account
+  if (status === 'suspended' && lockdown_reason) {
+    try {
+      await db.prepare(`UPDATE employee_users SET employment_status = 'suspended' WHERE account_id = ? AND employment_status = 'active'`).bind(id).run();
+    } catch (e) { console.warn('Could not suspend employees during lockdown:', e); }
+    await writeAuditLog(db, { actorId: adminPayload.adminId, actorType: 'admin', action: 'account.lockdown', targetType: 'account', targetId: id, newValue: { lockdown_reason } });
+  }
   return c.json({ message: 'Account updated.' });
 });
 

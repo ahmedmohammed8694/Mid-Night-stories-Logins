@@ -3715,7 +3715,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('openCreateCategoryBtn')?.addEventListener('click', () => openCategoryDrawer());
   document.getElementById('openCreateRoleBtn')?.addEventListener('click', () => openRoleDrawer());
   document.getElementById('openCreateTeamBtn')?.addEventListener('click', () => openTeamDrawer());
-  document.getElementById('openCreateAccountBtn')?.addEventListener('click', () => openAccountDrawer());
+  document.getElementById('openCreateAccountBtn')?.addEventListener('click', () => window.openCreateAccountDrawer());
   document.getElementById('openProvisionEmployeeBtn')?.addEventListener('click', () => openEmployeeDrawer());
 
   // Category form search+filter
@@ -3734,8 +3734,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('teamsAccountFilter')?.addEventListener('change', renderTeamsTable);
 
   // Accounts search+filter
-  document.getElementById('accountsSearch')?.addEventListener('input', renderAccountsTable);
-  document.getElementById('accountsStatusFilter')?.addEventListener('change', renderAccountsTable);
+  document.getElementById('accountsSearch')?.addEventListener('input', window.renderAccountsTable);
+  document.getElementById('accountsStatusFilter')?.addEventListener('change', window.renderAccountsTable);
 
   // Employees search+filter
   document.getElementById('employeesSearch')?.addEventListener('input', renderEmployeesTable);
@@ -4291,56 +4291,155 @@ window.deleteTeam = async function(id) {
 };
 
 // ══════════════════════════════════════════════════════════
-// ██  ACCOUNTS
+// ██  ACCOUNTS — Enterprise Lifecycle Management
 // ══════════════════════════════════════════════════════════
 
 async function loadAccounts() {
   try {
-    const accounts = await api('/api/admin/accounts').catch(e => { console.error('Accounts load error:', e); return []; });
+    const [accounts, employees] = await Promise.all([
+      api('/api/admin/accounts').catch(() => []),
+      api('/api/admin/employees').catch(() => []),
+    ]);
     _allAccounts = Array.isArray(accounts) ? accounts : [];
+    const allEmps = Array.isArray(employees) ? employees : [];
+
+    // ── Metrics ──
+    const totalEmps = allEmps.length;
+    const pendingInvites = allEmps.filter(e => e.employment_status === 'pending_invite').length;
+    const activeEmps = allEmps.filter(e => e.employment_status === 'active').length;
+    const suspendedAccts = _allAccounts.filter(a => a.status === 'suspended').length;
+
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setEl('metricPendingInvites', pendingInvites);
+    setEl('metricActiveEmps', activeEmps);
+    setEl('metricSuspendedAccts', suspendedAccts);
+
+    const seatLimit = _allAccounts.reduce((s, a) => s + (a.seat_limit || 50), 0) || 50;
+    const seatPct = Math.min(Math.round((totalEmps / seatLimit) * 100), 100);
+    setEl('metricSeatUsed', `${totalEmps}/${seatLimit}`);
+    setEl('metricSeatLabel', `${seatPct}% utilization`);
+    const seatBar = document.getElementById('metricSeatBar');
+    if (seatBar) {
+      setTimeout(() => { seatBar.style.width = seatPct + '%'; }, 100);
+      seatBar.style.background = seatPct > 90 ? '#f87171' : seatPct > 70 ? '#fbbf24' : 'var(--page-gradient)';
+    }
+
     renderAccountsTable();
+
+    // Populate lockdown dropdown
+    const ldSel = document.getElementById('lockdownAccountSelect');
+    if (ldSel) {
+      ldSel.innerHTML = '<option value="">— Select Account —</option>' +
+        _allAccounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)} (${a.status})</option>`).join('');
+    }
   } catch (err) { console.error('loadAccounts error:', err); showToast('Failed to load accounts.', 'error'); }
 }
 
-function renderAccountsTable() {
+window.renderAccountsTable = function renderAccountsTable() {
   const tbody = document.getElementById('accountsBody');
   if (!tbody) return;
   const search = (document.getElementById('accountsSearch')?.value || '').toLowerCase();
   const statusF = document.getElementById('accountsStatusFilter')?.value;
-  let filtered = _allAccounts.filter(a => {
-    if (search && !a.name.toLowerCase().includes(search)) return false;
+  const filtered = _allAccounts.filter(a => {
+    if (search && !a.name.toLowerCase().includes(search) && !(a.domain || '').toLowerCase().includes(search) && !String(a.id).includes(search)) return false;
     if (statusF && a.status !== statusF) return false;
     return true;
   });
-  tbody.innerHTML = filtered.map(a => `
-    <tr>
-      <td>${a.id}</td>
-      <td><strong>${escapeHtml(a.name)}</strong></td>
-      <td><span style="font-size:12px;opacity:.7">${escapeHtml(a.domain || '—')}</span></td>
-      <td><span class="status-badge status-badge--${a.status === 'active' ? 'approved' : 'rejected'}">${a.status}</span></td>
-      <td>${a.employee_count ?? 0}</td>
-      <td>${a.team_count ?? 0}</td>
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;opacity:.5;">No accounts match the current filters.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(a => {
+    const statusColor = a.status === 'active' ? 'approved' : a.status === 'suspended' ? 'rejected' : 'pending';
+    const seatLimit = a.seat_limit || 50;
+    const empCount = a.employee_count || 0;
+    const seatPct = Math.min(Math.round((empCount / seatLimit) * 100), 100);
+    const seatColor = seatPct > 90 ? 'var(--accent-rose)' : seatPct > 70 ? 'var(--accent-amber)' : 'var(--accent-emerald)';
+    const createdDate = a.created_at ? new Date(a.created_at).toLocaleDateString() : '—';
+    return `<tr>
+      <td><input type="checkbox" class="acct-row-check" data-id="${a.id}" style="cursor:pointer;transform:scale(1.2);"></td>
       <td>
-        <button class="btn btn--ghost btn--sm" onclick="toggleAccountStatus(${a.id},'${a.status === 'active' ? 'suspended' : 'active'}','${escapeHtml(a.name)}')">${a.status === 'active' ? 'Suspend' : 'Activate'}</button>
-        <button class="btn btn--danger btn--sm" onclick="deleteAccount(${a.id})">🗑</button>
+        <div style="font-weight:600;color:var(--text-primary);">${escapeHtml(a.name)}</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);font-family:monospace;">#${a.id}</div>
       </td>
-    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;opacity:.5">No accounts found.</td></tr>';
-}
+      <td><span style="font-size:0.82rem;color:var(--text-secondary);">${escapeHtml(a.domain || '—')}</span></td>
+      <td><span class="status-badge status-badge--${statusColor}">${a.status}</span></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;height:5px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;min-width:60px;">
+            <div style="height:100%;width:${seatPct}%;background:${seatColor};border-radius:99px;"></div>
+          </div>
+          <span style="font-size:0.78rem;white-space:nowrap;color:${seatColor};">${empCount}/${seatLimit}</span>
+        </div>
+      </td>
+      <td><span style="font-size:0.82rem;">${a.team_count || 0}</span></td>
+      <td><span style="font-size:0.78rem;color:var(--text-muted);">${createdDate}</span></td>
+      <td>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn--ghost btn--sm" onclick="window.openEditAccountDrawer(${a.id})" title="Edit">✏️</button>
+          <button class="btn btn--ghost btn--sm" onclick="window.toggleAccountStatus(${a.id},'${a.status === 'active' ? 'suspended' : 'active'}','${escapeHtml(a.name).replace(/'/g,"\\'")}')">
+            ${a.status === 'active' ? '🚫 Suspend' : '✅ Activate'}
+          </button>
+          <button class="btn btn--danger btn--sm" onclick="window.deleteAccount(${a.id})" title="Delete">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+};
 
-function openAccountDrawer() {
-  const name = prompt('Account name:');
-  if (!name) return;
-  const domain = prompt('Domain (optional):');
-  api('/api/admin/accounts', { method: 'POST', body: JSON.stringify({ name, domain: domain || undefined }) })
-    .then(() => { showToast('Account created.', 'success'); loadAccounts(); })
-    .catch(err => showToast(err.message, 'error'));
-}
+window.openCreateAccountDrawer = function() {
+  document.getElementById('editAccountId').value = '';
+  document.getElementById('accountDrawerTitle').textContent = '＋ Create Account';
+  document.getElementById('acctFormName').value = '';
+  document.getElementById('acctFormDomain').value = '';
+  document.getElementById('acctFormSeatLimit').value = '';
+  document.getElementById('acctFormStatus').value = 'active';
+  document.getElementById('acctFormNotes').value = '';
+  openDrawer('accountDrawerOverlay');
+};
+
+window.openEditAccountDrawer = function(id) {
+  const acct = _allAccounts.find(a => a.id === id);
+  if (!acct) return;
+  document.getElementById('editAccountId').value = id;
+  document.getElementById('accountDrawerTitle').textContent = `✏️ Edit: ${acct.name}`;
+  document.getElementById('acctFormName').value = acct.name || '';
+  document.getElementById('acctFormDomain').value = acct.domain || '';
+  document.getElementById('acctFormSeatLimit').value = acct.seat_limit || '';
+  document.getElementById('acctFormStatus').value = acct.status || 'active';
+  document.getElementById('acctFormNotes').value = acct.notes || '';
+  openDrawer('accountDrawerOverlay');
+};
+
+window.saveAccount = async function() {
+  const id = document.getElementById('editAccountId').value;
+  const name = document.getElementById('acctFormName').value.trim();
+  if (!name) return showToast('Account name is required.', 'warning');
+  const payload = {
+    name,
+    domain: document.getElementById('acctFormDomain').value.trim() || null,
+    seat_limit: parseInt(document.getElementById('acctFormSeatLimit').value) || null,
+    status: document.getElementById('acctFormStatus').value,
+    notes: document.getElementById('acctFormNotes').value.trim() || null,
+  };
+  try {
+    if (id) {
+      await api(`/api/admin/accounts/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+      showToast('Account updated.', 'success');
+    } else {
+      await api('/api/admin/accounts', { method: 'POST', body: JSON.stringify(payload) });
+      showToast('Account created.', 'success');
+    }
+    closeDrawer('accountDrawerOverlay');
+    loadAccounts();
+  } catch (err) { showToast(err.message, 'error'); }
+};
 
 window.toggleAccountStatus = async (id, newStatus, name) => {
   if (!confirm(`Set account "${name}" to ${newStatus}?`)) return;
   try {
     await api(`/api/admin/accounts/${id}`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
-    showToast('Account updated.', 'success');
+    showToast(`Account ${newStatus === 'active' ? 'activated' : 'suspended'}.`, 'success');
     loadAccounts();
   } catch (err) { showToast(err.message, 'error'); }
 };
@@ -4352,6 +4451,208 @@ window.deleteAccount = async (id) => {
     showToast('Account deleted.', 'success');
     loadAccounts();
   } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.exportAccountRoster = function() {
+  if (!_allAccounts.length) return showToast('No accounts to export.', 'warning');
+  const rows = [['ID', 'Name', 'Domain', 'Status', 'Employees', 'Teams', 'Created']];
+  _allAccounts.forEach(a => rows.push([a.id, a.name, a.domain || '', a.status, a.employee_count || 0, a.team_count || 0, a.created_at || '']));
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'account_roster.csv'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Roster exported.', 'success');
+};
+
+// ──  EMERGENCY LOCKDOWN  ──
+window.openLockdownModal = function() {
+  const ldSel = document.getElementById('lockdownAccountSelect');
+  if (ldSel) ldSel.innerHTML = '<option value="">— Select Account —</option>' +
+    _allAccounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+  const modal = document.getElementById('lockdownModal');
+  if (modal) modal.style.display = 'flex';
+};
+
+window.closeLockdownModal = function() {
+  const modal = document.getElementById('lockdownModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.executeLockdown = async function() {
+  const acctId = document.getElementById('lockdownAccountSelect')?.value;
+  const reason = (document.getElementById('lockdownReason')?.value || '').trim();
+  if (!acctId) return showToast('Please select an account to lock down.', 'warning');
+  if (!reason) return showToast('A lockdown reason is required.', 'warning');
+  if (!confirm('⚠️ CONFIRM: This will suspend the account and revoke all employee sessions. Proceed?')) return;
+  try {
+    await api(`/api/admin/accounts/${acctId}`, { method: 'PUT', body: JSON.stringify({ status: 'suspended', lockdown_reason: reason }) });
+    showToast('🔒 Account locked down successfully. All sessions have been revoked.', 'success');
+    window.closeLockdownModal();
+    loadAccounts();
+  } catch (err) { showToast(err.message, 'error'); }
+};
+
+// ──  4-STEP ONBOARD WIZARD  ──
+let _wzStep = 1;
+const _WZ_TOTAL = 4;
+
+window.openOnboardWizard = async function() {
+  _wzStep = 1;
+  _renderWizardStep();
+  // Populate dropdowns
+  const [accounts, teams, roles] = await Promise.all([
+    api('/api/admin/accounts').catch(() => []),
+    api('/api/admin/teams').catch(() => []),
+    api('/api/admin/roles').catch(() => []),
+  ]);
+  _allAccounts = Array.isArray(accounts) ? accounts : [];
+  _allTeams = Array.isArray(teams) ? teams : [];
+  _allRoles = Array.isArray(roles) ? roles : [];
+  const acctSel = document.getElementById('wz_accountId');
+  if (acctSel) acctSel.innerHTML = '<option value="">— Select Account —</option>' +
+    _allAccounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+  const roleSel = document.getElementById('wz_roleId');
+  if (roleSel) roleSel.innerHTML = '<option value="">— Select Role —</option>' +
+    _allRoles.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
+  // Reset form
+  ['wz_firstName','wz_lastName','wz_email','wz_phone','wz_jobTitle','wz_department','wz_startDate'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const modal = document.getElementById('onboardWizardModal');
+  if (modal) modal.style.display = 'flex';
+};
+
+window.closeOnboardWizard = function() {
+  const modal = document.getElementById('onboardWizardModal');
+  if (modal) modal.style.display = 'none';
+};
+
+function _renderWizardStep() {
+  for (let i = 1; i <= _WZ_TOTAL; i++) {
+    const step = document.getElementById(`wizardStep${i}`);
+    if (step) step.style.display = i === _wzStep ? '' : 'none';
+  }
+  // Update pill indicators
+  document.querySelectorAll('.wizard-step-pill').forEach((pill, idx) => {
+    const stepNum = idx + 1;
+    const isActive = stepNum === _wzStep;
+    const isDone = stepNum < _wzStep;
+    pill.style.background = isActive ? 'var(--page-gradient)' : isDone ? 'rgba(139,127,240,.35)' : 'rgba(255,255,255,.06)';
+    pill.style.color = isActive ? '#fff' : isDone ? 'var(--page-accent-soft)' : 'var(--text-muted)';
+  });
+  // Back button
+  const backBtn = document.getElementById('wizardBackBtn');
+  if (backBtn) backBtn.style.display = _wzStep > 1 ? '' : 'none';
+  // Next/Submit button
+  const nextBtn = document.getElementById('wizardNextBtn');
+  if (nextBtn) {
+    nextBtn.textContent = _wzStep === _WZ_TOTAL ? '🚀 Onboard Employee' : 'Next →';
+    nextBtn.onclick = _wzStep === _WZ_TOTAL ? window.submitOnboardWizard : window.wizardNext;
+  }
+  if (_wzStep === _WZ_TOTAL) _buildReviewCard();
+}
+
+window.wizardNext = function() {
+  if (_wzStep === 1) {
+    const first = document.getElementById('wz_firstName')?.value.trim();
+    const last = document.getElementById('wz_lastName')?.value.trim();
+    const email = document.getElementById('wz_email')?.value.trim();
+    if (!first || !last) return showToast('First and last name are required.', 'warning');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('A valid email is required.', 'warning');
+  }
+  if (_wzStep === 2) {
+    const acctId = document.getElementById('wz_accountId')?.value;
+    if (!acctId) return showToast('Please select an account.', 'warning');
+  }
+  if (_wzStep === 3) {
+    const roleId = document.getElementById('wz_roleId')?.value;
+    if (!roleId) return showToast('Please select a role.', 'warning');
+  }
+  if (_wzStep < _WZ_TOTAL) { _wzStep++; _renderWizardStep(); }
+};
+
+window.wizardBack = function() {
+  if (_wzStep > 1) { _wzStep--; _renderWizardStep(); }
+};
+
+window.wizardFilterTeams = function() {
+  const acctId = document.getElementById('wz_accountId')?.value;
+  const teamSel = document.getElementById('wz_teamId');
+  if (!teamSel) return;
+  const filtered = _allTeams.filter(t => !acctId || !t.account_id || String(t.account_id) === String(acctId));
+  teamSel.innerHTML = '<option value="">— Select Team (Optional) —</option>' +
+    filtered.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+};
+
+window.wizardPreviewAccess = async function() {
+  const roleId = document.getElementById('wz_roleId')?.value;
+  const preview = document.getElementById('wz_accessPreview');
+  const content = document.getElementById('wz_accessPreviewContent');
+  if (!roleId || !preview || !content) return;
+  try {
+    const rolePerms = await api(`/api/admin/roles/${roleId}/permissions`).catch(() => []);
+    const granted = rolePerms.filter(p => p.effect !== 'deny');
+    const denied = rolePerms.filter(p => p.effect === 'deny');
+    content.innerHTML = `<div style="margin-bottom:8px;"><strong style="color:var(--accent-emerald);">✅ Granted (${granted.length})</strong>: ${granted.length ? granted.map(p => `<code style="font-size:0.78rem;background:rgba(52,211,153,.12);padding:1px 6px;border-radius:4px;">${escapeHtml(p.code || '')}</code>`).join(' ') : '<em>None</em>'}</div>` +
+      (denied.length ? `<div><strong style="color:var(--accent-rose);">🚫 Denied (${denied.length})</strong>: ${denied.map(p => `<code style="font-size:0.78rem;background:rgba(248,113,113,.12);padding:1px 6px;border-radius:4px;">${escapeHtml(p.code || '')}</code>`).join(' ')}</div>` : '');
+    preview.style.display = '';
+  } catch { preview.style.display = 'none'; }
+};
+
+function _buildReviewCard() {
+  const card = document.getElementById('wz_reviewCard');
+  if (!card) return;
+  const first = document.getElementById('wz_firstName')?.value.trim() || '';
+  const last = document.getElementById('wz_lastName')?.value.trim() || '';
+  const email = document.getElementById('wz_email')?.value.trim() || '';
+  const phone = document.getElementById('wz_phone')?.value.trim() || '—';
+  const jobTitle = document.getElementById('wz_jobTitle')?.value.trim() || '—';
+  const acctId = document.getElementById('wz_accountId')?.value;
+  const acct = _allAccounts.find(a => String(a.id) === String(acctId));
+  const teamId = document.getElementById('wz_teamId')?.value;
+  const team = _allTeams.find(t => String(t.id) === String(teamId));
+  const roleId = document.getElementById('wz_roleId')?.value;
+  const role = _allRoles.find(r => String(r.id) === String(roleId));
+  const status = document.getElementById('wz_status')?.value;
+  card.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;">
+      <div><span style="color:var(--text-muted);font-size:0.78rem;">FULL NAME</span><br><strong>${escapeHtml(`${first} ${last}`)}</strong></div>
+      <div><span style="color:var(--text-muted);font-size:0.78rem;">EMAIL</span><br><strong>${escapeHtml(email)}</strong></div>
+      <div><span style="color:var(--text-muted);font-size:0.78rem;">PHONE</span><br><strong>${escapeHtml(phone)}</strong></div>
+      <div><span style="color:var(--text-muted);font-size:0.78rem;">JOB TITLE</span><br><strong>${escapeHtml(jobTitle)}</strong></div>
+      <div><span style="color:var(--text-muted);font-size:0.78rem;">ACCOUNT</span><br><strong>${escapeHtml(acct?.name || '—')}</strong></div>
+      <div><span style="color:var(--text-muted);font-size:0.78rem;">TEAM</span><br><strong>${escapeHtml(team?.name || '—')}</strong></div>
+      <div><span style="color:var(--text-muted);font-size:0.78rem;">ROLE</span><br><strong>${escapeHtml(role?.name || '—')}</strong></div>
+      <div><span style="color:var(--text-muted);font-size:0.78rem;">STATUS</span><br><strong>${status === 'pending_invite' ? '📨 Send Invite' : '✅ Activate Now'}</strong></div>
+    </div>
+  `;
+}
+
+window.submitOnboardWizard = async function() {
+  const btn = document.getElementById('wizardNextBtn');
+  if (btn) { btn.textContent = '⏳ Provisioning…'; btn.disabled = true; }
+  const firstName = document.getElementById('wz_firstName')?.value.trim();
+  const lastName = document.getElementById('wz_lastName')?.value.trim();
+  const payload = {
+    full_name: `${firstName} ${lastName}`,
+    email: document.getElementById('wz_email')?.value.trim(),
+    phone: document.getElementById('wz_phone')?.value.trim() || null,
+    account_id: parseInt(document.getElementById('wz_accountId')?.value) || null,
+    team_id: parseInt(document.getElementById('wz_teamId')?.value) || null,
+    role_id: parseInt(document.getElementById('wz_roleId')?.value) || null,
+    employment_status: document.getElementById('wz_status')?.value || 'pending_invite',
+  };
+  try {
+    const res = await api('/api/admin/employees', { method: 'POST', body: JSON.stringify(payload) });
+    showToast(`✅ ${payload.full_name} onboarded successfully!${payload.employment_status === 'pending_invite' ? ' Invite sent.' : ''}`, 'success');
+    window.closeOnboardWizard();
+    loadAccounts();
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    if (btn) { btn.textContent = '🚀 Onboard Employee'; btn.disabled = false; }
+  }
 };
 
 // ══════════════════════════════════════════════════════════
