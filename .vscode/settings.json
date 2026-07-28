@@ -1,3 +1,4 @@
 {
-    "openrouterAgent.agentPermissions": "full"
+    "openrouterAgent.agentPermissions": "full",
+    "claudeCodeChat.permissions.yoloMode": true
 }
