@@ -114,50 +114,53 @@
 
   // ── Panel Navigation ──
   function switchPanel(panelName) {
+    // 1. Hide all panels cleanly
     document.querySelectorAll('.admin-panel').forEach(p => {
       p.classList.remove('active');
       p.style.display = 'none';
     });
     document.querySelectorAll('.admin-nav-item').forEach(n => n.classList.remove('active'));
 
+    // 2. Display target panel with important flag
     const panel = document.getElementById(`panel-${panelName}`);
     if (panel) {
       panel.classList.add('active');
-      panel.style.display = 'block';
+      panel.style.setProperty('display', 'block', 'important');
     } else {
       console.warn(`Panel panel-${panelName} not found in DOM`);
     }
 
+    // 3. Active state on navbar button
     const navItem = document.querySelector(`[data-panel="${panelName}"]`);
     if (navItem) navItem.classList.add('active');
 
-    // Scroll to top of page so content starts right under horizontal nav bar
+    // 4. Reset scroll offsets to top
     window.scrollTo(0, 0);
     if (document.documentElement) document.documentElement.scrollTop = 0;
     if (document.body) document.body.scrollTop = 0;
     const adminMain = document.querySelector('.admin-main');
     if (adminMain) adminMain.scrollTop = 0;
 
-    // Load panel-specific data safely
+    // 5. Load panel-specific data
     try {
       switch (panelName) {
-        case 'overview': loadStats(); break;
-        case 'books': loadBooks(); break;
-        case 'stories-queue': loadStoriesQueue(); break;
-        case 'comments-queue': loadCommentsQueue(); break;
-        case 'reports': loadReports(); break;
-        case 'crm-analytics': loadCrmAnalytics(); break;
-        case 'users': loadUsers(); break;
-        case 'categories': loadCategories(); break;
-        case 'bans': loadBans(); break;
-        case 'settings': loadSettings(); break;
-        case 'audit-log': loadAuditLog(); break;
-        case 'accounts': loadAccounts(); break;
-        case 'taxonomy': loadTaxonomy(); break;
-        case 'roles': loadRoles(); break;
-        case 'teams': loadTeams(); break;
-        case 'employees': loadEmployees(); break;
-        case 'mfa-setup': loadMFASetup(); break;
+        case 'overview': if (typeof loadStats === 'function') loadStats(); break;
+        case 'books': if (typeof loadBooks === 'function') loadBooks(); break;
+        case 'stories-queue': if (typeof loadStoriesQueue === 'function') loadStoriesQueue(); break;
+        case 'comments-queue': if (typeof loadCommentsQueue === 'function') loadCommentsQueue(); break;
+        case 'reports': if (typeof loadReports === 'function') loadReports(); break;
+        case 'crm-analytics': if (typeof loadCrmAnalytics === 'function') loadCrmAnalytics(); break;
+        case 'users': if (typeof loadUsers === 'function') loadUsers(); break;
+        case 'categories': if (typeof loadCategories === 'function') loadCategories(); break;
+        case 'bans': if (typeof loadBans === 'function') loadBans(); break;
+        case 'settings': if (typeof loadSettings === 'function') loadSettings(); break;
+        case 'audit-log': if (typeof loadAuditLog === 'function') loadAuditLog(); break;
+        case 'accounts': if (typeof loadAccounts === 'function') loadAccounts(); break;
+        case 'taxonomy': if (typeof loadTaxonomy === 'function') loadTaxonomy(); break;
+        case 'roles': if (typeof loadRoles === 'function') loadRoles(); break;
+        case 'teams': if (typeof loadTeams === 'function') loadTeams(); break;
+        case 'employees': if (typeof loadEmployees === 'function') loadEmployees(); break;
+        case 'mfa-setup': if (typeof loadMFASetup === 'function') loadMFASetup(); break;
       }
     } catch(err) {
       console.error(`Failed to load panel ${panelName}:`, err);
