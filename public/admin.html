@@ -3,6 +3,7 @@
 <head>
   <!-- SYNCHRONOUS critical CSS injected before any element renders -->
   <script>!function(){var s=document.createElement('style');s.id='_crit';s.innerHTML=[
+    '.admin-layout.hidden{display:none!important}',
     '.admin-panel{display:none!important;margin-top:0!important;padding-top:0!important}',
     '.admin-panel.active{display:block!important;margin-top:0!important;padding-top:0!important}',
     '.admin-layout{display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;width:100%!important;margin-top:var(--header-height,60px)!important;min-height:calc(100vh - var(--header-height,60px))!important}',
@@ -20,13 +21,16 @@
   <meta name="robots" content="noindex, nofollow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="./css/style.css?v=20260730_topnav_v2">
-  <link rel="stylesheet" href="./css/admin.css?v=20260730_topnav_v2">
+  <link rel="stylesheet" href="./css/style.css?v=20260730_topnav_v3">
+  <link rel="stylesheet" href="./css/admin.css?v=20260730_topnav_v3">
   <style>
     /* ══════════════════════════════════════════════════════
        ADMIN LAYOUT — TOP HORIZONTAL NAV (FULL WIDTH)
        All panels hidden by default, only .active shown
     ══════════════════════════════════════════════════════ */
+
+    /* Ensure layout is 100% hidden when unauthenticated */
+    .admin-layout.hidden { display: none !important; }
 
     /* Panel visibility & zero gap */
     .admin-panel { display: none !important; margin-top: 0 !important; padding-top: 0 !important; }
@@ -175,70 +179,70 @@
       <aside class="admin-sidebar">
         <div class="admin-sidebar__section">
           <p class="admin-sidebar__heading">Dashboard</p>
-          <button class="admin-nav-item active" data-panel="overview">
+          <button class="admin-nav-item active" data-panel="overview" onclick="switchPanel('overview')">
             <span class="admin-nav-item__icon">📊</span> Overview
           </button>
         </div>
         <div class="admin-sidebar__section">
-          <p class="admin-sidebar__heading">Moderation & CRM</p>
-          <button class="admin-nav-item" data-panel="stories-queue">
+          <p class="admin-sidebar__heading">Moderation &amp; CRM</p>
+          <button class="admin-nav-item" data-panel="stories-queue" onclick="switchPanel('stories-queue')">
             <span class="admin-nav-item__icon">📝</span> Stories Queue
             <span class="admin-nav-item__badge hidden" id="pendingStoriesBadge">0</span>
           </button>
-          <button class="admin-nav-item" data-panel="comments-queue">
+          <button class="admin-nav-item" data-panel="comments-queue" onclick="switchPanel('comments-queue')">
             <span class="admin-nav-item__icon">💬</span> Comments Queue
             <span class="admin-nav-item__badge hidden" id="pendingCommentsBadge">0</span>
           </button>
-          <button class="admin-nav-item" data-panel="reports">
-            <span class="admin-nav-item__icon">🎫</span> Helpdesk & CRM Ops
+          <button class="admin-nav-item" data-panel="reports" onclick="switchPanel('reports')">
+            <span class="admin-nav-item__icon">🎫</span> Helpdesk &amp; CRM Ops
             <span class="admin-nav-item__badge hidden" id="reportsBadge">0</span>
           </button>
-          <button class="admin-nav-item" data-panel="crm-analytics">
+          <button class="admin-nav-item" data-panel="crm-analytics" onclick="switchPanel('crm-analytics')">
             <span class="admin-nav-item__icon">📈</span> Executive CRM Analytics
           </button>
         </div>
         <div class="admin-sidebar__section">
           <p class="admin-sidebar__heading">Management</p>
-          <button class="admin-nav-item" data-panel="users">
+          <button class="admin-nav-item" data-panel="users" onclick="switchPanel('users')">
             <span class="admin-nav-item__icon">👥</span> Users
           </button>
-          <button class="admin-nav-item" data-panel="books">
+          <button class="admin-nav-item" data-panel="books" onclick="switchPanel('books')">
             <span class="admin-nav-item__icon">📚</span> Books
           </button>
-          <button class="admin-nav-item" data-panel="categories">
+          <button class="admin-nav-item" data-panel="categories" onclick="switchPanel('categories')">
             <span class="admin-nav-item__icon">🏷️</span> Categories
           </button>
-          <button class="admin-nav-item" data-panel="bans">
+          <button class="admin-nav-item" data-panel="bans" onclick="switchPanel('bans')">
             <span class="admin-nav-item__icon">🚫</span> Bans
           </button>
-          <button class="admin-nav-item" data-panel="settings">
+          <button class="admin-nav-item" data-panel="settings" onclick="switchPanel('settings')">
             <span class="admin-nav-item__icon">⚙️</span> Settings
           </button>
         </div>
         <div class="admin-sidebar__section">
           <p class="admin-sidebar__heading">Administration</p>
-          <button class="admin-nav-item" data-panel="accounts">
+          <button class="admin-nav-item" data-panel="accounts" onclick="switchPanel('accounts')">
             <span class="admin-nav-item__icon">🏛️</span> Accounts
           </button>
-          <button class="admin-nav-item" data-panel="taxonomy">
+          <button class="admin-nav-item" data-panel="taxonomy" onclick="switchPanel('taxonomy')">
             <span class="admin-nav-item__icon">🗂️</span> Ticket Taxonomy
           </button>
-          <button class="admin-nav-item" data-panel="roles">
-            <span class="admin-nav-item__icon">🔐</span> Roles & Permissions
+          <button class="admin-nav-item" data-panel="roles" onclick="switchPanel('roles')">
+            <span class="admin-nav-item__icon">🔐</span> Roles &amp; Permissions
           </button>
-          <button class="admin-nav-item" data-panel="teams">
+          <button class="admin-nav-item" data-panel="teams" onclick="switchPanel('teams')">
             <span class="admin-nav-item__icon">🏢</span> Teams
           </button>
-          <button class="admin-nav-item" data-panel="employees">
+          <button class="admin-nav-item" data-panel="employees" onclick="switchPanel('employees')">
             <span class="admin-nav-item__icon">👤</span> Employees
           </button>
         </div>
         <div class="admin-sidebar__section">
           <p class="admin-sidebar__heading">System</p>
-          <button class="admin-nav-item" data-panel="audit-log">
+          <button class="admin-nav-item" data-panel="audit-log" onclick="switchPanel('audit-log')">
             <span class="admin-nav-item__icon">📋</span> Audit Log
           </button>
-          <button class="admin-nav-item" data-panel="mfa-setup">
+          <button class="admin-nav-item" data-panel="mfa-setup" onclick="switchPanel('mfa-setup')">
             <span class="admin-nav-item__icon">🔑</span> MFA Setup
           </button>
         </div>

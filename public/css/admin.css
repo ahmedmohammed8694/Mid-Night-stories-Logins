@@ -397,6 +397,10 @@ a:hover { text-decoration: underline; }
 /* ── Top-Nav Layout ────────────────────────────────────────
    admin-layout is now a column: nav bar on top, content below
    ─────────────────────────────────────────────────────────── */
+.admin-layout.hidden {
+  display: none !important;
+}
+
 .admin-layout {
   display: flex !important;
   flex-direction: column !important;

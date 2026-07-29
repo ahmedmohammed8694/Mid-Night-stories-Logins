@@ -114,12 +114,16 @@
 
   // ── Panel Navigation ──
   function switchPanel(panelName) {
-    document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.admin-panel').forEach(p => {
+      p.classList.remove('active');
+      p.style.display = 'none';
+    });
     document.querySelectorAll('.admin-nav-item').forEach(n => n.classList.remove('active'));
 
     const panel = document.getElementById(`panel-${panelName}`);
     if (panel) {
       panel.classList.add('active');
+      panel.style.display = 'block';
     } else {
       console.warn(`Panel panel-${panelName} not found in DOM`);
     }
@@ -128,7 +132,11 @@
     if (navItem) navItem.classList.add('active');
 
     // Scroll to top of page so content starts right under horizontal nav bar
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo(0, 0);
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+    const adminMain = document.querySelector('.admin-main');
+    if (adminMain) adminMain.scrollTop = 0;
 
     // Load panel-specific data safely
     try {
