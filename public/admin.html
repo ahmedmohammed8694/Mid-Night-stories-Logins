@@ -7,13 +7,95 @@
   <meta name="robots" content="noindex, nofollow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="./css/style.css?v=20260729_panels_v6">
-  <link rel="stylesheet" href="./css/admin.css?v=20260729_panels_v6">
+  <link rel="stylesheet" href="./css/style.css?v=20260730_topnav_v1">
+  <link rel="stylesheet" href="./css/admin.css?v=20260730_topnav_v1">
   <style>
-    /* CRITICAL: Panel visibility — only the .active panel is shown */
+    /* ══════════════════════════════════════════════════════
+       ADMIN LAYOUT — TOP HORIZONTAL NAV (FULL WIDTH)
+       All panels hidden by default, only .active shown
+    ══════════════════════════════════════════════════════ */
+
+    /* Panel visibility */
     .admin-panel { display: none !important; }
     .admin-panel.active { display: block !important; }
+
+    /* Layout: column direction so nav is above content */
+    .admin-layout {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      width: 100% !important;
+      min-height: calc(100vh - var(--header-height, 60px));
+      margin-top: var(--header-height, 60px);
+    }
+
+    /* Sidebar becomes top horizontal nav bar */
+    .admin-sidebar {
+      width: 100% !important;
+      min-width: unset !important;
+      max-width: unset !important;
+      height: auto !important;
+      min-height: unset !important;
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      align-items: center !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      position: sticky !important;
+      top: var(--header-height, 60px) !important;
+      padding: 6px 16px !important;
+      gap: 2px !important;
+      border-right: none !important;
+      border-bottom: 2px solid var(--border-subtle, rgba(255,255,255,0.08)) !important;
+      background: var(--bg-secondary, #0f1117) !important;
+      z-index: 100 !important;
+      scrollbar-width: thin !important;
+    }
+    .admin-sidebar::-webkit-scrollbar { height: 3px; }
+    .admin-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+    /* Section wrappers become inline flex groups with separator */
+    .admin-sidebar__section {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 2px !important;
+      margin: 0 !important;
+      padding: 0 8px !important;
+      border-right: 1px solid rgba(255,255,255,0.1) !important;
+      flex-shrink: 0 !important;
+    }
+    .admin-sidebar__section:last-child {
+      border-right: none !important;
+    }
+
+    /* Section headings hidden in horizontal mode */
+    .admin-sidebar__heading { display: none !important; }
+
+    /* Nav items compact horizontal buttons */
+    .admin-nav-item {
+      width: auto !important;
+      white-space: nowrap !important;
+      padding: 7px 12px !important;
+      font-size: 13px !important;
+      flex-shrink: 0 !important;
+      border-radius: 8px !important;
+    }
+    .admin-nav-item__icon { font-size: 14px !important; }
+
+    /* Main content takes full remaining width */
+    .admin-main {
+      flex: 1 !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      height: auto !important;
+      min-height: calc(100vh - var(--header-height, 60px) - 52px) !important;
+      padding: 32px !important;
+      overflow-y: visible !important;
+    }
   </style>
+
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
 </head>
 <body>
