@@ -702,7 +702,64 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Check for admin system messages
   checkAdminMessages();
+
+  // Initialize Cookie Consent Banner (Compliance Document 03)
+  initCookieBanner();
 });
+
+// ── Cookie Consent Banner & Settings (GDPR / ePrivacy Compliance) ──
+function initCookieBanner() {
+  const consent = localStorage.getItem('cookie_consent');
+  if (!consent) {
+    showCookieBanner();
+  }
+}
+
+function showCookieBanner() {
+  if (document.getElementById('cookieConsentBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'cookieConsentBanner';
+  banner.style.cssText = `
+    position: fixed; bottom: 20px; left: 20px; right: 20px; max-width: 520px;
+    background: var(--bg-card, #13151d); border: 1px solid var(--border-card, rgba(255,255,255,0.15));
+    border-radius: 16px; padding: 20px; z-index: 9999; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    font-family: var(--font-primary, sans-serif); color: var(--text-primary, #fff);
+  `;
+  banner.innerHTML = `
+    <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:12px;">
+      <span style="font-size:1.4rem; line-height:1;">🍪</span>
+      <div>
+        <h4 style="margin:0 0 4px 0; font-size:1rem; font-weight:700;">Cookie & Privacy Choices</h4>
+        <p style="margin:0; font-size:0.85rem; color:var(--text-secondary, #9ca3af); line-height:1.4;">
+          We use minimal, strictly necessary cookies for session security and theme preferences. No advertising or cross-site tracking cookies are used. Learn more in our <a href="/privacy" style="color:var(--page-accent, #818cf8); text-decoration:underline;">Privacy Policy</a>.
+        </p>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:14px;">
+      <button id="btnRejectCookies" style="background:rgba(255,255,255,0.08); color:var(--text-primary,#fff); border:1px solid rgba(255,255,255,0.15); padding:8px 16px; border-radius:8px; font-size:0.85rem; font-weight:600; cursor:pointer;">Reject Non-Essential</button>
+      <button id="btnAcceptCookies" style="background:linear-gradient(135deg, #6366f1, #7c3aed); color:#fff; border:none; padding:8px 18px; border-radius:8px; font-size:0.85rem; font-weight:700; cursor:pointer; box-shadow:0 2px 10px rgba(99,102,241,0.3);">Accept All</button>
+    </div>
+  `;
+  document.body.appendChild(banner);
+
+  document.getElementById('btnAcceptCookies').onclick = () => {
+    localStorage.setItem('cookie_consent', 'all');
+    banner.remove();
+    showToast('Cookie preferences saved (All enabled).', 'success');
+  };
+  document.getElementById('btnRejectCookies').onclick = () => {
+    localStorage.setItem('cookie_consent', 'essential');
+    banner.remove();
+    showToast('Cookie preferences saved (Essential only).', 'info');
+  };
+}
+
+window.openCookieSettings = function() {
+  localStorage.removeItem('cookie_consent');
+  const existing = document.getElementById('cookieConsentBanner');
+  if (existing) existing.remove();
+  showCookieBanner();
+};
 
 async function checkAdminMessages() {
   const token = localStorage.getItem('token');

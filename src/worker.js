@@ -597,6 +597,62 @@ app.get('/sitemap.xml', (c) => {
   });
 });
 
+// ── RFC 9116 Security Disclosure Contact Route ──
+const serveSecurityTxt = (c) => {
+  const secTxt = `# security.txt for Midnight Stories
+# Spec: RFC 9116 — https://www.rfc-editor.org/rfc/rfc9116
+
+Contact: mailto:security@midnightstories.dpdns.org
+Contact: mailto:support@midnightstories.dpdns.org
+Expires: 2027-07-28T00:00:00.000Z
+Policy: https://midnightstories.dpdns.org/privacy
+Preferred-Languages: en
+Canonical: https://midnightstories.dpdns.org/.well-known/security.txt
+`;
+  return new Response(secTxt, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'public, max-age=86400',
+    }
+  });
+};
+app.get('/.well-known/security.txt', serveSecurityTxt);
+app.get('/security.txt', serveSecurityTxt);
+
+// ── Automated Data Retention Purge Endpoint (Policy 04 Compliance) ──
+app.post('/api/admin/system/purge-expired', async (c) => {
+  const db = c.env.DB;
+  try {
+    // 1. Purge rejected/removed stories older than 30 days
+    const storiesRes = await db.prepare(
+      "DELETE FROM stories WHERE status IN ('rejected', 'removed') AND updated_at < datetime('now', '-30 days')"
+    ).run();
+
+    // 2. Purge rejected/removed comments older than 30 days
+    const commentsRes = await db.prepare(
+      "DELETE FROM comments WHERE status IN ('rejected', 'removed') AND created_at < datetime('now', '-30 days')"
+    ).run();
+
+    // 3. Redact hashed IP logs on stories older than 90 days
+    const ipRedactRes = await db.prepare(
+      "UPDATE stories SET ip_hash = 'REDACTED_EXPIRED' WHERE created_at < datetime('now', '-90 days') AND ip_hash IS NOT NULL AND ip_hash != 'REDACTED_EXPIRED'"
+    ).run();
+
+    return c.json({
+      success: true,
+      purged: {
+        stories: storiesRes.meta?.changes || 0,
+        comments: commentsRes.meta?.changes || 0,
+        ipLogsRedacted: ipRedactRes.meta?.changes || 0
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    return c.json({ error: 'Data retention purge failed: ' + err.message }, 500);
+  }
+});
+
 app.get('/robots.txt', (c) => {
   const robots = `User-agent: *\nDisallow: /admin\nDisallow: /admin.html\nDisallow: /api/\nDisallow: /login?*\nDisallow: /*?*\n\nSitemap: https://midnightstories.dpdns.org/sitemap.xml\n`;
   return new Response(robots, {

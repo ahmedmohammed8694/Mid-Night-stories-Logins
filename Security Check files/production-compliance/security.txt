@@ -1,0 +1,9 @@
+# security.txt for Midnight Stories
+# Spec: RFC 9116 — https://www.rfc-editor.org/rfc/rfc9116
+
+Contact: mailto:security@midnightstories.dpdns.org
+Contact: mailto:support@midnightstories.dpdns.org
+Expires: 2027-07-28T00:00:00.000Z
+Policy: https://midnightstories.dpdns.org/privacy
+Preferred-Languages: en
+Canonical: https://midnightstories.dpdns.org/.well-known/security.txt
