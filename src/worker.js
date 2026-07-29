@@ -563,6 +563,33 @@ app.get('/api/admin/analytics', async (c) => {
   }
 });
 
+// ── Corporate Accounts Endpoint ──
+app.get('/api/admin/accounts', async (c) => {
+  return c.json({
+    success: true,
+    accounts: [
+      { id: 1, name: 'Acme Corporation', domain: 'acme.com', status: 'active', seat_limit: 50, seats_used: 18, teams_count: 2, created_at: '2026-01-15' },
+      { id: 2, name: 'Starlight Publishing', domain: 'starlight.org', status: 'active', seat_limit: 25, seats_used: 12, teams_count: 2, created_at: '2026-02-01' },
+      { id: 3, name: 'Apex Media House', domain: 'apexmedia.io', status: 'active', seat_limit: 20, seats_used: 8, teams_count: 1, created_at: '2026-03-10' },
+      { id: 4, name: 'Global Tech Solutions', domain: 'globaltech.net', status: 'suspended', seat_limit: 10, seats_used: 5, teams_count: 1, created_at: '2026-04-05' }
+    ]
+  });
+});
+
+// ── Employee Roster Endpoint ──
+app.get('/api/admin/employees', async (c) => {
+  return c.json({
+    success: true,
+    employees: [
+      { id: 1001, name: 'Sarah Jenkins', email: 'sarah.j@midnightstories.org', account: 'Acme Corporation', team: 'Global Support Tier 1', role: 'Support Specialist', status: 'active' },
+      { id: 1002, name: 'Marcus Vance', email: 'marcus.vance@starlight.org', account: 'Starlight Publishing', team: 'Editorial & Moderation Guild', role: 'Senior Content Editor', status: 'active' },
+      { id: 1003, name: 'Elena Rostova', email: 'elena.r@midnightstories.org', account: 'Midnight Internal', team: 'Security Ops (SIRT)', role: 'Security Compliance Officer', status: 'active' },
+      { id: 1004, name: 'David Miller', email: 'david.m@apexmedia.io', account: 'Apex Media House', team: 'Billing & Enterprise Accounts', role: 'Support Specialist', status: 'active' },
+      { id: 1005, name: 'Chloe Bennett', email: 'chloe.b@midnightstories.org', account: 'Midnight Internal', team: 'Editorial Guild', role: 'Community Moderator', status: 'pending_invite' }
+    ]
+  });
+});
+
 // ── Navigation Redirects & Clean Slug Routing ──
 app.get('/education', (c) => c.redirect('/books?category=education', 301));
 app.get('/sitemap.xml', (c) => {

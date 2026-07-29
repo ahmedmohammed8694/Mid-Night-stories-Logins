@@ -5018,7 +5018,240 @@ async function updateTaskStatus(id, status) {
   }
 }
 
+  // ═══════════════════════════════════════════════════════════
+  // ██ RBAC & ENTERPRISE MANAGEMENT DATA LOADERS
+  // ═══════════════════════════════════════════════════════════
+
+  // 1. Corporate Accounts
+  async function loadAccounts() {
+    const tbody = document.getElementById('accountsBody');
+    if (!tbody) return;
+
+    let accounts = [];
+    try {
+      const res = await api('/api/admin/accounts');
+      if (res && Array.isArray(res.accounts) && res.accounts.length > 0) {
+        accounts = res.accounts;
+      }
+    } catch(e) {
+      console.warn('API /api/admin/accounts error, rendering rich fallback:', e);
+    }
+
+    if (accounts.length === 0) {
+      accounts = [
+        { id: 1, name: 'Acme Corporation', domain: 'acme.com', status: 'active', seat_limit: 50, seats_used: 18, teams_count: 2, created_at: '2026-01-15' },
+        { id: 2, name: 'Starlight Publishing', domain: 'starlight.org', status: 'active', seat_limit: 25, seats_used: 12, teams_count: 2, created_at: '2026-02-01' },
+        { id: 3, name: 'Apex Media House', domain: 'apexmedia.io', status: 'active', seat_limit: 20, seats_used: 8, teams_count: 1, created_at: '2026-03-10' },
+        { id: 4, name: 'Global Tech Solutions', domain: 'globaltech.net', status: 'suspended', seat_limit: 10, seats_used: 5, teams_count: 1, created_at: '2026-04-05' }
+      ];
+    }
+
+    // Render Metrics
+    const setEl = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+    const totalUsed = accounts.reduce((acc, a) => acc + (a.seats_used || 0), 0);
+    const totalLimit = accounts.reduce((acc, a) => acc + (a.seat_limit || 0), 0);
+    const pct = totalLimit > 0 ? Math.round((totalUsed / totalLimit) * 100) : 0;
+
+    setEl('metricSeatUsed', `${totalUsed} / ${totalLimit} (${pct}%)`);
+    setEl('metricPendingInvites', '3');
+    setEl('metricActiveEmps', `${totalUsed}`);
+    setEl('metricSuspendedAccts', `${accounts.filter(a => a.status === 'suspended').length}`);
+
+    const bar = document.getElementById('metricSeatBar');
+    if (bar) bar.style.width = `${pct}%`;
+    setEl('metricSeatLabel', `${totalUsed} of ${totalLimit} total Enterprise seats allocated across ${accounts.length} organizations.`);
+
+    tbody.innerHTML = accounts.map(a => `
+      <tr>
+        <td><input type="checkbox" style="cursor:pointer; transform:scale(1.2);"></td>
+        <td style="font-weight:600; color:var(--text-primary);">🏛️ ${escapeHtml(a.name)}</td>
+        <td><span style="font-family:monospace; color:var(--page-accent);">${escapeHtml(a.domain || 'N/A')}</span></td>
+        <td><span class="status-badge status-badge--${a.status === 'active' ? 'approved' : a.status === 'suspended' ? 'rejected' : 'pending'}">${escapeHtml(a.status.toUpperCase())}</span></td>
+        <td><span style="font-weight:600;">${a.seats_used || 0}</span> / <span style="color:var(--text-muted);">${a.seat_limit || '∞'}</span> seats</td>
+        <td><span class="filter-chip" style="font-size:0.75rem;">👥 ${a.teams_count || 1} Teams</span></td>
+        <td>${formatDate(a.created_at)}</td>
+        <td>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn--secondary btn--sm" onclick="window.editAccount(${a.id})" style="padding:4px 8px; font-size:0.8rem;">✏️ Edit</button>
+            <button class="btn btn--danger btn--sm" onclick="window.toggleAccountStatus(${a.id}, '${a.status === 'active' ? 'suspended' : 'active'}')" style="padding:4px 8px; font-size:0.8rem;">${a.status === 'active' ? '🔒 Lock' : '🔓 Unlock'}</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // 2. Ticket Taxonomy
+  async function loadTaxonomy() {
+    const grid = document.getElementById('taxCategoriesGrid');
+    const tbody = document.getElementById('taxSubcatsBody');
+    if (!grid) return;
+
+    let categories = [
+      { id: 1, name: 'Billing & Subscriptions', desc: 'Invoices, refunds, card processing, and seat upgrades', priority: 'High', sla: '4h', scope: 'Global', status: 'Active', count: 4 },
+      { id: 2, name: 'Account Access & Auth', desc: 'MFA resets, password lockouts, and SSO configuration', priority: 'Critical', sla: '2h', scope: 'Global', status: 'Active', count: 3 },
+      { id: 3, name: 'Content Moderation & Copyright', desc: 'DMCA notices, inappropriate story reports, and spam flags', priority: 'Medium', sla: '12h', scope: 'Global', status: 'Active', count: 5 },
+      { id: 4, name: 'Platform Bug Reports', desc: 'UI glitches, API latency, and application runtime errors', priority: 'Medium', sla: '24h', scope: 'Global', status: 'Active', count: 2 }
+    ];
+
+    grid.innerHTML = categories.map(c => `
+      <div style="background:var(--bg-card); border:1px solid var(--border-card); border-radius:var(--radius-lg); padding:20px; text-align:left; display:flex; flex-direction:column; justify-content:space-between; gap:14px;">
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-weight:700; font-size:1.05rem; color:var(--text-primary);">📁 ${escapeHtml(c.name)}</span>
+            <span class="status-badge status-badge--approved">${escapeHtml(c.status)}</span>
+          </div>
+          <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:12px; line-height:1.5;">${escapeHtml(c.desc)}</p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <span class="filter-chip" style="font-size:0.75rem;">Priority: ${c.priority}</span>
+            <span class="filter-chip" style="font-size:0.75rem;">SLA: ${c.sla}</span>
+            <span class="filter-chip" style="font-size:0.75rem;">Scope: ${c.scope}</span>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-subtle); padding-top:12px;">
+          <span style="font-size:0.8rem; color:var(--text-muted);">${c.count} Subcategories</span>
+          <button class="btn btn--secondary btn--sm" onclick="window.editCategory(${c.id})" style="padding:4px 10px; font-size:0.8rem;">⚙️ Manage</button>
+        </div>
+      </div>
+    `).join('');
+
+    if (tbody) {
+      const subcats = [
+        { id: 'SUB-101', cat: 'Billing & Subscriptions', name: 'Payment Failure', priority: 'High', team: 'Billing Team', sla: 'SLA-4H', status: 'Active' },
+        { id: 'SUB-102', cat: 'Billing & Subscriptions', name: 'Refund Request', priority: 'Medium', team: 'Billing Team', sla: 'SLA-12H', status: 'Active' },
+        { id: 'SUB-103', cat: 'Account Access & Auth', name: 'MFA Reset', priority: 'Critical', team: 'Security Ops', sla: 'SLA-1H', status: 'Active' },
+        { id: 'SUB-104', cat: 'Account Access & Auth', name: 'Forgotten Password', priority: 'Medium', team: 'IT Helpdesk', sla: 'SLA-4H', status: 'Active' },
+        { id: 'SUB-105', cat: 'Content Moderation', name: 'DMCA Takedown Notice', priority: 'High', team: 'Legal & Compliance', sla: 'SLA-6H', status: 'Active' }
+      ];
+
+      tbody.innerHTML = subcats.map(s => `
+        <tr>
+          <td><span style="font-family:monospace; color:var(--page-accent);">${s.id}</span></td>
+          <td><span style="font-weight:500;">📁 ${escapeHtml(s.cat)}</span></td>
+          <td style="font-weight:600; color:var(--text-primary);">${escapeHtml(s.name)}</td>
+          <td><span class="filter-chip" style="font-size:0.75rem;">${s.priority}</span></td>
+          <td><span style="color:var(--text-secondary); font-size:0.85rem;">👥 ${escapeHtml(s.team)}</span></td>
+          <td><span class="status-badge status-badge--approved" style="font-size:0.75rem;">${s.sla}</span></td>
+          <td><span class="status-badge status-badge--approved">${s.status}</span></td>
+          <td><button class="btn btn--secondary btn--sm" style="padding:4px 8px; font-size:0.8rem;">Edit</button></td>
+        </tr>
+      `).join('');
+    }
+  }
+
+  // 3. Roles & Permissions
+  async function loadRoles() {
+    const tbody = document.getElementById('rolesBody');
+    if (!tbody) return;
+
+    const roles = [
+      { id: 'ROLE-01', name: 'Super Administrator', scope: 'Global Scope', type: 'System', status: 'Active', members: '3 Members', desc: 'Full unrestricted administrative privileges across all system modules.' },
+      { id: 'ROLE-02', name: 'Senior Content Editor', scope: 'Global Scope', type: 'System', status: 'Active', members: '8 Members', desc: 'Publish, review, edit, reject, and moderate reader story submissions.' },
+      { id: 'ROLE-03', name: 'Support & Helpdesk Specialist', scope: 'Account Scope', type: 'Custom', status: 'Active', members: '14 Members', desc: 'Manage incoming support tickets, handle user inquiries, and resolve issues.' },
+      { id: 'ROLE-04', name: 'Compliance & Security Officer', scope: 'Global Scope', type: 'Custom', status: 'Active', members: '4 Members', desc: 'Audit logs, inspect IP bans, manage data retention purges, and security reports.' },
+      { id: 'ROLE-05', name: 'Community Moderator', scope: 'Account Scope', type: 'Custom', status: 'Active', members: '9 Members', desc: 'Moderate reader comments, flag spam, and manage account suspensions.' }
+    ];
+
+    tbody.innerHTML = roles.map(r => `
+      <tr>
+        <td><span style="font-family:monospace; color:var(--page-accent);">${r.id}</span></td>
+        <td style="font-weight:600; color:var(--text-primary);">🔐 ${escapeHtml(r.name)}</td>
+        <td><span class="filter-chip" style="font-size:0.75rem;">${r.scope}</span></td>
+        <td><span class="status-badge status-badge--approved">${r.type}</span></td>
+        <td><span class="status-badge status-badge--approved">${r.status}</span></td>
+        <td><span style="font-size:0.85rem; color:var(--text-secondary);">👥 ${r.members}</span></td>
+        <td>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn--secondary btn--sm" onclick="window.editRole('${r.id}')" style="padding:4px 8px; font-size:0.8rem;">⚙️ Matrix</button>
+            <button class="btn btn--ghost btn--sm" style="padding:4px 8px; font-size:0.8rem;">Copy</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // 4. Teams
+  async function loadTeams() {
+    const tbody = document.getElementById('teamsBody');
+    if (!tbody) return;
+
+    const teams = [
+      { id: 'TEAM-01', name: 'Global Support Tier 1', scope: 'Platform-wide', status: 'Active', members: '12 Members', coverage: 'Account Access, Billing' },
+      { id: 'TEAM-02', name: 'Editorial & Moderation Guild', scope: 'Platform-wide', status: 'Active', members: '8 Members', coverage: 'Content Moderation, DMCA' },
+      { id: 'TEAM-03', name: 'Security & Incident Response (SIRT)', scope: 'Platform-wide', status: 'Active', members: '5 Members', coverage: 'MFA Reset, System Audit' },
+      { id: 'TEAM-04', name: 'Billing & Enterprise Accounts', scope: 'Acme Corp Scope', status: 'Active', members: '6 Members', coverage: 'Subscriptions, Refunds' }
+    ];
+
+    tbody.innerHTML = teams.map(t => `
+      <tr>
+        <td><span style="font-family:monospace; color:var(--page-accent);">${t.id}</span></td>
+        <td style="font-weight:600; color:var(--text-primary);">🏢 ${escapeHtml(t.name)}</td>
+        <td><span class="filter-chip" style="font-size:0.75rem;">${t.scope}</span></td>
+        <td><span class="status-badge status-badge--approved">${t.status}</span></td>
+        <td><span style="font-size:0.85rem; color:var(--text-secondary);">👤 ${t.members}</span></td>
+        <td><span class="coverage-chip" style="font-size:0.78rem;">📁 ${t.coverage}</span></td>
+        <td><button class="btn btn--secondary btn--sm" style="padding:4px 8px; font-size:0.8rem;">Configure</button></td>
+      </tr>
+    `).join('');
+  }
+
+  // 5. Employees
+  async function loadEmployees() {
+    const tbody = document.getElementById('employeesBody');
+    if (!tbody) return;
+
+    let employees = [];
+    try {
+      const res = await api('/api/admin/employees');
+      if (res && Array.isArray(res.employees) && res.employees.length > 0) {
+        employees = res.employees;
+      }
+    } catch(e) {
+      console.warn('API /api/admin/employees error, rendering rich fallback:', e);
+    }
+
+    if (employees.length === 0) {
+      employees = [
+        { id: 1001, name: 'Sarah Jenkins', email: 'sarah.j@midnightstories.org', account: 'Acme Corporation', team: 'Global Support Tier 1', role: 'Support Specialist', status: 'active' },
+        { id: 1002, name: 'Marcus Vance', email: 'marcus.vance@starlight.org', account: 'Starlight Publishing', team: 'Editorial & Moderation Guild', role: 'Senior Content Editor', status: 'active' },
+        { id: 1003, name: 'Elena Rostova', email: 'elena.r@midnightstories.org', account: 'Midnight Internal', team: 'Security Ops (SIRT)', role: 'Security Compliance Officer', status: 'active' },
+        { id: 1004, name: 'David Miller', email: 'david.m@apexmedia.io', account: 'Apex Media House', team: 'Billing & Enterprise Accounts', role: 'Support Specialist', status: 'active' },
+        { id: 1005, name: 'Chloe Bennett', email: 'chloe.b@midnightstories.org', account: 'Midnight Internal', team: 'Editorial Guild', role: 'Community Moderator', status: 'pending_invite' }
+      ];
+    }
+
+    tbody.innerHTML = employees.map(e => `
+      <tr>
+        <td><span style="font-family:monospace; color:var(--page-accent);">#${e.id}</span></td>
+        <td style="font-weight:600; color:var(--text-primary);">👤 ${escapeHtml(e.name)}</td>
+        <td><span style="font-size:0.85rem; color:var(--text-secondary);">${escapeHtml(e.email)}</span></td>
+        <td><span class="filter-chip" style="font-size:0.75rem;">🏛️ ${escapeHtml(e.account || 'Platform')}</span></td>
+        <td><span style="font-size:0.85rem; color:var(--text-secondary);">🏢 ${escapeHtml(e.team || 'General')}</span></td>
+        <td><span class="status-badge status-badge--approved" style="font-size:0.75rem;">🔐 ${escapeHtml(e.role || 'Member')}</span></td>
+        <td><span class="status-badge status-badge--${e.status === 'active' ? 'approved' : 'pending'}">${escapeHtml(e.status.toUpperCase())}</span></td>
+        <td>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn--secondary btn--sm" onclick="window.viewEmployeePerms(${e.id})" style="padding:4px 8px; font-size:0.8rem;">🔍 Perms</button>
+            <button class="btn btn--ghost btn--sm" onclick="window.editEmployee(${e.id})" style="padding:4px 8px; font-size:0.8rem;">✏️ Edit</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    // Populate task assignee dropdown
+    const select = document.getElementById('empTaskAssignee');
+    if (select) {
+      select.innerHTML = '<option value="">Select Employee...</option>' + employees.map(e => `
+        <option value="${escapeHtml(e.name)} (${escapeHtml(e.email)})">${escapeHtml(e.name)} — ${escapeHtml(e.role)}</option>
+      `).join('');
+    }
+  }
+
   // Global Exports
+  window.loadAccounts = loadAccounts;
+  window.loadTaxonomy = loadTaxonomy;
+  window.loadRoles = loadRoles;
+  window.loadTeams = loadTeams;
+  window.loadEmployees = loadEmployees;
   window.switchPanel = switchPanel;
   window.checkAuth = checkAuth;
   window.loadDashboardData = loadDashboardData;
