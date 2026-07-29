@@ -394,86 +394,105 @@ a:hover { text-decoration: underline; }
 /* ═══════════════════════════════════════════════════════════
    ADMIN LAYOUT
    ═══════════════════════════════════════════════════════════ */
+/* ── Top-Nav Layout ────────────────────────────────────────
+   admin-layout is now a column: nav bar on top, content below
+   ─────────────────────────────────────────────────────────── */
 .admin-layout {
   display: flex !important;
-  flex-direction: row !important;
-  align-items: flex-start !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
   width: 100% !important;
   min-height: calc(100vh - var(--header-height));
   margin-top: var(--header-height);
 }
 
+/* Sidebar → full-width horizontal scrollable nav row */
 .admin-sidebar {
-  width: 260px !important;
-  min-width: 260px !important;
-  max-width: 260px !important;
-  flex-shrink: 0 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 6px 16px !important;
+  gap: 2px !important;
   background: var(--bg-secondary);
-  border-right: 1px solid var(--border-subtle);
-  padding: 24px 16px;
-  position: sticky;
-  top: var(--header-height);
-  height: calc(100vh - var(--header-height));
-  overflow-y: auto;
-  z-index: 10;
+  border-right: none !important;
+  border-bottom: 2px solid var(--border-subtle);
+  position: sticky !important;
+  top: var(--header-height) !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  z-index: 100 !important;
+  scrollbar-width: thin;
 }
+.admin-sidebar::-webkit-scrollbar { height: 3px; }
+.admin-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 2px; }
 
-.admin-sidebar__section { margin-bottom: 24px; }
-
-.admin-sidebar__heading {
-  font-family: var(--font-primary);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 0 12px;
-  margin-bottom: 8px;
+/* Section groups — inline separators */
+.admin-sidebar__section {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 2px !important;
+  margin: 0 !important;
+  padding: 0 6px !important;
+  flex-shrink: 0 !important;
+  border-right: 1px solid rgba(255,255,255,0.1) !important;
 }
+.admin-sidebar__section:last-child { border-right: none !important; }
 
+/* Section headings hidden in horizontal bar */
+.admin-sidebar__heading { display: none !important; }
+
+/* Nav items — compact horizontal buttons */
 .admin-nav-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   border-radius: var(--radius-md);
   color: var(--text-secondary);
   font-family: var(--font-primary);
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-fast);
   border: none;
   background: none;
-  width: 100%;
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: auto !important;
   text-align: left;
 }
 
 .admin-nav-item:hover { background: var(--bg-glass-hover); color: var(--text-primary); }
 .admin-nav-item.active { background: var(--page-accent-glow-sm); color: var(--page-accent); }
 
-.admin-nav-item__icon { font-size: 18px; width: 24px; text-align: center; }
+.admin-nav-item__icon { font-size: 14px; width: auto; text-align: center; }
 
 .admin-nav-item__badge {
-  margin-left: auto;
-  padding: 2px 8px;
+  padding: 1px 6px;
   border-radius: var(--radius-full);
   background: var(--accent-rose);
   color: white;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
+  margin-left: 2px;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   ADMIN MAIN CONTENT
-   ═══════════════════════════════════════════════════════════ */
+/* ── Main Content — full width below the nav bar ───────── */
 .admin-main {
   flex: 1 !important;
+  width: 100% !important;
   min-width: 0 !important;
-  width: calc(100% - 260px) !important;
-  padding: 32px;
-  height: calc(100vh - var(--header-height));
-  overflow-y: auto;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 28px 32px;
+  overflow-y: visible;
 }
 
 /* ═══════════════════════════════════════════════════════════
