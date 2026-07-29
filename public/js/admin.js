@@ -127,6 +127,9 @@
     const navItem = document.querySelector(`[data-panel="${panelName}"]`);
     if (navItem) navItem.classList.add('active');
 
+    // Scroll to top of page so content starts right under horizontal nav bar
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
     // Load panel-specific data safely
     try {
       switch (panelName) {

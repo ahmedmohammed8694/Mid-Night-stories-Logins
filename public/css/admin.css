@@ -401,6 +401,7 @@ a:hover { text-decoration: underline; }
   display: flex !important;
   flex-direction: column !important;
   align-items: stretch !important;
+  justify-content: flex-start !important;
   width: 100% !important;
   min-height: calc(100vh - var(--header-height));
   margin-top: var(--header-height);
@@ -486,12 +487,13 @@ a:hover { text-decoration: underline; }
 
 /* ── Main Content — full width below the nav bar ───────── */
 .admin-main {
-  flex: 1 !important;
+  flex: 1 1 auto !important;
   width: 100% !important;
   min-width: 0 !important;
   height: auto !important;
   min-height: 0 !important;
-  padding: 28px 32px;
+  margin-top: 0 !important;
+  padding: 24px 32px !important;
   overflow-y: visible;
 }
 
@@ -499,11 +501,15 @@ a:hover { text-decoration: underline; }
    ADMIN PANELS — hide all, show only active
    ═══════════════════════════════════════════════════════════ */
 .admin-panel {
-  display: none;
+  display: none !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 .admin-panel.active {
-  display: block;
+  display: block !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 .admin-page-title {
