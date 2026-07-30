@@ -1228,6 +1228,145 @@ async function ensurePasswordResetsTable(db) {
 // PASSWORD RESET OTP WORKFLOW API
 // ═════════════════════════════════════════════════════════
 
+// Helper to send real OTP emails via Gmail API / Resend / Brevo / Cloudflare Mailchannels
+async function sendOtpEmail(env, toEmail, otp) {
+  const subject = `🔑 Your Midnight Stories Password Reset OTP: ${otp}`;
+  const htmlContent = `
+    <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 540px; margin: 0 auto; padding: 30px; background-color: #100f24; color: #ffffff; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1);">
+      <div style="text-align: center; margin-bottom: 24px;">
+        <h1 style="font-family: Georgia, serif; color: #f3c77c; margin: 0; font-size: 26px;">🌙 Midnight Stories</h1>
+        <p style="color: #94a3b8; font-size: 14px; margin-top: 4px;">Security &amp; Account Authentication</p>
+      </div>
+      <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); padding: 24px; border-radius: 12px; text-align: center;">
+        <p style="color: #cbd5e1; font-size: 15px; margin-bottom: 16px;">We received a request to reset your password. Use the 6-digit OTP code below to proceed:</p>
+        <div style="font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #6366f1; background: #161433; padding: 14px 28px; border-radius: 10px; display: inline-block; border: 1px solid #8b5cf6;">
+          ${otp}
+        </div>
+        <p style="color: #94a3b8; font-size: 13px; margin-top: 18px;">This code is valid for <strong>10 minutes</strong>. Do not share this code with anyone.</p>
+      </div>
+      <div style="margin-top: 24px; text-align: center; color: #64748b; font-size: 12px;">
+        If you did not request a password reset, please ignore this email.<br>
+        &copy; 2026 Midnight Stories Inc. All rights reserved.
+      </div>
+    </div>
+  `;
+
+  // 1. Direct Gmail API (If GMAIL_REFRESH_TOKEN & GMAIL_CLIENT_ID are set)
+  if (env.GMAIL_REFRESH_TOKEN && env.GMAIL_CLIENT_ID && env.GMAIL_CLIENT_SECRET) {
+    try {
+      // Obtain Google Access Token
+      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: env.GMAIL_CLIENT_ID,
+          client_secret: env.GMAIL_CLIENT_SECRET,
+          refresh_token: env.GMAIL_REFRESH_TOKEN,
+          grant_type: 'refresh_token'
+        })
+      });
+
+      const tokenData = await tokenRes.json();
+      if (tokenData.access_token) {
+        const senderEmail = env.GMAIL_USER || 'ahmed.mohammed8694@gmail.com';
+        const str = `To: ${toEmail}\r\n` +
+                    `From: Midnight Stories <${senderEmail}>\r\n` +
+                    `Subject: ${subject}\r\n` +
+                    `Content-Type: text/html; charset=utf-8\r\n\r\n` +
+                    htmlContent;
+
+        const encodedMessage = btoa(unescape(encodeURIComponent(str)))
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_')
+          .replace(/=+$/, '');
+
+        const sendRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${tokenData.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ raw: encodedMessage })
+        });
+
+        console.log('[GMAIL API SENT STATUS]:', sendRes.status);
+        if (sendRes.ok) return true;
+      }
+    } catch (gErr) {
+      console.error('[GMAIL API ERROR]:', gErr);
+    }
+  }
+
+  // 2. Resend API
+  if (env.RESEND_API_KEY) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: env.FROM_EMAIL || 'Midnight Stories <onboarding@resend.dev>',
+          to: [toEmail],
+          subject: subject,
+          html: htmlContent
+        })
+      });
+      const data = await res.json();
+      console.log('[RESEND OTP EMAIL RESPONSE]:', data);
+      if (res.ok) return true;
+    } catch (err) {
+      console.error('[RESEND OTP EMAIL ERROR]:', err);
+    }
+  }
+
+  // 3. Brevo API
+  if (env.BREVO_API_KEY) {
+    try {
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': env.BREVO_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { name: 'Midnight Stories', email: env.FROM_EMAIL || 'ahmed.mohammed8694@gmail.com' },
+          to: [{ email: toEmail }],
+          subject: subject,
+          htmlContent: htmlContent
+        })
+      });
+      const data = await res.json();
+      console.log('[BREVO OTP EMAIL RESPONSE]:', data);
+      if (res.ok) return true;
+    } catch (err) {
+      console.error('[BREVO OTP EMAIL ERROR]:', err);
+    }
+  }
+
+  // 4. Cloudflare Native Email Gateway (Mailchannels) - Works directly without 3rd party!
+  try {
+    const senderEmail = env.FROM_EMAIL || 'noreply@midnightstories.dpdns.org';
+    const mcRes = await fetch('https://api.mailchannels.net/tx/v1/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        personalizations: [{ to: [{ email: toEmail }] }],
+        from: { email: senderEmail, name: 'Midnight Stories' },
+        subject: subject,
+        content: [{ type: 'text/html', value: htmlContent }]
+      })
+    });
+    console.log('[CLOUDFLARE NATIVE EMAIL STATUS]:', mcRes.status);
+    return mcRes.ok;
+  } catch (mcErr) {
+    console.error('[CLOUDFLARE NATIVE EMAIL ERROR]:', mcErr);
+  }
+
+  return false;
+}
+
 // 1. Request Password Reset OTP
 app.post('/api/auth/forgot-password', async (c) => {
   const db = c.env.DB;
@@ -1276,12 +1415,14 @@ app.post('/api/auth/forgot-password', async (c) => {
       created_at = CURRENT_TIMESTAMP
   `).bind(cleanEmail, otp, expiresAt).run();
 
-  console.log(`[PASSWORD RESET OTP] Target: ${cleanEmail} | OTP: ${otp} | Expires: ${expiresAt}`);
+  console.log(`[PASSWORD RESET OTP GENERATED] Target: ${cleanEmail} | OTP: ${otp} | Expires: ${expiresAt}`);
+
+  // Dispatch Real Email
+  await sendOtpEmail(c.env, cleanEmail, otp);
 
   return c.json({
     success: true,
-    message: 'OTP sent to your email address! Please check your inbox.',
-    simulated_otp: otp,
+    message: 'A 6-digit OTP verification code has been sent to your email address! Please check your inbox.',
     expires_in_seconds: 600
   });
 });
