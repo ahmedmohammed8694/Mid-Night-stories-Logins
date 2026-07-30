@@ -91,6 +91,14 @@ CREATE TABLE users (
   interaction_permissions TEXT DEFAULT '{"like":true, "comment":true, "follow":true, "block":true}'
 );
 
+CREATE TABLE IF NOT EXISTS password_resets (
+  email TEXT PRIMARY KEY,
+  otp TEXT NOT NULL,
+  expires_at DATETIME NOT NULL,
+  attempts INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL UNIQUE,

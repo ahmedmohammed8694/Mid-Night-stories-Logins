@@ -7,199 +7,767 @@
   <meta name="description" content="Join Midnight Stories to share your experiences, connect with our supportive community, and maintain complete anonymity.">
   <meta name="robots" content="noindex, follow">
   <link rel="canonical" href="https://midnightstories.dpdns.org/signup">
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..800;1,9..144,400..800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=20260730_v2">
   <!-- Cropper.js -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
   <style>
-    body {
-      background-color: var(--ms-bg) !important;
-      color: var(--ms-text) !important;
-      font-family: var(--font-primary) !important;
+    :root {
+      --bg-dark: #070611;
+      --bg-surface: #100f24;
+      --bg-panel: #161433;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --accent-purple: #8b5cf6;
+      --accent-indigo: #6366f1;
+      --primary-gold: #f3c77c;
+      --accent-emerald: #34d399;
+      --accent-rose: #f87171;
+    }
+
+    * {
+      box-sizing: border-box;
       margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
       min-height: 100vh;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      flex-direction: column;
     }
-    .auth-container {
-      max-width: 460px;
+
+    /* Dual-Panel Layout */
+    .dual-container {
+      display: grid;
+      grid-template-columns: 1fr 1.1fr;
+      min-height: 100vh;
       width: 100%;
-      margin: 40px auto;
-      padding: 36px;
-      background: var(--ms-surface);
-      border: 1px solid var(--ms-border);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-md);
-      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
     }
-    .auth-container:hover {
-      border-color: var(--ms-accent);
-      box-shadow: 0 4px 20px var(--ms-accent-glow-sm);
+
+    @media (max-width: 960px) {
+      .dual-container {
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
     }
-    .auth-form {
+
+    /* Left Panel: Branding & Media */
+    .branding-panel {
+      position: relative;
+      background: linear-gradient(135deg, #0f0c29 0%, #24243e 50%, #302b63 100%);
+      padding: 60px 48px;
       display: flex;
       flex-direction: column;
-      gap: 1.2rem;
+      justify-content: space-between;
+      overflow: hidden;
+      border-right: 1px solid var(--border-color);
     }
-    .auth-input {
-      padding: 0.75rem 1rem;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--ms-border);
-      background: var(--bg-input);
-      color: var(--ms-text);
-      font-family: var(--font-primary);
-      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-      outline: none;
+
+    .branding-panel::before {
+      content: '';
+      position: absolute;
+      top: -150px;
+      left: -150px;
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.35) 0%, rgba(0, 0, 0, 0) 70%);
+      border-radius: 50%;
+      pointer-events: none;
     }
-    .auth-input:focus {
-      border-color: var(--ms-accent);
-      box-shadow: 0 0 10px var(--ms-accent-glow-sm);
-      background: var(--bg-input-focus);
+
+    .branding-panel::after {
+      content: '';
+      position: absolute;
+      bottom: -150px;
+      right: -150px;
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(243, 199, 124, 0.25) 0%, rgba(0, 0, 0, 0) 70%);
+      border-radius: 50%;
+      pointer-events: none;
     }
-    .auth-btn {
-      padding: 0.85rem;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      font-weight: 600;
-      border: none;
-      font-family: var(--font-primary);
-      transition: all var(--transition-fast);
-      text-align: center;
+
+    .brand-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 2;
+    }
+
+    .brand-logo-icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple));
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
     }
-    .btn-primary {
-      background: var(--ms-accent);
-      color: var(--ms-bg);
+
+    .brand-logo-text {
+      font-family: 'Fraunces', serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+      text-decoration: none;
     }
-    .btn-primary:hover {
-      opacity: 0.9;
+
+    .brand-hero-content {
+      margin: auto 0;
+      z-index: 2;
+      max-width: 560px;
+      padding: 40px 0;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 99px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--primary-gold);
+      margin-bottom: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .brand-headline {
+      font-family: 'Fraunces', serif;
+      font-size: 2.75rem;
+      line-height: 1.2;
+      color: #fff;
+      margin-bottom: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-headline span {
+      background: linear-gradient(135deg, var(--primary-gold), #ffd79e);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-subheadline {
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+      margin-bottom: 32px;
+    }
+
+    .feature-highlights {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 12px 16px;
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+    }
+
+    .feature-item-icon {
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+
+    .feature-item-text h4 {
+      font-size: 0.9rem;
+      color: #fff;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .feature-item-text p {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin: 0;
+    }
+
+    .brand-footer {
+      font-size: 0.8rem;
+      color: #64748b;
+      z-index: 2;
+    }
+
+    /* Right Panel: Form Container */
+    .form-panel {
+      background-color: var(--bg-surface);
+      padding: 50px 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow-y: auto;
+    }
+
+    @media (max-width: 600px) {
+      .branding-panel {
+        padding: 40px 24px;
+      }
+      .form-panel {
+        padding: 40px 20px;
+      }
+      .brand-headline {
+        font-size: 2rem;
+      }
+    }
+
+    .form-card {
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .form-header {
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .form-title {
+      font-family: 'Fraunces', serif;
+      font-size: 1.85rem;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .form-subtitle {
+      font-size: 0.88rem;
+      color: #94a3b8;
+    }
+
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 500px) {
+      .form-grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .auth-form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .auth-input {
+      width: 100%;
+      height: 44px;
+      padding: 0 14px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .auth-input:focus {
+      border-color: var(--accent-indigo);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .toggle-password-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px;
+    }
+
+    .toggle-password-btn:hover {
+      color: #fff;
+    }
+
+    /* Dropzone Upload */
+    .signup-dropzone {
+      border: 2px dashed var(--border-color);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.02);
+      color: #94a3b8;
+    }
+
+    .signup-dropzone:hover, .signup-dropzone.dragover {
+      border-color: var(--accent-indigo);
+      background: rgba(99, 102, 241, 0.1);
+      color: #fff;
+    }
+
+    .signup-preview {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--bg-panel);
+    }
+
+    /* Password Strength Meter */
+    .strength-meter {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-top: 6px;
+      margin-bottom: 10px;
+    }
+
+    .strength-bar {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+    }
+
+    .terms-agreement {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 18px 0;
+      font-size: 0.82rem;
+      color: #cbd5e1;
+    }
+
+    .terms-agreement input[type="checkbox"] {
+      accent-color: var(--accent-indigo);
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      cursor: pointer;
+    }
+
+    .terms-agreement a {
+      color: var(--primary-gold);
+      text-decoration: none;
+    }
+
+    .terms-agreement a:hover {
+      text-decoration: underline;
+    }
+
+    .btn-submit {
+      width: 100%;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple));
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-submit:hover {
+      opacity: 0.95;
       transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
     }
+
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 20px 0;
+      color: #64748b;
+      font-size: 0.8rem;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .divider span {
+      padding: 0 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
     .btn-google {
-      background: var(--ms-surface);
-      color: var(--ms-text-secondary);
-      border: 1px solid var(--ms-border);
+      width: 100%;
+      height: 44px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      color: #e2e8f0;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 10px;
+      transition: all 0.2s ease;
       text-decoration: none;
     }
+
     .btn-google:hover {
-      border-color: var(--ms-accent);
-      background: rgba(255, 255, 255, 0.03);
-      color: var(--ms-text);
+      border-color: rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.04);
+      color: #fff;
     }
-    .auth-links {
+
+    .toggle-auth-link {
       text-align: center;
-      margin-top: 1.5rem;
-      font-size: 0.9em;
-      color: var(--ms-text-secondary);
+      margin-top: 20px;
+      font-size: 0.88rem;
+      color: #94a3b8;
     }
-    .auth-links a {
-      color: var(--ms-accent);
+
+    .toggle-auth-link a {
+      color: var(--accent-indigo);
       text-decoration: none;
-      font-weight: 600;
+      font-weight: 700;
     }
-    .auth-links a:hover {
+
+    .toggle-auth-link a:hover {
       text-decoration: underline;
     }
-    .signup-dropzone {
-      border: 2px dashed var(--ms-border) !important;
-      border-radius: var(--radius-sm) !important;
-      padding: 1.25rem !important;
-      text-align: center !important;
-      cursor: pointer !important;
-      transition: border-color var(--transition-fast), background-color var(--transition-fast) !important;
-      background: rgba(255, 255, 255, 0.01) !important;
-      color: var(--ms-text-secondary) !important;
+
+    /* Toast Notification Container */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 4000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
-    .signup-dropzone:hover, .signup-dropzone.dragover {
-      border-color: var(--ms-accent) !important;
-      background: var(--ms-accent-glow) !important;
-      color: var(--ms-text) !important;
+
+    .toast {
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      animation: slideIn 0.3s ease forwards;
     }
-    .signup-preview {
-      display: flex !important;
-      align-items: center !important;
-      gap: 12px !important;
-      padding: 10px !important;
-      border: 1px solid var(--ms-border) !important;
-      border-radius: var(--radius-sm) !important;
-      background: rgba(255, 255, 255, 0.01) !important;
+
+    .toast--success {
+      background: #064e3b;
+      border: 1px solid #10b981;
+    }
+
+    .toast--error {
+      background: #7f1d1d;
+      border: 1px solid #ef4444;
+    }
+
+    .toast--info {
+      background: #1e3a8a;
+      border: 1px solid #3b82f6;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
     }
   </style>
 </head>
 <body>
-  <div class="page-wrapper">
-    <div class="auth-container card glass">
-      <h1 style="text-align:center; margin-bottom: 2rem; font-size: 1.5rem; font-family: 'Fraunces', serif;">Join Midnight Stories</h1>
-      <form id="signupForm" class="auth-form" enctype="multipart/form-data">
-        <input type="text" id="fullname" class="auth-input" placeholder="Full Name" required>
-        <input type="text" id="userid" class="auth-input" placeholder="Custom User ID (optional, e.g. USER_XYZ)" pattern="^[a-zA-Z0-9_]{3,20}$" title="3-20 characters, alphanumeric and underscores only">
-        <input type="email" id="email" class="auth-input" placeholder="Email Address" required>
-        <input type="tel" id="phone" class="auth-input" placeholder="Phone Number (optional)">
-        
-        <div style="display:flex; flex-direction:column; gap: 4px;">
-          <label style="font-size:0.85rem; opacity:0.8; margin-left:4px;">Date of Birth</label>
-          <input type="date" id="dob" class="auth-input" required>
-        </div>
-        
-        <input type="password" id="password" class="auth-input" placeholder="Password (min 6 chars)" required minlength="6">
-        
-        <!-- Profile Picture Upload (Optional) -->
-        <div style="display:flex; flex-direction:column; gap: 4px;">
-          <label style="font-size:0.85rem; opacity:0.8; margin-left:4px;">Profile Picture (Optional)</label>
-          <div id="signupFileDropzone" class="signup-dropzone">
-            <div style="font-size: 1.5rem; margin-bottom: 6px;">📷</div>
-            <p style="margin: 0; font-size: 0.85rem; opacity: 0.8;">Click to upload profile photo</p>
-            <p style="margin: 4px 0 0 0; font-size: 0.72rem; opacity: 0.5;">JPG, PNG, or WebP (max 5MB)</p>
-            <input type="file" id="signupFileInput" accept=".jpg,.jpeg,.png,.webp" style="display:none;">
-          </div>
-          <div id="signupFilePreview" class="signup-preview" style="display: none;">
-            <img id="signupPreviewImage" src="" alt="Preview" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1);">
-            <div style="flex: 1; min-width: 0; font-size: 0.8rem;">
-              <p id="signupFileName" style="margin: 0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></p>
-              <p id="signupFileSize" style="margin: 2px 0 0 0; opacity: 0.6; font-size: 0.72rem;"></p>
+
+  <div class="dual-container">
+    
+    <!-- Left Side: Branding & Media -->
+    <div class="branding-panel">
+      <div class="brand-header">
+        <div class="brand-logo-icon">🌙</div>
+        <a href="/" class="brand-logo-text">Midnight Stories</a>
+      </div>
+
+      <div class="brand-hero-content">
+        <div class="brand-badge">🚀 Join the Guild</div>
+        <h1 class="brand-headline">Share Your Story <span>Anonymously</span></h1>
+        <p class="brand-subheadline">Create your creator profile to write web novels, post secret confessions, and connect with thousands of supportive readers worldwide.</p>
+
+        <div class="feature-highlights">
+          <div class="feature-item">
+            <div class="feature-item-icon">✍️</div>
+            <div class="feature-item-text">
+              <h4>Publish Web Novels &amp; Stories</h4>
+              <p>Format chapters, customize book covers, and reach dedicated fantasy &amp; drama fans.</p>
             </div>
-            <button type="button" id="signupRemoveFile" style="background: none; border: none; color: #ff5e5e; font-size: 0.8rem; cursor: pointer; padding: 4px;">✕ Remove</button>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-item-icon">💬</div>
+            <div class="feature-item-text">
+              <h4>Engage in Live Reader Guilds</h4>
+              <p>Discuss plot twists, participate in voting polls, and give chapter feedback.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-item-icon">🛡️</div>
+            <div class="feature-item-text">
+              <h4>End-to-End Privacy Protection</h4>
+              <p>Your real identity remains 100% confidential. You control what you display.</p>
+            </div>
           </div>
         </div>
+      </div>
 
-        <button type="submit" id="submitBtn" class="auth-btn btn-primary" style="margin-top: 0.5rem;">Create Account</button>
-      </form>
-      
-      <div style="text-align:center; margin: 1.5rem 0; opacity: 0.5;">— or —</div>
-      
-      <button type="button" onclick="window.location.href='/api/auth/google'" class="auth-btn btn-google">
-        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-        Sign up with Google
-      </button>
-
-      <div class="auth-links">
-        Already have an account? <a href="/login">Login</a>
+      <div class="brand-footer">
+        © 2026 Midnight Stories Inc. All rights reserved. • <a href="/" style="color: #94a3b8; text-decoration: none;">Home</a>
       </div>
     </div>
+
+    <!-- Right Side: Sign-Up Form Panel -->
+    <div class="form-panel">
+      <div class="form-card">
+        
+        <div class="form-header">
+          <h2 class="form-title">Create an Account</h2>
+          <p class="form-subtitle">Fill in your details below to start your storytelling journey.</p>
+        </div>
+
+        <form id="signupForm" enctype="multipart/form-data">
+          
+          <div class="form-grid-2">
+            <div class="auth-form-group">
+              <label class="form-label" for="fullname">Full Name *</label>
+              <input type="text" id="fullname" class="auth-input" placeholder="e.g. Sarah Jenkins" required autocomplete="name">
+            </div>
+
+            <div class="auth-form-group">
+              <label class="form-label" for="userid">Custom User ID</label>
+              <input type="text" id="userid" class="auth-input" placeholder="e.g. USER_SARAH" pattern="^[a-zA-Z0-9_]{3,20}$" title="3-20 characters, alphanumeric and underscores only">
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="auth-form-group">
+              <label class="form-label" for="email">Work/Personal Email *</label>
+              <input type="email" id="email" class="auth-input" placeholder="sarah@example.com" required autocomplete="email">
+            </div>
+
+            <div class="auth-form-group">
+              <label class="form-label" for="phone">Phone Number</label>
+              <input type="tel" id="phone" class="auth-input" placeholder="+1 (555) 000-0000" autocomplete="tel">
+            </div>
+          </div>
+
+          <div class="auth-form-group">
+            <label class="form-label" for="dob">Date of Birth * (Must be 18+)</label>
+            <input type="date" id="dob" class="auth-input" required>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="auth-form-group">
+              <label class="form-label" for="password">Password *</label>
+              <div class="input-wrapper">
+                <input type="password" id="password" class="auth-input" placeholder="Min 8 characters" required minlength="8" oninput="evaluateSignupPasswordStrength()">
+                <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility('password', this)">👁️</button>
+              </div>
+            </div>
+
+            <div class="auth-form-group">
+              <label class="form-label" for="confirmPassword">Confirm Password *</label>
+              <div class="input-wrapper">
+                <input type="password" id="confirmPassword" class="auth-input" placeholder="Re-enter password" required oninput="evaluateSignupPasswordStrength()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Password Strength Bar & Match Status -->
+          <div class="strength-meter">
+            <div class="strength-bar" id="signupStrBar1"></div>
+            <div class="strength-bar" id="signupStrBar2"></div>
+            <div class="strength-bar" id="signupStrBar3"></div>
+            <div class="strength-bar" id="signupStrBar4"></div>
+          </div>
+          <div id="signupPasswordMatchMsg" style="font-size: 0.78rem; margin-bottom: 12px;"></div>
+
+          <!-- Profile Picture Upload (Optional) -->
+          <div class="auth-form-group">
+            <label class="form-label">Profile Photo (Optional)</label>
+            <div id="signupFileDropzone" class="signup-dropzone">
+              <div style="font-size: 1.4rem; margin-bottom: 4px;">📷</div>
+              <p style="margin: 0; font-size: 0.83rem; font-weight: 500;">Click or drag profile photo here</p>
+              <p style="margin: 2px 0 0 0; font-size: 0.72rem; opacity: 0.6;">JPG, PNG, or WebP (Max 5MB)</p>
+              <input type="file" id="signupFileInput" accept=".jpg,.jpeg,.png,.webp" style="display:none;">
+            </div>
+
+            <div id="signupFilePreview" class="signup-preview" style="display: none;">
+              <img id="signupPreviewImage" src="" alt="Preview" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-indigo);">
+              <div style="flex: 1; min-width: 0; font-size: 0.8rem;">
+                <p id="signupFileName" style="margin: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #fff;"></p>
+                <p id="signupFileSize" style="margin: 2px 0 0 0; opacity: 0.6; font-size: 0.72rem;"></p>
+              </div>
+              <button type="button" id="signupRemoveFile" style="background: none; border: none; color: #f87171; font-size: 0.8rem; cursor: pointer; padding: 4px; font-weight: 600;">✕ Remove</button>
+            </div>
+          </div>
+
+          <!-- Terms & Conditions Agreement -->
+          <label class="terms-agreement">
+            <input type="checkbox" id="termsAgreement" required>
+            <span>I agree to the <a href="/terms" target="_blank">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank">Privacy Policy</a>. I confirm that I am at least 18 years of age.</span>
+          </label>
+
+          <button type="submit" id="submitBtn" class="btn-submit">
+            <span>Create Account 🚀</span>
+          </button>
+
+        </form>
+
+        <div class="divider"><span>or sign up with</span></div>
+
+        <button type="button" onclick="window.location.href='/api/auth/google'" class="btn-google">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Google SSO
+        </button>
+
+        <div class="toggle-auth-link">
+          Already have an account? <a href="/login">Log in here</a>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 
   <!-- Cropper Modal -->
-  <div id="cropperModal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #121212; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; width: 100%; max-width: 400px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-      <h2 style="margin-top: 0; margin-bottom: 15px; color: white; text-align: center; font-size: 1.1rem; font-family: inherit;">Crop Profile Picture</h2>
+  <div id="cropperModal" style="display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 16px; width: 100%; max-width: 400px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      <h3 style="margin-top: 0; margin-bottom: 15px; color: white; text-align: center; font-size: 1.1rem; font-family: 'Fraunces', serif;">Crop Profile Photo</h3>
       <div style="max-height: 280px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #000; border-radius: 8px;">
-        <img id="cropperImage" alt="Crop profile photo preview - Midnight Stories portal" style="max-width: 100%; max-height: 280px;">
+        <img id="cropperImage" alt="Crop profile photo preview" style="max-width: 100%; max-height: 280px;">
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
-        <button type="button" id="cropperCancelBtn" style="padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: white; font-family: inherit;">Cancel</button>
-        <button type="button" id="cropperConfirmBtn" style="padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; border: none; background: var(--primary, #5c6ac4); color: white; font-family: inherit; font-weight: bold;">Crop & Save</button>
+        <button type="button" id="cropperCancelBtn" style="padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; border: 1px solid var(--border-color); background: transparent; color: white;">Cancel</button>
+        <button type="button" id="cropperConfirmBtn" style="padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; border: none; background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple)); color: white; font-weight: bold;">Crop &amp; Save</button>
       </div>
     </div>
   </div>
 
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
   <script>
+    // Toggle Password Visibility
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+      }
+    }
+
+    // Toast Notification System
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast toast--${type}`;
+      
+      const icon = type === 'success' ? '✅' : (type === 'error' ? '⚠️' : 'ℹ️');
+      toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+      
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // Password Strength & Match Handler
+    function evaluateSignupPasswordStrength() {
+      const p1 = document.getElementById('password').value;
+      const p2 = document.getElementById('confirmPassword').value;
+
+      const hasLen = p1.length >= 8;
+      const hasNum = /\d/.test(p1);
+      const hasSpec = /[!@#$%^&*(),.?":{}|<>]/.test(p1);
+      const hasCase = /[a-z]/.test(p1) && /[A-Z]/.test(p1);
+
+      const score = [hasLen, hasNum, hasSpec, hasCase].filter(Boolean).length;
+      const colors = ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'];
+
+      for (let i = 1; i <= 4; i++) {
+        const bar = document.getElementById(`signupStrBar${i}`);
+        if (i <= score) {
+          bar.style.background = colors[score - 1];
+        } else {
+          bar.style.background = 'rgba(255,255,255,0.1)';
+        }
+      }
+
+      const matchMsg = document.getElementById('signupPasswordMatchMsg');
+      if (p2.length > 0) {
+        if (p1 === p2) {
+          matchMsg.style.color = '#34d399';
+          matchMsg.textContent = '✓ Passwords match';
+        } else {
+          matchMsg.style.color = '#f87171';
+          matchMsg.textContent = '✕ Passwords do not match';
+        }
+      } else {
+        matchMsg.textContent = '';
+      }
+    }
+
+    // Photo Upload & Cropper Logic
     let selectedFile = null;
     let cropper = null;
 
@@ -246,12 +814,12 @@
     function handleFile(file) {
       const allowed = ['image/jpeg', 'image/png', 'image/webp'];
       if (!allowed.includes(file.type)) {
-        alert('Only JPG, PNG, and WebP images are allowed.');
+        showToast('Only JPG, PNG, and WebP images are allowed.', 'error');
         fileInput.value = '';
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
-        alert('File must be under 5MB.');
+        showToast('File size must be under 5MB.', 'error');
         fileInput.value = '';
         return;
       }
@@ -271,10 +839,7 @@
         });
 
         document.getElementById('cropperConfirmBtn').onclick = () => {
-          const canvas = cropper.getCroppedCanvas({
-            width: 300,
-            height: 300
-          });
+          const canvas = cropper.getCroppedCanvas({ width: 300, height: 300 });
 
           canvas.toBlob((blob) => {
             if (!blob) return;
@@ -302,16 +867,35 @@
       reader.readAsDataURL(file);
     }
 
+    // Sign-Up Form Submit Handler
     document.getElementById('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      const full_name = document.getElementById('fullname').value;
-      const user_id = document.getElementById('userid').value.trim() || '';
-      const email = document.getElementById('email').value;
-      const phone_number = document.getElementById('phone').value.trim() || '';
-      const dob = document.getElementById('dob').value || '';
+      const full_name = document.getElementById('fullname').value.trim();
+      const user_id = document.getElementById('userid').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone_number = document.getElementById('phone').value.trim();
+      const dob = document.getElementById('dob').value;
       const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const termsChecked = document.getElementById('termsAgreement').checked;
 
+      if (!termsChecked) {
+        showToast('You must agree to the Terms & Conditions.', 'error');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showToast('Passwords do not match.', 'error');
+        return;
+      }
+
+      if (password.length < 8) {
+        showToast('Password must be at least 8 characters.', 'error');
+        return;
+      }
+
+      // Age check 18+
       if (dob) {
         const today = new Date();
         const birthDate = new Date(dob);
@@ -321,14 +905,14 @@
           age--;
         }
         if (age < 18) {
-          alert('You must be 18 years or older to create an account.');
+          showToast('You must be 18 years or older to create an account.', 'error');
           return;
         }
       }
 
       const submitBtn = document.getElementById('submitBtn');
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Creating Account...';
+      submitBtn.innerHTML = '<span>Creating Account... ⌛</span>';
 
       try {
         const formData = new FormData();
@@ -346,20 +930,26 @@
           method: 'POST',
           body: formData
         });
+
         const data = await res.json();
+
         if (res.ok) {
           localStorage.setItem('token', data.token);
           localStorage.setItem('user', JSON.stringify(data.user));
-          const params = new URLSearchParams(window.location.search);
-          window.location.href = params.get('redirect') || '/';
+          showToast('Account created successfully! Welcome to Midnight Stories.', 'success');
+
+          setTimeout(() => {
+            const params = new URLSearchParams(window.location.search);
+            window.location.href = params.get('redirect') || '/';
+          }, 800);
         } else {
-          alert(data.error);
+          showToast(data.error || 'Failed to create account.', 'error');
         }
       } catch (err) {
-        alert('An error occurred during signup.');
+        showToast('Network error occurred during registration.', 'error');
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Create Account';
+        submitBtn.innerHTML = '<span>Create Account 🚀</span>';
       }
     });
   </script>

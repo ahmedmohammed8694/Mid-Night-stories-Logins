@@ -7,133 +7,825 @@
   <meta name="description" content="Log in to your Midnight Stories account to securely share stories, connect with the community, and manage your anonymous profile.">
   <meta name="robots" content="noindex, follow">
   <link rel="canonical" href="https://midnightstories.dpdns.org/login">
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..800;1,9..144,400..800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=20260730_v2">
   <style>
-    body {
-      background-color: var(--ms-bg) !important;
-      color: var(--ms-text) !important;
-      font-family: var(--font-primary) !important;
+    :root {
+      --bg-dark: #070611;
+      --bg-surface: #100f24;
+      --bg-panel: #161433;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --accent-purple: #8b5cf6;
+      --accent-indigo: #6366f1;
+      --primary-gold: #f3c77c;
+      --accent-emerald: #34d399;
+      --accent-rose: #f87171;
+    }
+
+    * {
+      box-sizing: border-box;
       margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
       min-height: 100vh;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      flex-direction: column;
     }
-    .auth-container {
-      max-width: 420px;
+
+    /* Dual-Panel Layout */
+    .dual-container {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      min-height: 100vh;
       width: 100%;
-      margin: 40px auto;
-      padding: 36px;
-      background: var(--ms-surface);
-      border: 1px solid var(--ms-border);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-md);
-      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
     }
-    .auth-container:hover {
-      border-color: var(--ms-accent);
-      box-shadow: 0 4px 20px var(--ms-accent-glow-sm);
+
+    @media (max-width: 960px) {
+      .dual-container {
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
     }
-    .auth-form {
+
+    /* Left Panel: Branding & Media */
+    .branding-panel {
+      position: relative;
+      background: linear-gradient(135deg, #0f0c29 0%, #24243e 50%, #302b63 100%);
+      padding: 60px 48px;
       display: flex;
       flex-direction: column;
-      gap: 1.25rem;
+      justify-content: space-between;
+      overflow: hidden;
+      border-right: 1px solid var(--border-color);
     }
-    .auth-input {
-      padding: 0.75rem 1rem;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--ms-border);
-      background: var(--bg-input);
-      color: var(--ms-text);
-      font-family: var(--font-primary);
-      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-      outline: none;
+
+    .branding-panel::before {
+      content: '';
+      position: absolute;
+      top: -150px;
+      left: -150px;
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.35) 0%, rgba(0, 0, 0, 0) 70%);
+      border-radius: 50%;
+      pointer-events: none;
     }
-    .auth-input:focus {
-      border-color: var(--ms-accent);
-      box-shadow: 0 0 10px var(--ms-accent-glow-sm);
-      background: var(--bg-input-focus);
+
+    .branding-panel::after {
+      content: '';
+      position: absolute;
+      bottom: -150px;
+      right: -150px;
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(243, 199, 124, 0.25) 0%, rgba(0, 0, 0, 0) 70%);
+      border-radius: 50%;
+      pointer-events: none;
     }
-    .auth-btn {
-      padding: 0.85rem;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      font-weight: 600;
-      border: none;
-      font-family: var(--font-primary);
-      transition: all var(--transition-fast);
-      text-align: center;
+
+    .brand-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 2;
+    }
+
+    .brand-logo-icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple));
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
     }
-    .btn-primary {
-      background: var(--ms-accent);
-      color: var(--ms-bg);
+
+    .brand-logo-text {
+      font-family: 'Fraunces', serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+      text-decoration: none;
     }
-    .btn-primary:hover {
-      opacity: 0.9;
+
+    .brand-hero-content {
+      margin: auto 0;
+      z-index: 2;
+      max-width: 560px;
+      padding: 40px 0;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 99px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--primary-gold);
+      margin-bottom: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .brand-headline {
+      font-family: 'Fraunces', serif;
+      font-size: 2.75rem;
+      line-height: 1.2;
+      color: #fff;
+      margin-bottom: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-headline span {
+      background: linear-gradient(135deg, var(--primary-gold), #ffd79e);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-subheadline {
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+      margin-bottom: 32px;
+    }
+
+    .feature-highlights {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 12px 16px;
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+    }
+
+    .feature-item-icon {
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+
+    .feature-item-text h4 {
+      font-size: 0.9rem;
+      color: #fff;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .feature-item-text p {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin: 0;
+    }
+
+    .brand-footer {
+      font-size: 0.8rem;
+      color: #64748b;
+      z-index: 2;
+    }
+
+    /* Right Panel: Form Container */
+    .form-panel {
+      background-color: var(--bg-surface);
+      padding: 60px 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    @media (max-width: 600px) {
+      .branding-panel {
+        padding: 40px 24px;
+      }
+      .form-panel {
+        padding: 40px 20px;
+      }
+      .brand-headline {
+        font-size: 2rem;
+      }
+    }
+
+    .form-card {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .form-header {
+      margin-bottom: 28px;
+      text-align: left;
+    }
+
+    .form-title {
+      font-family: 'Fraunces', serif;
+      font-size: 1.85rem;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .form-subtitle {
+      font-size: 0.9rem;
+      color: #94a3b8;
+    }
+
+    .auth-form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .auth-input {
+      width: 100%;
+      height: 46px;
+      padding: 0 14px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.92rem;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .auth-input:focus {
+      border-color: var(--accent-indigo);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .toggle-password-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px;
+    }
+
+    .toggle-password-btn:hover {
+      color: #fff;
+    }
+
+    .form-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 22px;
+      font-size: 0.85rem;
+    }
+
+    .remember-me {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #94a3b8;
+      cursor: pointer;
+    }
+
+    .remember-me input[type="checkbox"] {
+      accent-color: var(--accent-indigo);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .forgot-link {
+      color: var(--primary-gold);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .forgot-link:hover {
+      text-decoration: underline;
+      color: #ffe6b0;
+    }
+
+    .btn-submit {
+      width: 100%;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple));
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-submit:hover {
+      opacity: 0.95;
       transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
     }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 24px 0;
+      color: #64748b;
+      font-size: 0.8rem;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .divider span {
+      padding: 0 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
     .btn-google {
-      background: var(--ms-surface);
-      color: var(--ms-text-secondary);
-      border: 1px solid var(--ms-border);
+      width: 100%;
+      height: 46px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      color: #e2e8f0;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 10px;
+      transition: all 0.2s ease;
       text-decoration: none;
     }
+
     .btn-google:hover {
-      border-color: var(--ms-accent);
-      background: rgba(255, 255, 255, 0.03);
-      color: var(--ms-text);
+      border-color: rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.04);
+      color: #fff;
     }
-    .auth-links {
+
+    .toggle-auth-link {
       text-align: center;
-      margin-top: 1.5rem;
-      font-size: 0.9em;
-      color: var(--ms-text-secondary);
+      margin-top: 24px;
+      font-size: 0.88rem;
+      color: #94a3b8;
     }
-    .auth-links a {
-      color: var(--ms-accent);
+
+    .toggle-auth-link a {
+      color: var(--accent-indigo);
       text-decoration: none;
-      font-weight: 600;
+      font-weight: 700;
     }
-    .auth-links a:hover {
+
+    .toggle-auth-link a:hover {
       text-decoration: underline;
+    }
+
+    /* Modal Styling for Password Reset OTP Workflow */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(4, 3, 10, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 3000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 440px;
+      padding: 32px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      position: relative;
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.4rem;
+      cursor: pointer;
+    }
+
+    .modal-close-btn:hover {
+      color: #fff;
+    }
+
+    .step-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 99px;
+      transition: all 0.3s ease;
+    }
+
+    .step-dot.active {
+      background: var(--accent-indigo);
+    }
+
+    .step-dot.completed {
+      background: var(--accent-emerald);
+    }
+
+    /* Password Strength Meter */
+    .strength-meter {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-top: 8px;
+      margin-bottom: 12px;
+    }
+
+    .strength-bar {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+    }
+
+    .strength-rules {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-bottom: 14px;
+    }
+
+    .rule-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rule-item.valid {
+      color: var(--accent-emerald);
+    }
+
+    /* Toast Notification Container */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 4000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast {
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      animation: slideIn 0.3s ease forwards;
+    }
+
+    .toast--success {
+      background: #064e3b;
+      border: 1px solid #10b981;
+    }
+
+    .toast--error {
+      background: #7f1d1d;
+      border: 1px solid #ef4444;
+    }
+
+    .toast--info {
+      background: #1e3a8a;
+      border: 1px solid #3b82f6;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
     }
   </style>
 </head>
 <body>
-  <div class="page-wrapper">
-    <div class="auth-container card glass">
-      <h1 style="text-align:center; margin-bottom: 2rem; font-size: 1.5rem;">Welcome Back</h1>
-      <form id="loginForm" class="auth-form">
-        <input type="email" id="email" class="auth-input" placeholder="Email Address" required>
-        <input type="password" id="password" class="auth-input" placeholder="Password" required>
-        <button type="submit" class="auth-btn btn-primary">Login</button>
-      </form>
-      
-      <div style="text-align:center; margin: 1.5rem 0; opacity: 0.5;">— or —</div>
-      
-      <button type="button" onclick="window.location.href='/api/auth/google'" class="auth-btn btn-google">
-        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-        Continue with Google
-      </button>
 
-      <div class="auth-links">
-        Don't have an account? <a href="/signup">Sign up</a>
+  <div class="dual-container">
+    
+    <!-- Left Side: Branding & Value Proposition -->
+    <div class="branding-panel">
+      <div class="brand-header">
+        <div class="brand-logo-icon">🌙</div>
+        <a href="/" class="brand-logo-text">Midnight Stories</a>
       </div>
+
+      <div class="brand-hero-content">
+        <div class="brand-badge">✨ Anonymous Storytelling Guild</div>
+        <h1 class="brand-headline">Where Whispers Become <span>Legends</span></h1>
+        <p class="brand-subheadline">Step into an immersive realm of captivating web novels, anonymous personal confessions, and real-time creator discussions.</p>
+
+        <div class="feature-highlights">
+          <div class="feature-item">
+            <div class="feature-item-icon">🔒</div>
+            <div class="feature-item-text">
+              <h4>100% Anonymous &amp; Encrypted</h4>
+              <p>Share your stories and engage with complete privacy and data protection.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-item-icon">⚡</div>
+            <div class="feature-item-text">
+              <h4>Real-Time Community Guild</h4>
+              <p>Connect with passionate readers, exchange feedback, and build your audience.</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-item-icon">📚</div>
+            <div class="feature-item-text">
+              <h4>Personal Library &amp; Progress Sync</h4>
+              <p>Save bookmarks, track chapter progress, and pick up right where you left off.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="brand-footer">
+        © 2026 Midnight Stories Inc. All rights reserved. • <a href="/" style="color: #94a3b8; text-decoration: none;">Home</a>
+      </div>
+    </div>
+
+    <!-- Right Side: Login Form Panel -->
+    <div class="form-panel">
+      <div class="form-card">
+        
+        <div class="form-header">
+          <h2 class="form-title">Welcome Back</h2>
+          <p class="form-subtitle">Log in to access your library, stories, and community profile.</p>
+        </div>
+
+        <form id="loginForm">
+          <div class="auth-form-group">
+            <label class="form-label" for="loginEmail">Email Address</label>
+            <div class="input-wrapper">
+              <input type="email" id="loginEmail" class="auth-input" placeholder="name@example.com" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="auth-form-group">
+            <label class="form-label" for="loginPassword">Password</label>
+            <div class="input-wrapper">
+              <input type="password" id="loginPassword" class="auth-input" placeholder="••••••••••••" required autocomplete="current-password">
+              <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility('loginPassword', this)">👁️</button>
+            </div>
+          </div>
+
+          <div class="form-options">
+            <label class="remember-me">
+              <input type="checkbox" id="rememberMe">
+              <span>Remember Me</span>
+            </label>
+            <a href="javascript:void(0)" class="forgot-link" onclick="openForgotPasswordModal()">Forgot Password?</a>
+          </div>
+
+          <button type="submit" id="loginSubmitBtn" class="btn-submit">
+            <span>Log In to Account</span>
+          </button>
+        </form>
+
+        <div class="divider"><span>or continue with</span></div>
+
+        <button type="button" onclick="window.location.href='/api/auth/google'" class="btn-google">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Google SSO
+        </button>
+
+        <div class="toggle-auth-link">
+          Don't have an account? <a href="/signup">Sign up for free</a>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PASSWORD RESET OTP WORKFLOW MODAL -->
+  <div id="forgotPasswordModal" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+      <button class="modal-close-btn" onclick="closeForgotPasswordModal()">✕</button>
+
+      <!-- Step Indicator -->
+      <div class="step-indicator">
+        <div class="step-dot active" id="dotStep1"></div>
+        <div class="step-dot" id="dotStep2"></div>
+        <div class="step-dot" id="dotStep3"></div>
+      </div>
+
+      <!-- STEP 1: Enter Email -->
+      <div id="resetStep1">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <span style="font-size: 2.2rem;">🔑</span>
+          <h3 style="font-family: 'Fraunces', serif; font-size: 1.4rem; color: #fff; margin-top: 8px;">Reset Password</h3>
+          <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Enter your registered work or personal email address to receive a 6-digit OTP verification code.</p>
+        </div>
+
+        <form onsubmit="event.preventDefault(); handleSendOtp();">
+          <div class="auth-form-group">
+            <label class="form-label">Email Address *</label>
+            <input type="email" id="resetEmailInput" class="auth-input" placeholder="e.g. user@midnightstories.org" required>
+          </div>
+          <button type="submit" id="btnSendOtp" class="btn-submit" style="height: 44px;">
+            <span>Send OTP Code 🚀</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- STEP 2: Enter OTP -->
+      <div id="resetStep2" style="display: none;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <span style="font-size: 2.2rem;">📩</span>
+          <h3 style="font-family: 'Fraunces', serif; font-size: 1.4rem; color: #fff; margin-top: 8px;">Verify OTP Code</h3>
+          <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">We sent a 6-digit verification code to <strong id="sentEmailLabel" style="color: var(--primary-gold);">email@example.com</strong></p>
+        </div>
+
+        <!-- Simulated OTP Banner for local/demo test convenience -->
+        <div id="simulatedOtpBanner" style="display: none; background: rgba(52, 211, 153, 0.15); border: 1px solid #34d399; border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; font-size: 0.82rem; color: #34d399; text-align: center;">
+          ⚡ Demo Code: <strong id="simulatedOtpValue" style="font-size: 1.1rem; letter-spacing: 0.1em; color: #fff;">123456</strong>
+        </div>
+
+        <form onsubmit="event.preventDefault(); handleVerifyOtp();">
+          <div class="auth-form-group">
+            <label class="form-label">6-Digit Verification Code *</label>
+            <input type="text" id="otpCodeInput" class="auth-input" placeholder="123456" maxlength="6" pattern="[0-9]{6}" required style="text-align: center; font-size: 1.3rem; letter-spacing: 0.3em; font-family: monospace;">
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 0.8rem;">
+            <span style="color: #94a3b8;" id="timerLabel">⏱️ Expires in: <strong id="otpTimer" style="color: var(--primary-gold);">10:00</strong></span>
+            <button type="button" id="btnResendOtp" onclick="handleResendOtp()" style="background: none; border: none; color: var(--accent-indigo); font-weight: 600; cursor: pointer;" disabled>Resend OTP</button>
+          </div>
+
+          <button type="submit" id="btnVerifyOtp" class="btn-submit" style="height: 44px;">
+            <span>Verify OTP Code</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- STEP 3: Create New Password -->
+      <div id="resetStep3" style="display: none;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <span style="font-size: 2.2rem;">🔒</span>
+          <h3 style="font-family: 'Fraunces', serif; font-size: 1.4rem; color: #fff; margin-top: 8px;">Create New Password</h3>
+          <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">Choose a strong new password for your account.</p>
+        </div>
+
+        <form onsubmit="event.preventDefault(); handleResetPassword();">
+          <div class="auth-form-group">
+            <label class="form-label">New Password *</label>
+            <div class="input-wrapper">
+              <input type="password" id="newPasswordInput" class="auth-input" placeholder="Min 8 characters" required oninput="evaluatePasswordStrength()">
+              <button type="button" class="toggle-password-btn" onclick="togglePasswordVisibility('newPasswordInput', this)">👁️</button>
+            </div>
+
+            <!-- Strength Bars -->
+            <div class="strength-meter">
+              <div class="strength-bar" id="strBar1"></div>
+              <div class="strength-bar" id="strBar2"></div>
+              <div class="strength-bar" id="strBar3"></div>
+              <div class="strength-bar" id="strBar4"></div>
+            </div>
+
+            <div class="strength-rules">
+              <div class="rule-item" id="ruleLen"><span>•</span> Min 8 Chars</div>
+              <div class="rule-item" id="ruleNum"><span>•</span> Contains Number</div>
+              <div class="rule-item" id="ruleSpec"><span>•</span> Special Character</div>
+              <div class="rule-item" id="ruleCase"><span>•</span> Upper &amp; Lower</div>
+            </div>
+          </div>
+
+          <div class="auth-form-group">
+            <label class="form-label">Confirm New Password *</label>
+            <div class="input-wrapper">
+              <input type="password" id="confirmPasswordInput" class="auth-input" placeholder="Re-enter new password" required oninput="evaluatePasswordStrength()">
+            </div>
+            <div id="passwordMatchMsg" style="font-size: 0.78rem; margin-top: 4px;"></div>
+          </div>
+
+          <button type="submit" id="btnUpdatePassword" class="btn-submit" style="height: 44px;">
+            <span>Update Password &amp; Login 🚀</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- STEP 4: Success Message -->
+      <div id="resetStep4" style="display: none; text-align: center; padding: 20px 0;">
+        <span style="font-size: 3.5rem;">🎉</span>
+        <h3 style="font-family: 'Fraunces', serif; font-size: 1.5rem; color: var(--accent-emerald); margin-top: 12px;">Password Updated!</h3>
+        <p style="font-size: 0.88rem; color: #cbd5e1; margin: 12px 0 24px 0;">Your password has been changed successfully. You can now log in with your new credentials.</p>
+        <button class="btn-submit" onclick="closeForgotPasswordModal()">Back to Login</button>
+      </div>
+
     </div>
   </div>
 
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
   <script>
+    // Toggle Password Visibility
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+      }
+    }
+
+    // Toast Notification System
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast toast--${type}`;
+      
+      const icon = type === 'success' ? '✅' : (type === 'error' ? '⚠️' : 'ℹ️');
+      toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+      
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // Login Form Submit Handler
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      const submitBtn = document.getElementById('loginSubmitBtn');
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>Logging in... ⌛</span>';
 
       try {
         const res = await fetch('/api/auth/login', {
@@ -141,19 +833,250 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
+
         const data = await res.json();
+
         if (res.ok) {
           localStorage.setItem('token', data.token);
           localStorage.setItem('user', JSON.stringify(data.user));
-          const params = new URLSearchParams(window.location.search);
-          window.location.href = params.get('redirect') || '/';
+          showToast(`Welcome back, ${data.user.full_name || 'User'}!`, 'success');
+          
+          setTimeout(() => {
+            const params = new URLSearchParams(window.location.search);
+            window.location.href = params.get('redirect') || '/';
+          }, 800);
         } else {
-          alert(data.error);
+          showToast(data.error || 'Invalid credentials', 'error');
         }
       } catch (err) {
-        alert('An error occurred during login.');
+        showToast('Network error occurred during login.', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Log In to Account</span>';
       }
     });
+
+    // PASSWORD RESET OTP STATE & TIMERS
+    let resetEmail = '';
+    let currentOtp = '';
+    let otpCountdownTimer = null;
+    let secondsRemaining = 600;
+
+    function openForgotPasswordModal() {
+      document.getElementById('forgotPasswordModal').style.display = 'flex';
+      switchResetStep(1);
+    }
+
+    function closeForgotPasswordModal() {
+      document.getElementById('forgotPasswordModal').style.display = 'none';
+      if (otpCountdownTimer) clearInterval(otpCountdownTimer);
+    }
+
+    function switchResetStep(step) {
+      document.getElementById('resetStep1').style.display = step === 1 ? 'block' : 'none';
+      document.getElementById('resetStep2').style.display = step === 2 ? 'block' : 'none';
+      document.getElementById('resetStep3').style.display = step === 3 ? 'block' : 'none';
+      document.getElementById('resetStep4').style.display = step === 4 ? 'block' : 'none';
+
+      document.getElementById('dotStep1').className = `step-dot ${step >= 1 ? (step > 1 ? 'completed' : 'active') : ''}`;
+      document.getElementById('dotStep2').className = `step-dot ${step >= 2 ? (step > 2 ? 'completed' : 'active') : ''}`;
+      document.getElementById('dotStep3').className = `step-dot ${step >= 3 ? (step > 3 ? 'completed' : 'active') : ''}`;
+    }
+
+    // Step 1: Send OTP
+    async function handleSendOtp() {
+      const email = document.getElementById('resetEmailInput').value.trim();
+      if (!email) return;
+
+      const btn = document.getElementById('btnSendOtp');
+      btn.disabled = true;
+      btn.innerHTML = '<span>Sending OTP... ⌛</span>';
+
+      try {
+        const res = await fetch('/api/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          resetEmail = email;
+          document.getElementById('sentEmailLabel').textContent = email;
+
+          if (data.simulated_otp) {
+            currentOtp = data.simulated_otp;
+            document.getElementById('simulatedOtpValue').textContent = data.simulated_otp;
+            document.getElementById('simulatedOtpBanner').style.display = 'block';
+          }
+
+          showToast('OTP verification code sent to your email!', 'success');
+          switchResetStep(2);
+          startOtpTimer(data.expires_in_seconds || 600);
+        } else {
+          showToast(data.error || 'Failed to send OTP.', 'error');
+        }
+      } catch (e) {
+        showToast('Server error while requesting OTP.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Send OTP Code 🚀</span>';
+      }
+    }
+
+    // Step 2: Verify OTP
+    async function handleVerifyOtp() {
+      const otp = document.getElementById('otpCodeInput').value.trim();
+      if (!otp || otp.length !== 6) {
+        showToast('Please enter the full 6-digit OTP code.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnVerifyOtp');
+      btn.disabled = true;
+      btn.innerHTML = '<span>Verifying... ⌛</span>';
+
+      try {
+        const res = await fetch('/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: resetEmail, otp })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          currentOtp = otp;
+          showToast('OTP verified successfully!', 'success');
+          switchResetStep(3);
+        } else {
+          showToast(data.error || 'Invalid OTP code.', 'error');
+        }
+      } catch (e) {
+        showToast('Error verifying OTP.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Verify OTP Code</span>';
+      }
+    }
+
+    // Resend OTP
+    async function handleResendOtp() {
+      document.getElementById('otpCodeInput').value = '';
+      await handleSendOtp();
+    }
+
+    // Start Timer
+    function startOtpTimer(duration) {
+      if (otpCountdownTimer) clearInterval(otpCountdownTimer);
+      secondsRemaining = duration;
+      const resendBtn = document.getElementById('btnResendOtp');
+      resendBtn.disabled = true;
+
+      otpCountdownTimer = setInterval(() => {
+        secondsRemaining--;
+        const mins = Math.floor(secondsRemaining / 60);
+        const secs = secondsRemaining % 60;
+        document.getElementById('otpTimer').textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+        if (secondsRemaining <= 570) { // Allow resend after 30 seconds
+          resendBtn.disabled = false;
+        }
+
+        if (secondsRemaining <= 0) {
+          clearInterval(otpCountdownTimer);
+          document.getElementById('otpTimer').textContent = 'EXPIRED';
+          showToast('OTP code expired. Please resend a new code.', 'info');
+        }
+      }, 1000);
+    }
+
+    // Password Strength Meter & Matching Validation
+    function evaluatePasswordStrength() {
+      const p1 = document.getElementById('newPasswordInput').value;
+      const p2 = document.getElementById('confirmPasswordInput').value;
+
+      const hasLen = p1.length >= 8;
+      const hasNum = /\d/.test(p1);
+      const hasSpec = /[!@#$%^&*(),.?":{}|<>]/.test(p1);
+      const hasCase = /[a-z]/.test(p1) && /[A-Z]/.test(p1);
+
+      document.getElementById('ruleLen').className = `rule-item ${hasLen ? 'valid' : ''}`;
+      document.getElementById('ruleNum').className = `rule-item ${hasNum ? 'valid' : ''}`;
+      document.getElementById('ruleSpec').className = `rule-item ${hasSpec ? 'valid' : ''}`;
+      document.getElementById('ruleCase').className = `rule-item ${hasCase ? 'valid' : ''}`;
+
+      const score = [hasLen, hasNum, hasSpec, hasCase].filter(Boolean).length;
+      const colors = ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'];
+
+      for (let i = 1; i <= 4; i++) {
+        const bar = document.getElementById(`strBar${i}`);
+        if (i <= score) {
+          bar.style.background = colors[score - 1];
+        } else {
+          bar.style.background = 'rgba(255,255,255,0.1)';
+        }
+      }
+
+      const matchMsg = document.getElementById('passwordMatchMsg');
+      if (p2.length > 0) {
+        if (p1 === p2) {
+          matchMsg.style.color = '#34d399';
+          matchMsg.textContent = '✓ Passwords match';
+        } else {
+          matchMsg.style.color = '#f87171';
+          matchMsg.textContent = '✕ Passwords do not match';
+        }
+      } else {
+        matchMsg.textContent = '';
+      }
+    }
+
+    // Step 3: Reset Password Finalize
+    async function handleResetPassword() {
+      const new_password = document.getElementById('newPasswordInput').value;
+      const confirm_password = document.getElementById('confirmPasswordInput').value;
+
+      if (new_password.length < 8) {
+        showToast('Password must be at least 8 characters.', 'error');
+        return;
+      }
+      if (new_password !== confirm_password) {
+        showToast('Passwords do not match.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnUpdatePassword');
+      btn.disabled = true;
+      btn.innerHTML = '<span>Updating Password... ⌛</span>';
+
+      try {
+        const res = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: resetEmail,
+            otp: currentOtp,
+            new_password
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          showToast('Password updated successfully!', 'success');
+          switchResetStep(4);
+        } else {
+          showToast(data.error || 'Failed to update password.', 'error');
+        }
+      } catch (e) {
+        showToast('Error resetting password.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Update Password &amp; Login 🚀</span>';
+      }
+    }
   </script>
 </body>
 </html>

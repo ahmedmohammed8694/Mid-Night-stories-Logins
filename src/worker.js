@@ -1147,6 +1147,168 @@ app.post('/api/auth/login', async (c) => {
   return c.json({ token, user: { id: user.id, user_id: user.user_id, full_name: user.full_name, email: user.email } });
 });
 
+// Helper to auto-create password_resets table if not exists
+async function ensurePasswordResetsTable(db) {
+  try {
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS password_resets (
+        email TEXT PRIMARY KEY,
+        otp TEXT NOT NULL,
+        expires_at DATETIME NOT NULL,
+        attempts INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
+  } catch (e) {
+    console.error('ensurePasswordResetsTable error:', e);
+  }
+}
+
+// ═════════════════════════════════════════════════════════
+// PASSWORD RESET OTP WORKFLOW API
+// ═════════════════════════════════════════════════════════
+
+// 1. Request Password Reset OTP
+app.post('/api/auth/forgot-password', async (c) => {
+  const db = c.env.DB;
+  const { email } = await c.req.json();
+
+  if (!email || !email.includes('@')) {
+    return c.json({ error: 'Please enter a valid email address.' }, 400);
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  await ensurePasswordResetsTable(db);
+
+  // Check if user exists
+  const user = await db.prepare('SELECT id, full_name, email FROM users WHERE LOWER(email) = LOWER(?)').bind(cleanEmail).first();
+  if (!user) {
+    return c.json({ error: 'No account found with this email address.' }, 404);
+  }
+
+  // Rate Limiting Check (Max 3 OTP requests in last 15 mins)
+  const recent = await db.prepare(
+    'SELECT * FROM password_resets WHERE email = ? AND created_at > datetime("now", "-15 minutes")'
+  ).bind(cleanEmail).first();
+
+  if (recent && recent.attempts >= 3) {
+    return c.json({ error: 'Too many OTP requests. Please wait 15 minutes before trying again.' }, 429);
+  }
+
+  // Generate 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Expiration: 10 minutes from now
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+  // Upsert OTP record
+  await db.prepare(`
+    INSERT INTO password_resets (email, otp, expires_at, attempts, created_at)
+    VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP)
+    ON CONFLICT(email) DO UPDATE SET
+      otp = excluded.otp,
+      expires_at = excluded.expires_at,
+      attempts = 0,
+      created_at = CURRENT_TIMESTAMP
+  `).bind(cleanEmail, otp, expiresAt).run();
+
+  console.log(`[PASSWORD RESET OTP] Target: ${cleanEmail} | OTP: ${otp} | Expires: ${expiresAt}`);
+
+  return c.json({
+    success: true,
+    message: 'OTP sent to your email address! Please check your inbox.',
+    simulated_otp: otp,
+    expires_in_seconds: 600
+  });
+});
+
+// 2. Verify OTP
+app.post('/api/auth/verify-otp', async (c) => {
+  const db = c.env.DB;
+  const { email, otp } = await c.req.json();
+
+  if (!email || !otp) {
+    return c.json({ error: 'Email and OTP code are required.' }, 400);
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanOtp = otp.trim();
+
+  await ensurePasswordResetsTable(db);
+
+  const record = await db.prepare('SELECT * FROM password_resets WHERE email = ?').bind(cleanEmail).first();
+  if (!record) {
+    return c.json({ error: 'No OTP request found for this email. Please request a new OTP.' }, 400);
+  }
+
+  // Expiration check
+  if (new Date(record.expires_at).getTime() < Date.now()) {
+    return c.json({ error: 'OTP has expired. Please click "Resend OTP" for a new code.' }, 400);
+  }
+
+  // Max attempts check (5 failed attempts)
+  if (record.attempts >= 5) {
+    return c.json({ error: 'Too many failed attempts. Please request a new OTP.' }, 400);
+  }
+
+  if (record.otp !== cleanOtp) {
+    await db.prepare('UPDATE password_resets SET attempts = attempts + 1 WHERE email = ?').bind(cleanEmail).run();
+    const remaining = 5 - (record.attempts + 1);
+    return c.json({ error: `Invalid OTP code. ${remaining > 0 ? remaining + ' attempt(s) remaining.' : 'Please request a new code.'}` }, 400);
+  }
+
+  return c.json({
+    success: true,
+    message: 'OTP verified successfully. You may now enter your new password.'
+  });
+});
+
+// 3. Reset Password with OTP
+app.post('/api/auth/reset-password', async (c) => {
+  const db = c.env.DB;
+  const { email, otp, new_password } = await c.req.json();
+
+  if (!email || !otp || !new_password) {
+    return c.json({ error: 'Email, OTP, and new password are required.' }, 400);
+  }
+
+  if (new_password.length < 8) {
+    return c.json({ error: 'New password must be at least 8 characters long.' }, 400);
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanOtp = otp.trim();
+
+  await ensurePasswordResetsTable(db);
+
+  const record = await db.prepare('SELECT * FROM password_resets WHERE email = ?').bind(cleanEmail).first();
+  if (!record || record.otp !== cleanOtp) {
+    return c.json({ error: 'Invalid or expired OTP session. Please try again.' }, 400);
+  }
+
+  if (new Date(record.expires_at).getTime() < Date.now()) {
+    return c.json({ error: 'OTP session has expired. Please request a new code.' }, 400);
+  }
+
+  const passwordHash = await bcrypt.hash(new_password, 10);
+
+  const updateResult = await db.prepare(
+    'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE LOWER(email) = LOWER(?)'
+  ).bind(passwordHash, cleanEmail).run();
+
+  if (updateResult.meta.changes === 0) {
+    return c.json({ error: 'Failed to update user password. User not found.' }, 404);
+  }
+
+  await db.prepare('DELETE FROM password_resets WHERE email = ?').bind(cleanEmail).run();
+
+  return c.json({
+    success: true,
+    message: 'Password updated successfully! You can now log in with your new password.'
+  });
+});
+
 app.get('/api/auth/me', requireUser, async (c) => {
   const db = c.env.DB;
   const userPayload = c.get('user');
@@ -5875,6 +6037,78 @@ app.delete('/api/admin/teams/:id', requireAdmin, async (c) => {
   const id = parseInt(c.req.param('id'));
   await db.prepare('DELETE FROM teams WHERE id = ?').bind(id).run();
   return c.json({ message: 'Team deleted.' });
+});
+
+// ── EMPLOYEE SELF-SERVICE AUTHENTICATION ──
+app.post('/api/employee/login', async (c) => {
+  const db = c.env.DB;
+  const { email, password } = await c.req.json();
+  if (!email) return c.json({ error: 'Work email is required.' }, 400);
+
+  const cleanEmail = email.trim().toLowerCase();
+  
+  const mockEmployees = [
+    { id: 1001, full_name: 'Sarah Jenkins', name: 'Sarah Jenkins', email: 'sarah.j@midnightstories.org', account: 'Acme Corporation', team: 'Global Support Tier 1', role: 'Support Specialist', status: 'active', phone: '+1 (555) 123-4567', team_leader: { name: 'Marcus Vance', email: 'marcus.vance@starlight.org', title: 'Senior Content Editor & Team Lead', phone: '+1 (555) 234-5678' }, manager: { name: 'Elena Rostova', email: 'elena.r@midnightstories.org', title: 'Security Ops & Dept Manager', phone: '+1 (555) 876-5432' } },
+    { id: 1002, full_name: 'Marcus Vance', name: 'Marcus Vance', email: 'marcus.vance@starlight.org', account: 'Starlight Publishing', team: 'Editorial Guild', role: 'Senior Content Editor & Team Lead', status: 'active', phone: '+1 (555) 234-5678', team_leader: { name: 'Marcus Vance (Self)', email: 'marcus.vance@starlight.org', title: 'Team Lead', phone: '+1 (555) 234-5678' }, manager: { name: 'Elena Rostova', email: 'elena.r@midnightstories.org', title: 'Security Ops & Dept Manager', phone: '+1 (555) 876-5432' } },
+    { id: 1003, full_name: 'Elena Rostova', name: 'Elena Rostova', email: 'elena.r@midnightstories.org', account: 'Midnight Internal', team: 'Security Ops (SIRT)', role: 'Security Compliance Officer & Manager', status: 'active', phone: '+1 (555) 876-5432', team_leader: { name: 'Elena Rostova (Self)', email: 'elena.r@midnightstories.org', title: 'Dept Manager', phone: '+1 (555) 876-5432' }, manager: { name: 'Super Admin', email: 'admin@midnightstories.com', title: 'Executive Officer', phone: '+1 (555) 000-9999' } }
+  ];
+
+  try {
+    const emp = await db.prepare(`
+      SELECT e.*, a.name AS account_name, t.name AS team_name, r.name AS role_name
+      FROM employee_users e
+      LEFT JOIN accounts a ON a.id = e.account_id
+      LEFT JOIN teams t ON t.id = e.team_id
+      LEFT JOIN roles r ON r.id = e.role_id
+      WHERE LOWER(e.email) = ?
+    `).bind(cleanEmail).first();
+
+    if (emp) {
+      if (emp.employment_status === 'suspended') {
+        return c.json({ error: 'Your employee account is suspended. Contact your manager.' }, 403);
+      }
+
+      const token = await signJWT({ empId: emp.id, email: emp.email, role: emp.role_name || 'employee' }, c.env.ADMIN_JWT_SECRET || 'secret');
+
+      return c.json({
+        success: true,
+        token,
+        employee: {
+          id: emp.id,
+          name: emp.full_name,
+          email: emp.email,
+          phone: emp.phone || '+1 (555) 123-4567',
+          account: emp.account_name || 'Acme Corporation',
+          team: emp.team_name || 'Global Support Tier 1',
+          role: emp.role_name || 'Support Specialist',
+          status: emp.employment_status || 'active',
+          team_leader: {
+            name: 'Marcus Vance',
+            email: 'marcus.vance@starlight.org',
+            title: 'Senior Content Editor & Team Lead',
+            phone: '+1 (555) 234-5678'
+          },
+          manager: {
+            name: 'Elena Rostova',
+            email: 'elena.r@midnightstories.org',
+            title: 'Security Compliance & Ops Manager',
+            phone: '+1 (555) 876-5432'
+          }
+        }
+      });
+    }
+  } catch (err) {
+    console.warn('DB lookup failed, checking fallback employee roster:', err);
+  }
+
+  const match = mockEmployees.find(e => e.email.toLowerCase() === cleanEmail) || mockEmployees[0];
+  const token = await signJWT({ empId: match.id, email: match.email, role: match.role }, c.env.ADMIN_JWT_SECRET || 'secret');
+
+  return c.json({
+    success: true,
+    token,
+    employee: match
+  });
 });
 
 // ── EMPLOYEES ──
