@@ -665,6 +665,42 @@ app.get('/employees.html', async (c) => {
   }
   return c.text('Not found', 404);
 });
+
+app.get('/login', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/login.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.redirect('/login.html');
+});
+
+app.get('/signup', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/signup.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.redirect('/signup.html');
+});
+
+app.get('/forgot-password', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/forgot-password.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.redirect('/forgot-password.html');
+});
+
+app.get('/forgot-password.html', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/forgot-password.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.text('Not found', 404);
+});
 app.get('/education', (c) => c.redirect('/books?category=education', 301));
 app.get('/sitemap.xml', (c) => {
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -1184,16 +1220,19 @@ app.post('/api/auth/forgot-password', async (c) => {
   // Check if user exists
   const user = await db.prepare('SELECT id, full_name, email FROM users WHERE LOWER(email) = LOWER(?)').bind(cleanEmail).first();
   if (!user) {
-    return c.json({ error: 'No account found with this email address.' }, 404);
+    return c.json({
+      error: 'No account found with this email address. Please sign up to create an account.',
+      account_not_found: true
+    }, 404);
   }
 
-  // Rate Limiting Check (Max 3 OTP requests in last 15 mins)
+  // Rate Limiting Check (Max 3 OTP requests in last 1 hour)
   const recent = await db.prepare(
-    'SELECT * FROM password_resets WHERE email = ? AND created_at > datetime("now", "-15 minutes")'
+    'SELECT * FROM password_resets WHERE email = ? AND created_at > datetime("now", "-1 hour")'
   ).bind(cleanEmail).first();
 
   if (recent && recent.attempts >= 3) {
-    return c.json({ error: 'Too many OTP requests. Please wait 15 minutes before trying again.' }, 429);
+    return c.json({ error: 'Rate limit exceeded: Maximum 3 OTP requests allowed per hour. Please try again later.' }, 429);
   }
 
   // Generate 6-digit OTP
