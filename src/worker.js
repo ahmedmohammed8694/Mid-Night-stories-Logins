@@ -590,7 +590,81 @@ app.get('/api/admin/employees', async (c) => {
   });
 });
 
-// ── Navigation Redirects & Clean Slug Routing ──
+// ── Navigation Redirects, Admin & Clean Slug Routing ──
+app.get('/admin', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/admin.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.redirect('/admin.html');
+});
+
+app.get('/admin.html', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/admin.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.text('Not found', 404);
+});
+
+app.get('/admin/employees', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/employees.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.redirect('/employees.html');
+});
+
+app.get('/admin/employees.html', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/employees.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.redirect('/employees.html');
+});
+
+app.get('/admin/:panel', async (c, next) => {
+  const panel = c.req.param('panel');
+  if (panel.startsWith('api') || panel.includes('.')) {
+    return next();
+  }
+  if (panel === 'employees') {
+    if (c.env.ASSETS) {
+      const url = new URL(c.req.url);
+      url.pathname = '/employees.html';
+      return c.env.ASSETS.fetch(url);
+    }
+    return c.redirect('/employees.html');
+  }
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/admin.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.redirect('/admin.html');
+});
+
+app.get('/employees', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/employees.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.redirect('/employees.html');
+});
+
+app.get('/employees.html', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/employees.html';
+    return c.env.ASSETS.fetch(url);
+  }
+  return c.text('Not found', 404);
+});
 app.get('/education', (c) => c.redirect('/books?category=education', 301));
 app.get('/sitemap.xml', (c) => {
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

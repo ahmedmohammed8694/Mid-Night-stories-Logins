@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Management &amp; RBAC Suite — Midnight Stories</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..800;1,9..144,400..800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=20260730_emp_v1">
+  <link rel="stylesheet" href="/css/admin.css?v=20260730_emp_v1">
+  <style>
+    :root {
+      --bg-dark: #0a0914;
+      --bg-card: #121124;
+      --bg-secondary: #1a1836;
+      --border-card: rgba(255, 255, 255, 0.08);
+      --primary-gold: #f3c77c;
+      --accent-rose: #f87171;
+      --accent-emerald: #34d399;
+      --accent-cyan: #22d3ee;
+      --accent-amber: #fbbf24;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    /* Top Navigation Header */
+    .emp-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(10, 9, 20, 0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-card);
+      padding: 0 32px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .emp-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: #fff;
+      font-family: 'Fraunces', serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .emp-brand-badge {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #fff;
+      font-size: 0.7rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .emp-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .emp-nav-link {
+      color: var(--text-secondary, #94a3b8);
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .emp-nav-link:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Hero Subheader */
+    .emp-hero {
+      padding: 28px 32px;
+      background: linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, rgba(10, 9, 20, 0) 100%);
+      border-bottom: 1px solid var(--border-card);
+    }
+
+    .emp-hero__title {
+      font-family: 'Fraunces', serif;
+      font-size: 1.8rem;
+      margin: 0 0 6px 0;
+      color: #fff;
+    }
+
+    .emp-hero__subtitle {
+      color: #94a3b8;
+      font-size: 0.92rem;
+      margin: 0;
+    }
+
+    /* KPI Metrics Bar */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      padding: 24px 32px;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      padding: 18px 20px;
+    }
+
+    .metric-card__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .metric-card__title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #94a3b8;
+    }
+
+    .metric-card__value {
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+    }
+
+    .metric-card__subtitle {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 6px;
+    }
+
+    /* Workspace Section */
+    .emp-container {
+      padding: 0 32px 48px 32px;
+    }
+
+    /* Tab Bar Navigation */
+    .emp-tab-bar {
+      display: flex;
+      gap: 6px;
+      border-bottom: 2px solid var(--border-card);
+      margin-bottom: 24px;
+      overflow-x: auto;
+    }
+
+    .emp-tab-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 0.92rem;
+      font-weight: 600;
+      padding: 12px 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .emp-tab-btn:hover {
+      color: #fff;
+    }
+
+    .emp-tab-btn.active {
+      color: var(--primary-gold);
+      border-bottom-color: var(--primary-gold);
+    }
+
+    .emp-tab-panel {
+      display: none;
+    }
+
+    .emp-tab-panel.active {
+      display: block;
+    }
+
+    /* Table Container */
+    .emp-table-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .emp-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-card);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    /* Status Badges */
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-status--active { background: rgba(52, 211, 153, 0.15); color: #34d399; }
+    .badge-status--pending { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+    .badge-status--suspended { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="emp-header">
+    <a href="/admin" class="emp-brand">
+      <span>🌙 Midnight Stories</span>
+      <span class="emp-brand-badge">Employee Hub</span>
+    </a>
+    <div class="emp-nav-links">
+      <a href="/admin" class="emp-nav-link">← Return to Main Admin</a>
+      <a href="/" class="emp-nav-link" target="_blank">🌐 Public Site</a>
+      <button class="btn btn--secondary btn--sm" onclick="handleLogout()" style="padding: 6px 14px;">Logout</button>
+    </div>
+  </header>
+
+  <!-- Hero Title Bar -->
+  <section class="emp-hero">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <h1 class="emp-hero__title">Enterprise Employee &amp; RBAC Control Hub</h1>
+        <p class="emp-hero__subtitle">Manage support staff, provision accounts, assign roles, and synchronize team workflows.</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn btn--primary" onclick="openProvisionModal()" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+          <span>➕</span> Provision New Employee
+        </button>
+        <button class="btn btn--secondary" onclick="openCreateAccountModal()">
+          <span>🏛️</span> New Account
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Metrics Bar -->
+  <section class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-card__header">
+        <span class="metric-card__title">Active Employees</span>
+        <span style="font-size: 1.4rem;">👥</span>
+      </div>
+      <div class="metric-card__value" id="metricActiveEmps">38</div>
+      <div class="metric-card__subtitle">Across 4 Enterprise Accounts</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-card__header">
+        <span class="metric-card__title">Pending Invites</span>
+        <span style="font-size: 1.4rem;">📨</span>
+      </div>
+      <div class="metric-card__value" id="metricPendingInvites" style="color: var(--accent-amber);">3</div>
+      <div class="metric-card__subtitle">Awaiting acceptance</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-card__header">
+        <span class="metric-card__title">Corporate Accounts</span>
+        <span style="font-size: 1.4rem;">🏛️</span>
+      </div>
+      <div class="metric-card__value" id="metricCorporateAccts" style="color: var(--accent-cyan);">4</div>
+      <div class="metric-card__subtitle">105 allocated seats</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-card__header">
+        <span class="metric-card__title">Active Work Tasks</span>
+        <span style="font-size: 1.4rem;">📌</span>
+      </div>
+      <div class="metric-card__value" id="metricWorkTasks" style="color: var(--primary-gold);">6</div>
+      <div class="metric-card__subtitle">Assigned to support staff</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-card__header">
+        <span class="metric-card__title">SLA Compliance</span>
+        <span style="font-size: 1.4rem;">⚡</span>
+      </div>
+      <div class="metric-card__value" style="color: var(--accent-emerald);">99.8%</div>
+      <div class="metric-card__subtitle">Target: 99.0%</div>
+    </div>
+  </section>
+
+  <!-- Main Workspace -->
+  <main class="emp-container">
+
+    <!-- Tab Bar -->
+    <div class="emp-tab-bar">
+      <button class="emp-tab-btn active" onclick="switchEmpTab('roster')">👥 Employee Roster</button>
+      <button class="emp-tab-btn" onclick="switchEmpTab('chat-tasks')">💬 Staff Chat &amp; Work Tasks</button>
+      <button class="emp-tab-btn" onclick="switchEmpTab('accounts')">🏛️ Corporate Accounts</button>
+      <button class="emp-tab-btn" onclick="switchEmpTab('roles-teams')">🔐 Roles &amp; Teams Matrix</button>
+    </div>
+
+    <!-- Tab 1: Employee Roster -->
+    <div class="emp-tab-panel active" id="tab-roster">
+      <div class="emp-table-card">
+        <div class="emp-toolbar">
+          <div style="display: flex; gap: 12px; align-items: center; flex: 1; max-width: 450px;">
+            <span style="font-size: 1.1rem;">🔍</span>
+            <input type="text" class="form-input" id="empRosterSearch" placeholder="Search employee name, email, or role..." oninput="filterRosterTable()" style="height: 38px; margin: 0;">
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <select class="form-select" id="empAccountFilter" onchange="filterRosterTable()" style="height: 38px; width: auto;">
+              <option value="">All Corporate Accounts</option>
+              <option value="Acme Corporation">Acme Corporation</option>
+              <option value="Starlight Publishing">Starlight Publishing</option>
+              <option value="Midnight Internal">Midnight Internal</option>
+              <option value="Apex Media House">Apex Media House</option>
+            </select>
+            <select class="form-select" id="empStatusFilter" onchange="filterRosterTable()" style="height: 38px; width: auto;">
+              <option value="">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="pending_invite">Pending Invite</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Employee Name</th>
+                <th>Work Email</th>
+                <th>Account</th>
+                <th>Team</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th style="width: 160px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="empRosterBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Staff Chat & Work Tasks -->
+    <div class="emp-tab-panel" id="tab-chat-tasks">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        
+        <!-- Left Column: Staff Communication Stream -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; height: 500px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-card); padding-bottom: 12px;">
+            <div>
+              <h3 style="margin: 0; font-size: 1.1rem; color: #fff;">💬 Internal Staff Chat</h3>
+              <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #94a3b8;">Real-time communication channel for moderators &amp; staff.</p>
+            </div>
+            <button class="btn btn--secondary btn--sm" onclick="loadChatStream()">Refresh</button>
+          </div>
+
+          <div id="empChatStream" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 6px; margin-bottom: 16px;">
+            <!-- Chat messages stream -->
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <input type="text" class="form-input" id="empMessageInput" placeholder="Type a team message..." style="flex: 1; height: 40px;" onkeydown="if(event.key==='Enter') sendChatMessage()">
+            <button class="btn btn--primary" onclick="sendChatMessage()" style="height: 40px; padding: 0 20px;">Send</button>
+          </div>
+        </div>
+
+        <!-- Right Column: Work Task Assignment -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 24px;">
+          <h3 style="margin: 0 0 4px 0; font-size: 1.1rem; color: #fff;">📌 Assign Work Task</h3>
+          <p style="margin: 0 0 20px 0; font-size: 0.8rem; color: #94a3b8;">Assign moderation or support duties to staff members.</p>
+
+          <form onsubmit="event.preventDefault(); submitWorkTask();" style="display: flex; flex-direction: column; gap: 14px;">
+            <div>
+              <label class="form-label" style="font-size: 0.82rem; margin-bottom: 6px;">Task Title / Summary *</label>
+              <input type="text" class="form-input" id="taskTitleInput" placeholder="e.g. Review tickets #204 &amp; DMCA report" required style="height: 40px;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+              <div>
+                <label class="form-label" style="font-size: 0.82rem; margin-bottom: 6px;">Assign To *</label>
+                <select class="form-select" id="taskAssigneeSelect" required style="height: 40px;">
+                  <option value="">Select Employee...</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label" style="font-size: 0.82rem; margin-bottom: 6px;">Priority</label>
+                <select class="form-select" id="taskPrioritySelect" style="height: 40px;">
+                  <option value="low">🟢 Low</option>
+                  <option value="medium" selected>🟡 Medium</option>
+                  <option value="high">🔴 High</option>
+                  <option value="urgent">🚨 Critical</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="form-label" style="font-size: 0.82rem; margin-bottom: 6px;">Details / Instructions</label>
+              <textarea class="form-textarea" id="taskDetailsInput" rows="3" placeholder="Provide step-by-step instructions for the staff member..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn--primary" style="height: 42px; font-weight: 600;">🚀 Dispatch Task</button>
+          </form>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Tab 3: Corporate Accounts -->
+    <div class="emp-tab-panel" id="tab-accounts">
+      <div class="emp-table-card">
+        <div class="emp-toolbar">
+          <h3 style="margin: 0; font-size: 1.1rem; color: #fff;">🏛️ Corporate Accounts Roster &amp; Licenses</h3>
+          <button class="btn btn--danger btn--sm" onclick="openLockdownModal()">🔒 Emergency Account Lockdown</button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Account ID</th>
+                <th>Organization</th>
+                <th>Domain</th>
+                <th>Status</th>
+                <th>Seat Utilization</th>
+                <th>Teams</th>
+                <th>Created Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="empAccountsBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 4: Roles & Teams -->
+    <div class="emp-tab-panel" id="tab-roles-teams">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        
+        <!-- Roles Grid -->
+        <div class="emp-table-card" style="padding: 20px;">
+          <h3 style="margin: 0 0 16px 0; font-size: 1.1rem; color: #fff;">🔐 Role-Based Access Control (RBAC)</h3>
+          <div style="overflow-x: auto;">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Role Name</th>
+                  <th>Scope</th>
+                  <th>Members</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="empRolesBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Teams Grid -->
+        <div class="emp-table-card" style="padding: 20px;">
+          <h3 style="margin: 0 0 16px 0; font-size: 1.1rem; color: #fff;">🏢 Support &amp; Operational Teams</h3>
+          <div style="overflow-x: auto;">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Team Name</th>
+                  <th>Coverage</th>
+                  <th>Members</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="empTeamsBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Provision Employee Modal -->
+  <div id="provisionModal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 2500; backdrop-filter: blur(6px);">
+    <div class="modal" style="max-width: 600px; width: 92%; padding: 28px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-card); text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-card); padding-bottom: 12px;">
+        <h2 style="font-family: 'Fraunces', serif; font-size: 1.4rem; color: #fff; margin: 0;">➕ Provision New Employee Account</h2>
+        <button onclick="closeProvisionModal()" style="background: none; border: none; font-size: 1.4rem; color: #94a3b8; cursor: pointer;">✕</button>
+      </div>
+
+      <form onsubmit="event.preventDefault(); saveNewEmployee();" style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div>
+            <label class="form-label">Full Name *</label>
+            <input type="text" class="form-input" id="newEmpName" placeholder="e.g. Sarah Jenkins" required style="height: 40px;">
+          </div>
+          <div>
+            <label class="form-label">Work Email *</label>
+            <input type="email" class="form-input" id="newEmpEmail" placeholder="sarah@company.com" required style="height: 40px;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div>
+            <label class="form-label">Corporate Account *</label>
+            <select class="form-select" id="newEmpAccount" required style="height: 40px;">
+              <option value="Acme Corporation">Acme Corporation</option>
+              <option value="Starlight Publishing">Starlight Publishing</option>
+              <option value="Midnight Internal">Midnight Internal</option>
+              <option value="Apex Media House">Apex Media House</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Assigned Team</label>
+            <select class="form-select" id="newEmpTeam" style="height: 40px;">
+              <option value="Global Support Tier 1">Global Support Tier 1</option>
+              <option value="Editorial &amp; Moderation Guild">Editorial &amp; Moderation Guild</option>
+              <option value="Security Ops (SIRT)">Security Ops (SIRT)</option>
+              <option value="Billing &amp; Enterprise Accounts">Billing &amp; Enterprise Accounts</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">RBAC Role *</label>
+          <select class="form-select" id="newEmpRole" required style="height: 40px;">
+            <option value="Support Specialist">Support &amp; Helpdesk Specialist</option>
+            <option value="Senior Content Editor">Senior Content Editor</option>
+            <option value="Security Compliance Officer">Security Compliance Officer</option>
+            <option value="Community Moderator">Community Moderator</option>
+            <option value="Super Administrator">Super Administrator</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 10px;">
+          <button type="button" class="btn btn--secondary" onclick="closeProvisionModal()">Cancel</button>
+          <button type="submit" class="btn btn--primary" style="height: 40px; padding: 0 24px;">🚀 Send Invite &amp; Provision</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Client-Side JavaScript Logic -->
+  <script src="/js/app.js?v=20260730_emp_v1"></script>
+  <script>
+    // State management
+    let employeesData = [
+      { id: 1001, name: 'Sarah Jenkins', email: 'sarah.j@midnightstories.org', account: 'Acme Corporation', team: 'Global Support Tier 1', role: 'Support Specialist', status: 'active' },
+      { id: 1002, name: 'Marcus Vance', email: 'marcus.vance@starlight.org', account: 'Starlight Publishing', team: 'Editorial & Moderation Guild', role: 'Senior Content Editor', status: 'active' },
+      { id: 1003, name: 'Elena Rostova', email: 'elena.r@midnightstories.org', account: 'Midnight Internal', team: 'Security Ops (SIRT)', role: 'Security Compliance Officer', status: 'active' },
+      { id: 1004, name: 'David Miller', email: 'david.m@apexmedia.io', account: 'Apex Media House', team: 'Billing & Enterprise Accounts', role: 'Support Specialist', status: 'active' },
+      { id: 1005, name: 'Chloe Bennett', email: 'chloe.b@midnightstories.org', account: 'Midnight Internal', team: 'Editorial Guild', role: 'Community Moderator', status: 'pending_invite' }
+    ];
+
+    let accountsData = [
+      { id: 1, name: 'Acme Corporation', domain: 'acme.com', status: 'active', seats: '18 / 50', teams: '2 Teams', created: '2026-01-15' },
+      { id: 2, name: 'Starlight Publishing', domain: 'starlight.org', status: 'active', seats: '12 / 25', teams: '2 Teams', created: '2026-02-01' },
+      { id: 3, name: 'Apex Media House', domain: 'apexmedia.io', status: 'active', seats: '8 / 20', teams: '1 Team', created: '2026-03-10' },
+      { id: 4, name: 'Global Tech Solutions', domain: 'globaltech.net', status: 'suspended', seats: '5 / 10', teams: '1 Team', created: '2026-04-05' }
+    ];
+
+    let chatMessages = [
+      { sender: 'Elena Rostova', text: 'SIRT security scan completed for all corporate domains.', time: '04:15 AM' },
+      { sender: 'Sarah Jenkins', text: 'Assigned 4 pending support tickets to Global Tier 1 queue.', time: '04:22 AM' },
+      { sender: 'Marcus Vance', text: 'Editorial review finished for pending submissions batch #12.', time: '04:35 AM' }
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderRosterTable();
+      renderAccountsTable();
+      renderRolesAndTeams();
+      renderChatMessages();
+      populateAssigneeDropdown();
+    });
+
+    function switchEmpTab(tabId) {
+      document.querySelectorAll('.emp-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.emp-tab-panel').forEach(p => p.classList.remove('active'));
+      
+      const activeBtn = document.querySelector(`.emp-tab-btn[onclick*="${tabId}"]`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const activePanel = document.getElementById(`tab-${tabId}`);
+      if (activePanel) activePanel.classList.add('active');
+    }
+
+    function renderRosterTable(filtered) {
+      const list = filtered || employeesData;
+      const tbody = document.getElementById('empRosterBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = list.map(e => `
+        <tr>
+          <td><span style="font-family: monospace; color: var(--primary-gold);">#${e.id}</span></td>
+          <td style="font-weight: 600; color: #fff;">👤 ${escapeHtml(e.name)}</td>
+          <td><span style="color: #94a3b8; font-size: 0.85rem;">${escapeHtml(e.email)}</span></td>
+          <td><span class="filter-chip" style="font-size: 0.75rem;">🏛️ ${escapeHtml(e.account)}</span></td>
+          <td><span style="color: #94a3b8; font-size: 0.85rem;">🏢 ${escapeHtml(e.team)}</span></td>
+          <td><span class="badge-status badge-status--active">🔐 ${escapeHtml(e.role)}</span></td>
+          <td><span class="badge-status badge-status--${e.status === 'active' ? 'active' : 'pending'}">${escapeHtml(e.status.replace('_', ' '))}</span></td>
+          <td>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn--secondary btn--sm" onclick="toggleStatus(${e.id})" style="padding: 4px 8px; font-size: 0.78rem;">Status</button>
+              <button class="btn btn--danger btn--sm" onclick="deleteEmp(${e.id})" style="padding: 4px 8px; font-size: 0.78rem;">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterRosterTable() {
+      const q = (document.getElementById('empRosterSearch')?.value || '').toLowerCase();
+      const acct = document.getElementById('empAccountFilter')?.value || '';
+      const st = document.getElementById('empStatusFilter')?.value || '';
+
+      const filtered = employeesData.filter(e => {
+        const matchesQ = !q || e.name.toLowerCase().includes(q) || e.email.toLowerCase().includes(q) || e.role.toLowerCase().includes(q);
+        const matchesAcct = !acct || e.account === acct;
+        const matchesSt = !st || e.status === st;
+        return matchesQ && matchesAcct && matchesSt;
+      });
+
+      renderRosterTable(filtered);
+    }
+
+    function renderAccountsTable() {
+      const tbody = document.getElementById('empAccountsBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = accountsData.map(a => `
+        <tr>
+          <td><span style="font-family: monospace; color: var(--primary-gold);">#ACCT-0${a.id}</span></td>
+          <td style="font-weight: 600; color: #fff;">🏛️ ${escapeHtml(a.name)}</td>
+          <td><span style="font-family: monospace; color: var(--accent-cyan);">${escapeHtml(a.domain)}</span></td>
+          <td><span class="badge-status badge-status--${a.status === 'active' ? 'active' : 'suspended'}">${escapeHtml(a.status)}</span></td>
+          <td><span style="font-weight: 600;">${a.seats}</span></td>
+          <td><span class="filter-chip" style="font-size: 0.75rem;">👥 ${a.teams}</span></td>
+          <td>${a.created}</td>
+          <td>
+            <button class="btn btn--secondary btn--sm" onclick="showToast('Account edits updated', 'info')" style="padding: 4px 8px; font-size: 0.78rem;">Edit</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderRolesAndTeams() {
+      const rolesBody = document.getElementById('empRolesBody');
+      if (rolesBody) {
+        rolesBody.innerHTML = `
+          <tr><td style="font-weight:600; color:#fff;">Super Administrator</td><td>Global</td><td>3 Members</td><td><span class="filter-chip">Full Access</span></td></tr>
+          <tr><td style="font-weight:600; color:#fff;">Senior Content Editor</td><td>Global</td><td>8 Members</td><td><span class="filter-chip">Moderation</span></td></tr>
+          <tr><td style="font-weight:600; color:#fff;">Support Specialist</td><td>Account</td><td>14 Members</td><td><span class="filter-chip">Helpdesk</span></td></tr>
+          <tr><td style="font-weight:600; color:#fff;">Security Compliance Officer</td><td>Global</td><td>4 Members</td><td><span class="filter-chip">Security Audit</span></td></tr>
+        `;
+      }
+
+      const teamsBody = document.getElementById('empTeamsBody');
+      if (teamsBody) {
+        teamsBody.innerHTML = `
+          <tr><td style="font-weight:600; color:#fff;">Global Support Tier 1</td><td>Account Access, Billing</td><td>12 Members</td><td><span class="badge-status badge-status--active">Active</span></td></tr>
+          <tr><td style="font-weight:600; color:#fff;">Editorial &amp; Moderation Guild</td><td>Content Review</td><td>8 Members</td><td><span class="badge-status badge-status--active">Active</span></td></tr>
+          <tr><td style="font-weight:600; color:#fff;">Security Ops (SIRT)</td><td>MFA Reset, Audit</td><td>5 Members</td><td><span class="badge-status badge-status--active">Active</span></td></tr>
+        `;
+      }
+    }
+
+    function renderChatMessages() {
+      const stream = document.getElementById('empChatStream');
+      if (!stream) return;
+
+      stream.innerHTML = chatMessages.map(m => `
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-card); border-radius: 8px; padding: 10px 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-weight: 700; font-size: 0.85rem; color: var(--primary-gold);">${escapeHtml(m.sender)}</span>
+            <span style="font-size: 0.72rem; color: #64748b;">${m.time}</span>
+          </div>
+          <p style="margin: 0; font-size: 0.88rem; color: #cbd5e1; line-height: 1.4;">${escapeHtml(m.text)}</p>
+        </div>
+      `).join('');
+
+      stream.scrollTop = stream.scrollHeight;
+    }
+
+    function sendChatMessage() {
+      const input = document.getElementById('empMessageInput');
+      const text = (input?.value || '').trim();
+      if (!text) return;
+
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      chatMessages.push({ sender: 'Admin Operator', text, time: timeStr });
+      input.value = '';
+      renderChatMessages();
+      showToast('Message sent to team stream.', 'success');
+    }
+
+    function submitWorkTask() {
+      const title = document.getElementById('taskTitleInput')?.value;
+      const assignee = document.getElementById('taskAssigneeSelect')?.value;
+
+      if (!title || !assignee) {
+        showToast('Please fill out required fields.', 'warning');
+        return;
+      }
+
+      showToast(`Work task "${title}" assigned to ${assignee}!`, 'success');
+      document.getElementById('taskTitleInput').value = '';
+      document.getElementById('taskDetailsInput').value = '';
+    }
+
+    function populateAssigneeDropdown() {
+      const select = document.getElementById('taskAssigneeSelect');
+      if (select) {
+        select.innerHTML = '<option value="">Select Employee...</option>' + employeesData.map(e => `
+          <option value="${escapeHtml(e.name)}">${escapeHtml(e.name)} (${escapeHtml(e.role)})</option>
+        `).join('');
+      }
+    }
+
+    function openProvisionModal() {
+      document.getElementById('provisionModal').style.display = 'flex';
+    }
+
+    function closeProvisionModal() {
+      document.getElementById('provisionModal').style.display = 'none';
+    }
+
+    function saveNewEmployee() {
+      const name = document.getElementById('newEmpName')?.value;
+      const email = document.getElementById('newEmpEmail')?.value;
+      const account = document.getElementById('newEmpAccount')?.value;
+      const team = document.getElementById('newEmpTeam')?.value;
+      const role = document.getElementById('newEmpRole')?.value;
+
+      const newId = 1000 + employeesData.length + 1;
+      employeesData.push({ id: newId, name, email, account, team, role, status: 'active' });
+
+      renderRosterTable();
+      populateAssigneeDropdown();
+      closeProvisionModal();
+      showToast(`Employee ${name} provisioned successfully!`, 'success');
+    }
+
+    function toggleStatus(id) {
+      const emp = employeesData.find(e => e.id === id);
+      if (emp) {
+        emp.status = emp.status === 'active' ? 'suspended' : 'active';
+        renderRosterTable();
+        showToast(`Status updated for ${emp.name}`, 'info');
+      }
+    }
+
+    function deleteEmp(id) {
+      employeesData = employeesData.filter(e => e.id !== id);
+      renderRosterTable();
+      showToast('Employee account removed.', 'warning');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>
