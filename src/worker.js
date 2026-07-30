@@ -670,16 +670,34 @@ app.get('/login', async (c) => {
   if (c.env.ASSETS) {
     const url = new URL(c.req.url);
     url.pathname = '/login.html';
-    return c.env.ASSETS.fetch(url);
+    const res = await c.env.ASSETS.fetch(url);
+    const newRes = new Response(res.body, res);
+    newRes.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return newRes;
   }
   return c.redirect('/login.html');
+});
+
+app.get('/login.html', async (c) => {
+  if (c.env.ASSETS) {
+    const url = new URL(c.req.url);
+    url.pathname = '/login.html';
+    const res = await c.env.ASSETS.fetch(url);
+    const newRes = new Response(res.body, res);
+    newRes.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return newRes;
+  }
+  return c.text('Not found', 404);
 });
 
 app.get('/signup', async (c) => {
   if (c.env.ASSETS) {
     const url = new URL(c.req.url);
     url.pathname = '/signup.html';
-    return c.env.ASSETS.fetch(url);
+    const res = await c.env.ASSETS.fetch(url);
+    const newRes = new Response(res.body, res);
+    newRes.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return newRes;
   }
   return c.redirect('/signup.html');
 });
@@ -688,7 +706,10 @@ app.get('/forgot-password', async (c) => {
   if (c.env.ASSETS) {
     const url = new URL(c.req.url);
     url.pathname = '/forgot-password.html';
-    return c.env.ASSETS.fetch(url);
+    const res = await c.env.ASSETS.fetch(url);
+    const newRes = new Response(res.body, res);
+    newRes.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return newRes;
   }
   return c.redirect('/forgot-password.html');
 });
@@ -697,7 +718,10 @@ app.get('/forgot-password.html', async (c) => {
   if (c.env.ASSETS) {
     const url = new URL(c.req.url);
     url.pathname = '/forgot-password.html';
-    return c.env.ASSETS.fetch(url);
+    const res = await c.env.ASSETS.fetch(url);
+    const newRes = new Response(res.body, res);
+    newRes.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return newRes;
   }
   return c.text('Not found', 404);
 });

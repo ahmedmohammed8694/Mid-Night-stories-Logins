@@ -642,7 +642,7 @@
               <input type="checkbox" id="rememberMe">
               <span>Remember Me</span>
             </label>
-            <a href="/forgot-password.html" class="forgot-link">Forgot Password?</a>
+            <a href="/forgot-password" class="forgot-link" onclick="window.location.href='/forgot-password'; return false;">Forgot Password?</a>
           </div>
 
           <button type="submit" id="loginSubmitBtn" class="btn-submit">
@@ -870,13 +870,7 @@
     let secondsRemaining = 600;
 
     function openForgotPasswordModal() {
-      const modal = document.getElementById('forgotPasswordModal');
-      if (modal) {
-        modal.style.display = 'flex';
-        switchResetStep(1);
-        const emailInput = document.getElementById('resetEmailInput');
-        if (emailInput) setTimeout(() => emailInput.focus(), 100);
-      }
+      window.location.href = '/forgot-password';
     }
 
     function closeForgotPasswordModal() {
@@ -887,7 +881,7 @@
       if (otpCountdownTimer) clearInterval(otpCountdownTimer);
     }
 
-    // Expose functions globally for modal support if required
+    // Expose functions globally
     window.openForgotPasswordModal = openForgotPasswordModal;
     window.closeForgotPasswordModal = closeForgotPasswordModal;
 
