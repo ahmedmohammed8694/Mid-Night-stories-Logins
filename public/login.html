@@ -642,7 +642,7 @@
               <input type="checkbox" id="rememberMe">
               <span>Remember Me</span>
             </label>
-            <a href="/forgot-password" id="forgotPasswordBtn" class="forgot-link" onclick="openForgotPasswordModal()">Forgot Password?</a>
+            <a href="/forgot-password.html" class="forgot-link">Forgot Password?</a>
           </div>
 
           <button type="submit" id="loginSubmitBtn" class="btn-submit">
@@ -887,19 +887,9 @@
       if (otpCountdownTimer) clearInterval(otpCountdownTimer);
     }
 
-    // Expose functions globally to guarantee inline onclick access
+    // Expose functions globally for modal support if required
     window.openForgotPasswordModal = openForgotPasswordModal;
     window.closeForgotPasswordModal = closeForgotPasswordModal;
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const forgotBtn = document.getElementById('forgotPasswordBtn');
-      if (forgotBtn) {
-        forgotBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          openForgotPasswordModal();
-        });
-      }
-    });
 
     function switchResetStep(step) {
       document.getElementById('resetStep1').style.display = step === 1 ? 'block' : 'none';
