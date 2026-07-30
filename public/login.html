@@ -576,32 +576,32 @@
       </div>
 
       <div class="brand-hero-content">
-        <div class="brand-badge">✨ Anonymous Storytelling Guild</div>
-        <h1 class="brand-headline">Where Whispers Become <span>Legends</span></h1>
-        <p class="brand-subheadline">Step into an immersive realm of captivating web novels, anonymous personal confessions, and real-time creator discussions.</p>
+        <div class="brand-badge">📚 Popular Web Novels &amp; Library</div>
+        <h1 class="brand-headline">Discover Trending <span>Stories &amp; Books</span></h1>
+        <p class="brand-subheadline">Explore top-rated original web series, fantasy epics, and reader-favorite web novels updated daily.</p>
 
         <div class="feature-highlights">
-          <div class="feature-item">
-            <div class="feature-item-icon">🔒</div>
+          <div class="feature-item" style="border-left: 3px solid var(--primary-gold);">
+            <div class="feature-item-icon">📖</div>
             <div class="feature-item-text">
-              <h4>100% Anonymous &amp; Encrypted</h4>
-              <p>Share your stories and engage with complete privacy and data protection.</p>
+              <h4>The Shadow Alchemist</h4>
+              <p><span style="color: var(--primary-gold);">★ 4.9</span> • Dark Fantasy • 142k Reads • 48 Chapters</p>
             </div>
           </div>
 
-          <div class="feature-item">
-            <div class="feature-item-icon">⚡</div>
+          <div class="feature-item" style="border-left: 3px solid var(--accent-indigo);">
+            <div class="feature-item-icon">🌙</div>
             <div class="feature-item-text">
-              <h4>Real-Time Community Guild</h4>
-              <p>Connect with passionate readers, exchange feedback, and build your audience.</p>
+              <h4>Whispers of the Eternal Night</h4>
+              <p><span style="color: var(--primary-gold);">★ 4.8</span> • Supernatural Thriller • 98k Reads • 32 Chapters</p>
             </div>
           </div>
 
-          <div class="feature-item">
-            <div class="feature-item-icon">📚</div>
+          <div class="feature-item" style="border-left: 3px solid var(--accent-emerald);">
+            <div class="feature-item-icon">🐉</div>
             <div class="feature-item-text">
-              <h4>Personal Library &amp; Progress Sync</h4>
-              <p>Save bookmarks, track chapter progress, and pick up right where you left off.</p>
+              <h4>Chronicles of Starlight</h4>
+              <p><span style="color: var(--primary-gold);">★ 4.9</span> • Epic Adventure • 215k Reads • 74 Chapters</p>
             </div>
           </div>
         </div>
@@ -642,7 +642,7 @@
               <input type="checkbox" id="rememberMe">
               <span>Remember Me</span>
             </label>
-            <a href="javascript:void(0)" class="forgot-link" onclick="openForgotPasswordModal()">Forgot Password?</a>
+            <a href="javascript:void(0)" id="forgotPasswordBtn" class="forgot-link" onclick="openForgotPasswordModal()">Forgot Password?</a>
           </div>
 
           <button type="submit" id="loginSubmitBtn" class="btn-submit">
@@ -863,14 +863,36 @@
     let secondsRemaining = 600;
 
     function openForgotPasswordModal() {
-      document.getElementById('forgotPasswordModal').style.display = 'flex';
-      switchResetStep(1);
+      const modal = document.getElementById('forgotPasswordModal');
+      if (modal) {
+        modal.style.display = 'flex';
+        switchResetStep(1);
+        const emailInput = document.getElementById('resetEmailInput');
+        if (emailInput) setTimeout(() => emailInput.focus(), 100);
+      }
     }
 
     function closeForgotPasswordModal() {
-      document.getElementById('forgotPasswordModal').style.display = 'none';
+      const modal = document.getElementById('forgotPasswordModal');
+      if (modal) {
+        modal.style.display = 'none';
+      }
       if (otpCountdownTimer) clearInterval(otpCountdownTimer);
     }
+
+    // Expose functions globally to guarantee inline onclick access
+    window.openForgotPasswordModal = openForgotPasswordModal;
+    window.closeForgotPasswordModal = closeForgotPasswordModal;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const forgotBtn = document.getElementById('forgotPasswordBtn');
+      if (forgotBtn) {
+        forgotBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          openForgotPasswordModal();
+        });
+      }
+    });
 
     function switchResetStep(step) {
       document.getElementById('resetStep1').style.display = step === 1 ? 'block' : 'none';
