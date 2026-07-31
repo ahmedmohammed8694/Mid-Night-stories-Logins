@@ -5483,6 +5483,7 @@ async function updateTaskStatus(id, status) {
   window.closeCreateEmployeeModal = closeCreateEmployeeModal;
   window.handleCreateEmployee = handleCreateEmployee;
   window.editEmployee = editEmployee;
+  window.adminEditEmployee = editEmployee;
   window.closeEditEmployeeModal = closeEditEmployeeModal;
   window.handleSaveEditEmployee = handleSaveEditEmployee;
   window.resetEmployeePassword = resetEmployeePassword;

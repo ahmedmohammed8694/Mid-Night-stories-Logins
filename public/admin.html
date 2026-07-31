@@ -1291,7 +1291,7 @@
                 roles, and dispatch welcome kits.</p>
             </div>
             <button type="button" class="btn btn--primary"
-              onclick="window.openCreateEmployeeModal && window.openCreateEmployeeModal()"
+              onclick="openCreateEmployeeModal()"
               style="padding: 10px 20px; font-weight: 700;">
               ➕ Create Employee Account
             </button>
@@ -1350,7 +1350,7 @@
               <h3 style="margin: 0; font-size: 1rem; color: #fff;">👤 Onboarded Employees Roster &amp; Provisioned
                 Access</h3>
               <button type="button" class="btn btn--secondary btn--sm"
-                onclick="window.openCreateEmployeeModal &amp;&amp; window.openCreateEmployeeModal()">➕ Create Employee
+                onclick="openCreateEmployeeModal()">➕ Create Employee
                 Account</button>
             </div>
             <div style="overflow-x: auto;">
@@ -1631,7 +1631,7 @@
                 onboarding status.</p>
             </div>
             <button type="button" class="btn btn--primary"
-              onclick="window.openCreateEmployeeModal &amp;&amp; window.openCreateEmployeeModal()"
+              onclick="openCreateEmployeeModal()"
               style="padding: 10px 20px; font-weight: 700;">
               ➕ Create Employee Account
             </button>
@@ -1643,7 +1643,7 @@
               style="padding: 16px 20px; border-bottom: 1px solid var(--border-card); display: flex; justify-content: space-between; align-items: center;">
               <h3 style="margin: 0; font-size: 1rem; color: #fff;">👤 Company Employee Roster</h3>
               <button type="button" class="btn btn--secondary btn--sm"
-                onclick="window.openCreateEmployeeModal &amp;&amp; window.openCreateEmployeeModal()">➕ Create Employee
+                onclick="openCreateEmployeeModal()">➕ Create Employee
                 Account</button>
             </div>
             <div style="overflow-x: auto;">
@@ -4078,7 +4078,35 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="./js/admin.js?v=20260731_v8"></script>
+  <script>
+    function openCreateEmployeeModal() {
+      var modal = document.getElementById('createEmployeeModal');
+      if (modal) modal.style.display = 'flex';
+      var form = document.getElementById('createEmployeeForm');
+      if (form) form.reset();
+    }
+    function closeCreateEmployeeModal() {
+      var modal = document.getElementById('createEmployeeModal');
+      if (modal) modal.style.display = 'none';
+    }
+    function editEmployee(id) {
+      if (window.adminEditEmployee) {
+        window.adminEditEmployee(id);
+        return;
+      }
+      var modal = document.getElementById('editEmployeeModal');
+      if (modal) modal.style.display = 'flex';
+    }
+    function closeEditEmployeeModal() {
+      var modal = document.getElementById('editEmployeeModal');
+      if (modal) modal.style.display = 'none';
+    }
+    window.openCreateEmployeeModal = openCreateEmployeeModal;
+    window.closeCreateEmployeeModal = closeCreateEmployeeModal;
+    window.editEmployee = editEmployee;
+    window.closeEditEmployeeModal = closeEditEmployeeModal;
+  </script>
+  <script src="./js/admin.js?v=20260731_v9"></script>
   <script>
     window.toggleSidebarAccordion = function (headingEl) {
       const section = headingEl.closest('.admin-sidebar__section');
