@@ -5249,6 +5249,36 @@ async function updateTaskStatus(id, status) {
     }
   }
 
+  // Sidebar Collapse / Expand Toggle
+  function toggleAdminSidebar() {
+    const sidebar = document.getElementById('adminSidebar');
+    if (!sidebar) return;
+    sidebar.classList.toggle('collapsed');
+    const isCollapsed = sidebar.classList.contains('collapsed');
+    localStorage.setItem('adminSidebarCollapsed', isCollapsed ? 'true' : 'false');
+  }
+
+  // Restore Sidebar State on Init
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      if (localStorage.getItem('adminSidebarCollapsed') === 'true') {
+        document.getElementById('adminSidebar')?.classList.add('collapsed');
+      }
+    });
+  } else {
+    if (localStorage.getItem('adminSidebarCollapsed') === 'true') {
+      document.getElementById('adminSidebar')?.classList.add('collapsed');
+    }
+  }
+
+  // Global Keyboard Shortcut (Ctrl+\ or Cmd+\) for Sidebar Toggle
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
+      e.preventDefault();
+      toggleAdminSidebar();
+    }
+  });
+
   // Global Exports
   window.loadAccounts = loadAccounts;
   window.loadTaxonomy = loadTaxonomy;
@@ -5258,5 +5288,6 @@ async function updateTaskStatus(id, status) {
   window.switchPanel = switchPanel;
   window.checkAuth = checkAuth;
   window.loadDashboardData = loadDashboardData;
+  window.toggleAdminSidebar = toggleAdminSidebar;
 
 })();

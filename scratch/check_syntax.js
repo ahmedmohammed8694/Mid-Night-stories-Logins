@@ -1,7 +1,7 @@
 const fs = require('fs');
 const acorn = require('acorn');
 
-const code = fs.readFileSync('src/worker.js', 'utf8');
+const code = fs.readFileSync('public/js/admin.js', 'utf8');
 
 try {
   acorn.parse(code, { ecmaVersion: 'latest', sourceType: 'module' });

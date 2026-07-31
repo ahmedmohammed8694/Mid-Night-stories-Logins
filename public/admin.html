@@ -5,14 +5,7 @@
   <script>!function(){var s=document.createElement('style');s.id='_crit';s.innerHTML=[
     '.admin-layout.hidden{display:none!important}',
     '.admin-panel{display:none!important;margin-top:0!important;padding-top:0!important}',
-    '.admin-panel.active{display:block!important;margin-top:0!important;padding-top:0!important}',
-    '.admin-layout{display:flex!important;flex-direction:row!important;align-items:stretch!important;justify-content:flex-start!important;width:100%!important;margin-top:var(--header-height,60px)!important;min-height:calc(100vh - var(--header-height,60px))!important}',
-    '.admin-sidebar{width:68px!important;min-width:68px!important;max-width:68px!important;height:calc(100vh - var(--header-height,60px))!important;display:flex!important;flex-direction:column!important;overflow-y:auto!important;overflow-x:hidden!important;padding:12px 8px!important;gap:8px!important;border-right:1px solid rgba(255,255,255,0.08)!important;position:sticky!important;top:var(--header-height,60px)!important;z-index:100!important;background:#0f1117!important;transition:width 0.3s cubic-bezier(0.4,0,0.2,1),min-width 0.3s cubic-bezier(0.4,0,0.2,1),box-shadow 0.3s ease!important}',
-    '.admin-sidebar:hover,.admin-sidebar.pinned{width:270px!important;min-width:270px!important;max-width:270px!important;box-shadow:8px 0 30px rgba(0,0,0,0.5)!important;border-right-color:rgba(243,199,124,0.25)!important}',
-    '.admin-sidebar__section{display:flex!important;flex-direction:column!important;gap:3px!important;margin:0!important;padding:0!important}',
-    '.admin-sidebar__heading{display:flex!important;align-items:center!important;justify-content:space-between!important;font-size:11px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:0.08em!important;color:#64748b!important;margin:8px 8px 4px 8px!important;cursor:pointer!important;user-select:none!important}',
-    '.admin-nav-item{width:100%!important;display:flex!important;align-items:center!important;gap:10px!important;padding:9px 12px!important;font-size:13px!important;border-radius:8px!important;color:#94a3b8!important;justify-content:flex-start!important;text-align:left!important;white-space:nowrap!important}',
-    '.admin-main{flex:1 1 auto!important;width:calc(100% - 68px)!important;min-width:0!important;padding:28px 36px!important;overflow-y:auto!important;transition:width 0.3s cubic-bezier(0.4,0,0.2,1)!important}'
+    '.admin-panel.active{display:block!important;margin-top:0!important;padding-top:0!important}'
   ].join('');(document.head||document.documentElement).appendChild(s)}();</script>
 
   <meta charset="UTF-8">
@@ -21,161 +14,8 @@
   <meta name="robots" content="noindex, nofollow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="./css/style.css?v=20260731_hover_v2">
-  <link rel="stylesheet" href="./css/admin.css?v=20260731_hover_v2">
-  <style>
-    /* ══════════════════════════════════════════════════════
-       ANIMATED AUTO-HIDING HOVER SIDEBAR & ACCORDION DROPDOWN
-    ══════════════════════════════════════════════════════ */
-    .admin-layout.hidden { display: none !important; }
-    .admin-panel { display: none !important; margin-top: 0 !important; padding-top: 0 !important; }
-    .admin-panel.active { display: block !important; margin-top: 0 !important; padding-top: 0 !important; }
-
-    .admin-layout {
-      display: flex !important;
-      flex-direction: row !important;
-      align-items: stretch !important;
-      justify-content: flex-start !important;
-      width: 100% !important;
-      min-height: calc(100vh - var(--header-height, 60px)) !important;
-      margin-top: var(--header-height, 60px) !important;
-    }
-
-    /* Auto-hiding sidebar: shrinks to 68px mini icon bar when mouse is not hovering */
-    .admin-sidebar {
-      width: 68px !important;
-      min-width: 68px !important;
-      max-width: 68px !important;
-      height: calc(100vh - var(--header-height, 60px)) !important;
-      display: flex !important;
-      flex-direction: column !important;
-      overflow-y: auto !important;
-      overflow-x: hidden !important;
-      position: sticky !important;
-      top: var(--header-height, 60px) !important;
-      padding: 14px 8px !important;
-      gap: 10px !important;
-      border-right: 1px solid var(--border-subtle, rgba(255,255,255,0.08)) !important;
-      background: rgba(15, 17, 23, 0.96) !important;
-      backdrop-filter: blur(12px) !important;
-      z-index: 100 !important;
-      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s ease !important;
-    }
-
-    /* Expand smoothly when hovered or pinned */
-    .admin-sidebar:hover,
-    .admin-sidebar.pinned {
-      width: 270px !important;
-      min-width: 270px !important;
-      max-width: 270px !important;
-      box-shadow: 10px 0 35px rgba(0, 0, 0, 0.6) !important;
-      border-right-color: rgba(243, 199, 124, 0.25) !important;
-    }
-
-    .admin-main {
-      flex: 1 1 auto !important;
-      width: calc(100% - 68px) !important;
-      min-width: 0 !important;
-      padding: 28px 36px !important;
-      overflow-y: auto !important;
-      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    }
-
-    /* Hide text labels in mini collapsed state */
-    .admin-sidebar .nav-text,
-    .admin-sidebar .admin-sidebar__heading span,
-    .admin-sidebar .accordion-chevron,
-    .admin-sidebar .sidebar-logo-title {
-      opacity: 0;
-      white-space: nowrap;
-      transition: opacity 0.25s ease;
-      pointer-events: none;
-    }
-    .admin-sidebar:hover .nav-text,
-    .admin-sidebar:hover .admin-sidebar__heading span,
-    .admin-sidebar:hover .accordion-chevron,
-    .admin-sidebar:hover .sidebar-logo-title,
-    .admin-sidebar.pinned .nav-text,
-    .admin-sidebar.pinned .admin-sidebar__heading span,
-    .admin-sidebar.pinned .accordion-chevron,
-    .admin-sidebar.pinned .sidebar-logo-title {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    /* Accordion Section Heading */
-    .admin-sidebar__heading {
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      font-size: 11px !important;
-      font-weight: 700 !important;
-      text-transform: uppercase !important;
-      letter-spacing: 0.08em !important;
-      color: #64748b !important;
-      padding: 8px 8px 4px 8px !important;
-      margin: 4px 0 2px 0 !important;
-      cursor: pointer !important;
-      user-select: none !important;
-      transition: color 0.2s ease !important;
-      border-radius: 6px;
-    }
-    .admin-sidebar__heading:hover {
-      color: #f3c77c !important;
-      background: rgba(255, 255, 255, 0.03);
-    }
-
-    .accordion-chevron {
-      font-size: 9px !important;
-      transition: transform 0.25s ease !important;
-      color: #94a3b8;
-    }
-
-    /* Accordion Menu items container */
-    .admin-sidebar__menu {
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 3px !important;
-      max-height: 600px;
-      overflow: hidden;
-      transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
-    }
-    .admin-sidebar__section.collapsed .admin-sidebar__menu {
-      max-height: 0 !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-    .admin-sidebar__section.collapsed .accordion-chevron {
-      transform: rotate(-90deg) !important;
-    }
-
-    .admin-nav-item {
-      width: 100% !important;
-      display: flex !important;
-      align-items: center !important;
-      gap: 12px !important;
-      padding: 9px 12px !important;
-      font-size: 13px !important;
-      border-radius: 8px !important;
-      color: #94a3b8 !important;
-      justify-content: flex-start !important;
-      text-align: left !important;
-      transition: all 0.2s ease !important;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-    }
-    .admin-nav-item__icon {
-      font-size: 16px !important;
-      flex-shrink: 0 !important;
-      width: 24px;
-      text-align: center;
-    }
-    .admin-nav-item:hover, .admin-nav-item.active {
-      background: rgba(243, 199, 124, 0.14) !important;
-      color: #f3c77c !important;
-    }
-  </style>
+  <link rel="stylesheet" href="./css/style.css?v=20260731_v2">
+  <link rel="stylesheet" href="./css/admin.css?v=20260731_v2">
 
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
 </head>
@@ -238,122 +78,202 @@
 
     <!-- Dashboard (Hidden until login) -->
     <div class="admin-layout hidden" id="dashboardSection">
-      <!-- Animated Auto-Hiding Hover Sidebar with Dropdown Accordions -->
+      <!-- Animated Auto-Hiding Hover Sidebar with Dropdown Accordions (Screenshot replica) -->
       <aside class="admin-sidebar" id="adminSidebar">
+        <!-- Sidebar Brand Header -->
+        <div class="sidebar-brand-header">
+          <div class="sidebar-brand-left">
+            <div class="sidebar-brand-logo">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            </div>
+            <div class="sidebar-brand-text">
+              <span class="brand-title">Midnight</span>
+              <span class="brand-badge">ADMIN</span>
+            </div>
+          </div>
+          <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle Sidebar Collapse" aria-label="Toggle Sidebar" onclick="window.toggleAdminSidebar && window.toggleAdminSidebar()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="9" y1="3" x2="9" y2="21"/>
+              <path d="m15 15-3-3 3-3"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Section: Dashboard -->
         <div class="admin-sidebar__section">
           <div class="admin-sidebar__heading" onclick="window.toggleSidebarAccordion(this)">
             <span>Dashboard</span>
-            <span class="accordion-chevron">▼</span>
+            <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           <div class="admin-sidebar__menu">
-            <button class="admin-nav-item active" data-panel="overview" onclick="switchPanel('overview')">
-              <span class="admin-nav-item__icon">📊</span>
+            <button class="admin-nav-item active" data-panel="overview" data-tooltip="Overview" onclick="switchPanel('overview')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+              </span>
               <span class="nav-text">Overview</span>
             </button>
           </div>
         </div>
 
+        <!-- Section: Moderation & CRM -->
         <div class="admin-sidebar__section">
           <div class="admin-sidebar__heading" onclick="window.toggleSidebarAccordion(this)">
             <span>Moderation &amp; CRM</span>
-            <span class="accordion-chevron">▼</span>
+            <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           <div class="admin-sidebar__menu">
-            <button class="admin-nav-item" data-panel="stories-queue" onclick="switchPanel('stories-queue')">
-              <span class="admin-nav-item__icon">📝</span>
+            <button class="admin-nav-item" data-panel="stories-queue" data-tooltip="Stories Queue" onclick="switchPanel('stories-queue')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+              </span>
               <span class="nav-text">Stories Queue</span>
               <span class="admin-nav-item__badge hidden" id="pendingStoriesBadge">0</span>
             </button>
-            <button class="admin-nav-item" data-panel="comments-queue" onclick="switchPanel('comments-queue')">
-              <span class="admin-nav-item__icon">💬</span>
+            <button class="admin-nav-item" data-panel="comments-queue" data-tooltip="Comments Queue" onclick="switchPanel('comments-queue')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </span>
               <span class="nav-text">Comments Queue</span>
               <span class="admin-nav-item__badge hidden" id="pendingCommentsBadge">0</span>
             </button>
-            <button class="admin-nav-item" data-panel="reports" onclick="switchPanel('reports')">
-              <span class="admin-nav-item__icon">🎫</span>
+            <button class="admin-nav-item" data-panel="reports" data-tooltip="Helpdesk &amp; CRM Ops" onclick="switchPanel('reports')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><line x1="13" y1="5" x2="13" y2="19"/></svg>
+              </span>
               <span class="nav-text">Helpdesk &amp; CRM Ops</span>
               <span class="admin-nav-item__badge hidden" id="reportsBadge">0</span>
             </button>
-            <button class="admin-nav-item" data-panel="crm-analytics" onclick="switchPanel('crm-analytics')">
-              <span class="admin-nav-item__icon">📈</span>
+            <button class="admin-nav-item" data-panel="crm-analytics" data-tooltip="Executive CRM Analytics" onclick="switchPanel('crm-analytics')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              </span>
               <span class="nav-text">Executive CRM Analytics</span>
             </button>
           </div>
         </div>
 
+        <!-- Section: Management -->
         <div class="admin-sidebar__section">
           <div class="admin-sidebar__heading" onclick="window.toggleSidebarAccordion(this)">
             <span>Management</span>
-            <span class="accordion-chevron">▼</span>
+            <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           <div class="admin-sidebar__menu">
-            <button class="admin-nav-item" data-panel="users" onclick="switchPanel('users')">
-              <span class="admin-nav-item__icon">👥</span>
+            <button class="admin-nav-item" data-panel="users" data-tooltip="Users" onclick="switchPanel('users')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </span>
               <span class="nav-text">Users</span>
             </button>
-            <button class="admin-nav-item" data-panel="books" onclick="switchPanel('books')">
-              <span class="admin-nav-item__icon">📚</span>
+            <button class="admin-nav-item" data-panel="books" data-tooltip="Books" onclick="switchPanel('books')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              </span>
               <span class="nav-text">Books</span>
             </button>
-            <button class="admin-nav-item" data-panel="categories" onclick="switchPanel('categories')">
-              <span class="admin-nav-item__icon">🏷️</span>
+            <button class="admin-nav-item" data-panel="categories" data-tooltip="Categories" onclick="switchPanel('categories')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+              </span>
               <span class="nav-text">Categories</span>
             </button>
-            <button class="admin-nav-item" data-panel="bans" onclick="switchPanel('bans')">
-              <span class="admin-nav-item__icon">🚫</span>
+            <button class="admin-nav-item" data-panel="bans" data-tooltip="Bans" onclick="switchPanel('bans')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+              </span>
               <span class="nav-text">Bans</span>
             </button>
-            <button class="admin-nav-item" data-panel="settings" onclick="switchPanel('settings')">
-              <span class="admin-nav-item__icon">⚙️</span>
+            <button class="admin-nav-item" data-panel="settings" data-tooltip="Settings" onclick="switchPanel('settings')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </span>
               <span class="nav-text">Settings</span>
             </button>
           </div>
         </div>
 
+        <!-- Section: Administration -->
         <div class="admin-sidebar__section">
           <div class="admin-sidebar__heading" onclick="window.toggleSidebarAccordion(this)">
             <span>Administration</span>
-            <span class="accordion-chevron">▼</span>
+            <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           <div class="admin-sidebar__menu">
-            <button class="admin-nav-item" data-panel="accounts" onclick="switchPanel('accounts')">
-              <span class="admin-nav-item__icon">🚀</span>
+            <button class="admin-nav-item" data-panel="accounts" data-tooltip="Employees Onboarding" onclick="switchPanel('accounts')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+              </span>
               <span class="nav-text">Employees Onboarding</span>
             </button>
-            <button class="admin-nav-item" data-panel="taxonomy" onclick="switchPanel('taxonomy')">
-              <span class="admin-nav-item__icon">🗂️</span>
+            <button class="admin-nav-item" data-panel="taxonomy" data-tooltip="Ticket Taxonomy" onclick="switchPanel('taxonomy')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              </span>
               <span class="nav-text">Ticket Taxonomy</span>
             </button>
-            <button class="admin-nav-item" data-panel="roles" onclick="switchPanel('roles')">
-              <span class="admin-nav-item__icon">🔐</span>
+            <button class="admin-nav-item" data-panel="roles" data-tooltip="Roles &amp; Permissions" onclick="switchPanel('roles')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </span>
               <span class="nav-text">Roles &amp; Permissions</span>
             </button>
-            <button class="admin-nav-item" data-panel="teams" onclick="switchPanel('teams')">
-              <span class="admin-nav-item__icon">🏢</span>
+            <button class="admin-nav-item" data-panel="teams" data-tooltip="Teams" onclick="switchPanel('teams')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v8h4"/><path d="M18 9h2a2 2 0 0 1 2 2v11h-4"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
+              </span>
               <span class="nav-text">Teams</span>
             </button>
-            <button class="admin-nav-item" data-panel="employees" onclick="switchPanel('employees')">
-              <span class="admin-nav-item__icon">👤</span>
+            <button class="admin-nav-item" data-panel="employees" data-tooltip="Employees" onclick="switchPanel('employees')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </span>
               <span class="nav-text">Employees</span>
             </button>
           </div>
         </div>
 
+        <!-- Section: System -->
         <div class="admin-sidebar__section">
           <div class="admin-sidebar__heading" onclick="window.toggleSidebarAccordion(this)">
             <span>System</span>
-            <span class="accordion-chevron">▼</span>
+            <svg class="accordion-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
           <div class="admin-sidebar__menu">
-            <button class="admin-nav-item" data-panel="audit-log" onclick="switchPanel('audit-log')">
-              <span class="admin-nav-item__icon">📋</span>
+            <button class="admin-nav-item" data-panel="audit-log" data-tooltip="Audit Log" onclick="switchPanel('audit-log')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>
+              </span>
               <span class="nav-text">Audit Log</span>
             </button>
-            <button class="admin-nav-item" data-panel="mfa-setup" onclick="switchPanel('mfa-setup')">
-              <span class="admin-nav-item__icon">🔑</span>
+            <button class="admin-nav-item" data-panel="mfa-setup" data-tooltip="MFA Setup" onclick="switchPanel('mfa-setup')">
+              <span class="admin-nav-item__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 2-2 2m-1.5 1.5L16 7v3.5l-2.5 2.5"/><circle cx="7.5" cy="16.5" r="4.5"/><path d="m10.5 13.5 6-6"/></svg>
+              </span>
               <span class="nav-text">MFA Setup</span>
             </button>
           </div>
+        </div>
+
+        <!-- User Profile Card Footer -->
+        <div class="sidebar-user-card" id="sidebarUserCard">
+          <div class="sidebar-user-avatar-wrap">
+            <div class="sidebar-user-avatar">AS</div>
+            <span class="sidebar-user-status" title="Online"></span>
+          </div>
+          <div class="sidebar-user-info">
+            <span class="sidebar-user-name">Andrew Smith</span>
+            <span class="sidebar-user-role">Super Admin</span>
+          </div>
+          <button type="button" class="sidebar-user-action" title="Sign Out" onclick="window.handleLogout &amp;&amp; window.handleLogout()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </button>
         </div>
       </aside>
 
