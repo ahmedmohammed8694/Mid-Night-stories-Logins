@@ -987,9 +987,9 @@
               <h1 class="admin-page-title" style="margin-bottom: 4px;">🚀 Employees Onboarding &amp; Provisioning Hub</h1>
               <p class="admin-page-subtitle">Manage company employee accounts, provision corporate access, assign RBAC roles, and dispatch welcome kits.</p>
             </div>
-            <a href="/employees" target="_blank" class="btn btn--primary" style="padding: 10px 20px; font-weight: 700; text-decoration: none;">
-              ➕ Open Employee Onboarding Suite →
-            </a>
+            <button type="button" class="btn btn--primary" onclick="window.openCreateEmployeeModal && window.openCreateEmployeeModal()" style="padding: 10px 20px; font-weight: 700;">
+              ➕ Create Employee Account
+            </button>
           </div>
 
           <!-- Onboarding Metrics Cards -->
@@ -999,7 +999,7 @@
                 <span style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8;">Onboarded Staff</span>
                 <span style="font-size: 1.4rem;">👥</span>
               </div>
-              <div style="font-size: 1.8rem; font-weight: 800; color: #fff;">18</div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: #fff;" id="metricActiveEmpsCount">18</div>
               <div style="font-size: 0.75rem; color: #34d399; margin-top: 4px;">Active across all departments</div>
             </div>
             <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
@@ -1007,7 +1007,7 @@
                 <span style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8;">Pending Invites</span>
                 <span style="font-size: 1.4rem;">📨</span>
               </div>
-              <div style="font-size: 1.8rem; font-weight: 800; color: #fbbf24;">3</div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: #fbbf24;" id="metricPendingInvitesCount">3</div>
               <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">Awaiting employee acceptance</div>
             </div>
             <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
@@ -1032,7 +1032,7 @@
           <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; overflow: hidden; margin-bottom: 24px;">
             <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-card); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
               <h3 style="margin: 0; font-size: 1rem; color: #fff;">👤 Onboarded Employees Roster &amp; Provisioned Access</h3>
-              <a href="/employees" class="btn btn--secondary btn--sm" style="text-decoration: none;">⚙️ Manage All Employees</a>
+              <button type="button" class="btn btn--secondary btn--sm" onclick="window.openCreateEmployeeModal &amp;&amp; window.openCreateEmployeeModal()">➕ Create Employee Account</button>
             </div>
             <div style="overflow-x: auto;">
               <table class="admin-table">
@@ -1045,36 +1045,11 @@
                     <th>Assigned Team</th>
                     <th>RBAC Role</th>
                     <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr>
-                    <td><span style="font-family: monospace; color: var(--primary-gold, #f3c77c);">#1001</span></td>
-                    <td style="font-weight: 600; color: #fff;">👤 Sarah Jenkins</td>
-                    <td><span style="color: #94a3b8; font-size: 0.85rem;">sarah.j@midnightstories.org</span></td>
-                    <td><span class="filter-chip" style="font-size: 0.75rem;">🏛️ Acme Corporation</span></td>
-                    <td><span style="color: #94a3b8; font-size: 0.85rem;">🏢 Global Support Tier 1</span></td>
-                    <td><span class="badge-status" style="background: rgba(99,102,241,0.15); color: #818cf8; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">Support Specialist</span></td>
-                    <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
-                  </tr>
-                  <tr>
-                    <td><span style="font-family: monospace; color: var(--primary-gold, #f3c77c);">#1002</span></td>
-                    <td style="font-weight: 600; color: #fff;">👤 Marcus Vance</td>
-                    <td><span style="color: #94a3b8; font-size: 0.85rem;">marcus.vance@starlight.org</span></td>
-                    <td><span class="filter-chip" style="font-size: 0.75rem;">🏛️ Starlight Publishing</span></td>
-                    <td><span style="color: #94a3b8; font-size: 0.85rem;">🏢 Editorial Guild</span></td>
-                    <td><span class="badge-status" style="background: rgba(245,158,11,0.15); color: #fbbf24; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">Senior Content Editor</span></td>
-                    <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
-                  </tr>
-                  <tr>
-                    <td><span style="font-family: monospace; color: var(--primary-gold, #f3c77c);">#1003</span></td>
-                    <td style="font-weight: 600; color: #fff;">👤 Elena Rostova</td>
-                    <td><span style="color: #94a3b8; font-size: 0.85rem;">elena.r@midnightstories.org</span></td>
-                    <td><span class="filter-chip" style="font-size: 0.75rem;">🏛️ Midnight Internal</span></td>
-                    <td><span style="color: #94a3b8; font-size: 0.85rem;">🏢 Security Ops (SIRT)</span></td>
-                    <td><span class="badge-status" style="background: rgba(239,68,68,0.15); color: #f87171; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">Security Officer</span></td>
-                    <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
-                  </tr>
+                <tbody id="accountsEmployeeBody">
+                  <!-- Rendered dynamically -->
                 </tbody>
               </table>
             </div>
@@ -1275,15 +1250,15 @@
               <h1 class="admin-page-title" style="margin-bottom: 4px;">👤 Corporate Employees &amp; Staff Directory</h1>
               <p class="admin-page-subtitle">Full roster of company employees, staff accounts, email credentials, and onboarding status.</p>
             </div>
-            <a href="/employees" target="_blank" class="btn btn--primary" style="padding: 10px 20px; font-weight: 700; text-decoration: none;">
-              🚀 Open Full Onboarding Wizard →
-            </a>
+            <button type="button" class="btn btn--primary" onclick="window.openCreateEmployeeModal &amp;&amp; window.openCreateEmployeeModal()" style="padding: 10px 20px; font-weight: 700;">
+              ➕ Create Employee Account
+            </button>
           </div>
 
           <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; overflow: hidden;">
             <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-card); display: flex; justify-content: space-between; align-items: center;">
               <h3 style="margin: 0; font-size: 1rem; color: #fff;">👤 Company Employee Roster</h3>
-              <a href="/employees" class="btn btn--secondary btn--sm" style="text-decoration: none;">⚙️ Full Employee Portal</a>
+              <button type="button" class="btn btn--secondary btn--sm" onclick="window.openCreateEmployeeModal &amp;&amp; window.openCreateEmployeeModal()">➕ Create Employee Account</button>
             </div>
             <div style="overflow-x: auto;">
               <table class="admin-table">
@@ -1299,37 +1274,8 @@
                     <th>Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr>
-                    <td><span style="font-family: monospace; color: var(--primary-gold, #f3c77c);">#1001</span></td>
-                    <td style="font-weight: 600; color: #fff;">👤 Sarah Jenkins</td>
-                    <td><span style="color: #94a3b8; font-size: 0.85rem;">sarah.j@midnightstories.org</span></td>
-                    <td><span class="filter-chip" style="font-size: 0.75rem;">🏛️ Acme Corporation</span></td>
-                    <td><span style="color: #94a3b8; font-size: 0.85rem;">🏢 Global Support Tier 1</span></td>
-                    <td><span class="badge-status" style="background: rgba(99,102,241,0.15); color: #818cf8; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">Support Specialist</span></td>
-                    <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
-                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Editing Employee Profile')">✏️ Edit Profile</button></td>
-                  </tr>
-                  <tr>
-                    <td><span style="font-family: monospace; color: var(--primary-gold, #f3c77c);">#1002</span></td>
-                    <td style="font-weight: 600; color: #fff;">👤 Marcus Vance</td>
-                    <td><span style="color: #94a3b8; font-size: 0.85rem;">marcus.vance@starlight.org</span></td>
-                    <td><span class="filter-chip" style="font-size: 0.75rem;">🏛️ Starlight Publishing</span></td>
-                    <td><span style="color: #94a3b8; font-size: 0.85rem;">🏢 Editorial Guild</span></td>
-                    <td><span class="badge-status" style="background: rgba(245,158,11,0.15); color: #fbbf24; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">Senior Content Editor</span></td>
-                    <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
-                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Editing Employee Profile')">✏️ Edit Profile</button></td>
-                  </tr>
-                  <tr>
-                    <td><span style="font-family: monospace; color: var(--primary-gold, #f3c77c);">#1003</span></td>
-                    <td style="font-weight: 600; color: #fff;">👤 Elena Rostova</td>
-                    <td><span style="color: #94a3b8; font-size: 0.85rem;">elena.r@midnightstories.org</span></td>
-                    <td><span class="filter-chip" style="font-size: 0.75rem;">🏛️ Midnight Internal</span></td>
-                    <td><span style="color: #94a3b8; font-size: 0.85rem;">🏢 Security Ops (SIRT)</span></td>
-                    <td><span class="badge-status" style="background: rgba(239,68,68,0.15); color: #f87171; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">Security Officer</span></td>
-                    <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
-                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Editing Employee Profile')">✏️ Edit Profile</button></td>
-                  </tr>
+                <tbody id="employeesBody">
+                  <!-- Rendered dynamically -->
                 </tbody>
               </table>
             </div>
@@ -3052,6 +2998,178 @@
         <div style="display: flex; gap: 12px; justify-content: flex-end;">
           <button type="button" class="btn btn--secondary btn--sm" onclick="closeAdminCreateUserModal()">Cancel</button>
           <button type="submit" id="btnSaveNewUser" class="btn btn--primary btn--sm" style="height: 38px; padding: 0 20px;">🚀 Create User Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Create New Employee Account Modal -->
+  <div id="createEmployeeModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="modal" style="max-width: 650px; width: 92%; padding: 28px; background: #0f172a; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); position: relative; max-height: 90vh; overflow-y: auto; text-align: left;">
+      <button class="modal__close" onclick="closeCreateEmployeeModal()" style="position: absolute; right: 20px; top: 20px; background: none; border: none; font-size: 1.4rem; color: #94a3b8; cursor: pointer;">✕</button>
+      <h2 style="font-family: 'Inter', sans-serif; font-size: 1.4rem; font-weight: 700; color: #f8fafc; margin-bottom: 4px;">👤 Create Employee Account</h2>
+      <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 20px;">Provision a new employee account, set corporate email, assign team roles, and configure initial access.</p>
+
+      <form id="createEmployeeForm" onsubmit="handleCreateEmployee(event)">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Full Name*</label>
+            <input type="text" id="createEmpFullName" class="form-input" placeholder="e.g. Sarah Jenkins" required style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Corporate Email Address*</label>
+            <input type="email" id="createEmpEmail" class="form-input" placeholder="sarah.j@midnightstories.org" required style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Phone Number (Optional)</label>
+            <input type="text" id="createEmpPhone" class="form-input" placeholder="+1 (555) 000-0000" style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Enterprise Organization / Account*</label>
+            <select id="createEmpAccount" class="form-select" style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+              <option value="Acme Corporation">Acme Corporation</option>
+              <option value="Starlight Publishing">Starlight Publishing</option>
+              <option value="Apex Media House">Apex Media House</option>
+              <option value="Midnight Internal">Midnight Internal</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Department / Team*</label>
+            <select id="createEmpTeam" class="form-select" style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+              <option value="Global Support Tier 1">Global Support Tier 1</option>
+              <option value="Editorial &amp; Moderation Guild">Editorial &amp; Moderation Guild</option>
+              <option value="Security Ops (SIRT)">Security Ops (SIRT)</option>
+              <option value="Billing &amp; Enterprise Accounts">Billing &amp; Enterprise Accounts</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Role &amp; Permissions*</label>
+            <select id="createEmpRole" class="form-select" style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+              <option value="Support Specialist">Support Specialist</option>
+              <option value="Senior Content Editor">Senior Content Editor</option>
+              <option value="Security Compliance Officer">Security Compliance Officer</option>
+              <option value="Community Moderator">Community Moderator</option>
+              <option value="Super Administrator">Super Administrator</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Employment Status</label>
+            <select id="createEmpStatus" class="form-select" style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+              <option value="active">Active</option>
+              <option value="pending_invite">Pending Invite</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Initial Password (Default: Midnight@2026!)</label>
+            <input type="text" id="createEmpPassword" class="form-input" value="Midnight@2026!" style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08);">
+          <button type="button" class="btn btn--secondary btn--sm" onclick="closeCreateEmployeeModal()">Cancel</button>
+          <button type="submit" class="btn btn--primary btn--sm" style="height: 38px; padding: 0 20px;">🚀 Create Employee Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Employee Account & Password Reset Modal -->
+  <div id="editEmployeeModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="modal" style="max-width: 680px; width: 92%; padding: 28px; background: #0f172a; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); position: relative; max-height: 90vh; overflow-y: auto; text-align: left;">
+      <button class="modal__close" onclick="closeEditEmployeeModal()" style="position: absolute; right: 20px; top: 20px; background: none; border: none; font-size: 1.4rem; color: #94a3b8; cursor: pointer;">✕</button>
+      <h2 style="font-family: 'Inter', sans-serif; font-size: 1.4rem; font-weight: 700; color: #f8fafc; margin-bottom: 4px;">✏️ Edit Employee Account &amp; Credentials</h2>
+      <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 20px;">Update employee information, reset password to default, or modify corporate access permissions.</p>
+
+      <form id="editEmployeeForm" onsubmit="handleSaveEditEmployee(event)">
+        <input type="hidden" id="editEmpId">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Full Name*</label>
+            <input type="text" id="editEmpFullName" class="form-input" required style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Corporate Email Address*</label>
+            <input type="email" id="editEmpEmail" class="form-input" required style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Phone Number</label>
+            <input type="text" id="editEmpPhone" class="form-input" style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Enterprise Organization / Account</label>
+            <select id="editEmpAccount" class="form-select" style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+              <option value="Acme Corporation">Acme Corporation</option>
+              <option value="Starlight Publishing">Starlight Publishing</option>
+              <option value="Apex Media House">Apex Media House</option>
+              <option value="Midnight Internal">Midnight Internal</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Department / Team</label>
+            <select id="editEmpTeam" class="form-select" style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+              <option value="Global Support Tier 1">Global Support Tier 1</option>
+              <option value="Editorial &amp; Moderation Guild">Editorial &amp; Moderation Guild</option>
+              <option value="Security Ops (SIRT)">Security Ops (SIRT)</option>
+              <option value="Billing &amp; Enterprise Accounts">Billing &amp; Enterprise Accounts</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Role &amp; Permissions</label>
+            <select id="editEmpRole" class="form-select" style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+              <option value="Support Specialist">Support Specialist</option>
+              <option value="Senior Content Editor">Senior Content Editor</option>
+              <option value="Security Compliance Officer">Security Compliance Officer</option>
+              <option value="Community Moderator">Community Moderator</option>
+              <option value="Super Administrator">Super Administrator</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Employment Status</label>
+            <select id="editEmpStatus" class="form-select" style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+              <option value="active">Active</option>
+              <option value="pending_invite">Pending Invite</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Password Reset & Handling Box -->
+        <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; color: #f8fafc;">🔑 Password &amp; Account Security Handling</h4>
+          <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 12px;">Reset employee password to default system credential or remove employee access.</p>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button type="button" class="btn btn--secondary btn--sm" onclick="handleResetEmployeePasswordDefault()" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); padding: 8px 14px; font-weight: 600;">
+              🔑 Reset Password to Default (Midnight@2026!)
+            </button>
+            <button type="button" class="btn btn--danger btn--sm" onclick="handleDeleteEmployeeAccount()" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 8px 14px; font-weight: 600;">
+              🗑️ Delete Employee Account
+            </button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08);">
+          <button type="button" class="btn btn--secondary btn--sm" onclick="closeEditEmployeeModal()">Cancel</button>
+          <button type="submit" class="btn btn--primary btn--sm" style="height: 38px; padding: 0 20px;">💾 Save Employee Changes</button>
         </div>
       </form>
     </div>

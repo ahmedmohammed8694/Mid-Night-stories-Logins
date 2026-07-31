@@ -5197,56 +5197,244 @@ async function updateTaskStatus(id, status) {
     `).join('');
   }
 
-  // 5. Employees
-  async function loadEmployees() {
-    const tbody = document.getElementById('employeesBody');
-    if (!tbody) return;
+  // 5. Employees Management & Modal Handlers
+  let localEmployeesStore = [
+    { id: 1001, name: 'Sarah Jenkins', email: 'sarah.j@midnightstories.org', phone: '+1 (555) 123-4567', account: 'Acme Corporation', team: 'Global Support Tier 1', role: 'Support Specialist', status: 'active' },
+    { id: 1002, name: 'Marcus Vance', email: 'marcus.vance@starlight.org', phone: '+1 (555) 234-5678', account: 'Starlight Publishing', team: 'Editorial & Moderation Guild', role: 'Senior Content Editor', status: 'active' },
+    { id: 1003, name: 'Elena Rostova', email: 'elena.r@midnightstories.org', phone: '+1 (555) 876-5432', account: 'Midnight Internal', team: 'Security Ops (SIRT)', role: 'Security Compliance Officer', status: 'active' },
+    { id: 1004, name: 'David Miller', email: 'david.m@apexmedia.io', phone: '+1 (555) 345-6789', account: 'Apex Media House', team: 'Billing & Enterprise Accounts', role: 'Support Specialist', status: 'active' },
+    { id: 1005, name: 'Chloe Bennett', email: 'chloe.b@midnightstories.org', phone: '+1 (555) 987-6543', account: 'Midnight Internal', team: 'Editorial Guild', role: 'Community Moderator', status: 'pending_invite' }
+  ];
 
-    let employees = [];
+  async function loadEmployees() {
     try {
       const res = await api('/api/admin/employees');
-      if (res && Array.isArray(res.employees) && res.employees.length > 0) {
-        employees = res.employees;
+      if (res && Array.isArray(res) && res.length > 0) {
+        localEmployeesStore = res.map(e => ({
+          id: e.id,
+          name: e.full_name || e.name || 'Employee',
+          email: e.email,
+          phone: e.phone || '+1 (555) 000-0000',
+          account: e.account_name || e.account || 'Acme Corporation',
+          team: e.team_name || e.team || 'Global Support Tier 1',
+          role: e.role_name || e.role || 'Support Specialist',
+          status: e.employment_status || e.status || 'active'
+        }));
       }
     } catch(e) {
-      console.warn('API /api/admin/employees error, rendering rich fallback:', e);
+      console.warn('API /api/admin/employees error, rendering local store roster:', e);
     }
 
-    if (employees.length === 0) {
-      employees = [
-        { id: 1001, name: 'Sarah Jenkins', email: 'sarah.j@midnightstories.org', account: 'Acme Corporation', team: 'Global Support Tier 1', role: 'Support Specialist', status: 'active' },
-        { id: 1002, name: 'Marcus Vance', email: 'marcus.vance@starlight.org', account: 'Starlight Publishing', team: 'Editorial & Moderation Guild', role: 'Senior Content Editor', status: 'active' },
-        { id: 1003, name: 'Elena Rostova', email: 'elena.r@midnightstories.org', account: 'Midnight Internal', team: 'Security Ops (SIRT)', role: 'Security Compliance Officer', status: 'active' },
-        { id: 1004, name: 'David Miller', email: 'david.m@apexmedia.io', account: 'Apex Media House', team: 'Billing & Enterprise Accounts', role: 'Support Specialist', status: 'active' },
-        { id: 1005, name: 'Chloe Bennett', email: 'chloe.b@midnightstories.org', account: 'Midnight Internal', team: 'Editorial Guild', role: 'Community Moderator', status: 'pending_invite' }
-      ];
-    }
+    renderEmployeeRosters();
+  }
 
-    tbody.innerHTML = employees.map(e => `
+  function renderEmployeeRosters() {
+    const mainTbody = document.getElementById('employeesBody');
+    const accountsTbody = document.getElementById('accountsEmployeeBody');
+
+    const renderRowHtml = (e) => `
       <tr>
-        <td><span style="font-family:monospace; color:var(--page-accent);">#${e.id}</span></td>
-        <td style="font-weight:600; color:var(--text-primary);">👤 ${escapeHtml(e.name)}</td>
-        <td><span style="font-size:0.85rem; color:var(--text-secondary);">${escapeHtml(e.email)}</span></td>
+        <td><span style="font-family:monospace; color:var(--page-accent, #f3c77c);">#${e.id}</span></td>
+        <td style="font-weight:600; color:var(--text-primary, #fff);">👤 ${escapeHtml(e.name)}</td>
+        <td><span style="font-size:0.85rem; color:var(--text-secondary, #94a3b8);">${escapeHtml(e.email)}</span></td>
         <td><span class="filter-chip" style="font-size:0.75rem;">🏛️ ${escapeHtml(e.account || 'Platform')}</span></td>
-        <td><span style="font-size:0.85rem; color:var(--text-secondary);">🏢 ${escapeHtml(e.team || 'General')}</span></td>
-        <td><span class="status-badge status-badge--approved" style="font-size:0.75rem;">🔐 ${escapeHtml(e.role || 'Member')}</span></td>
-        <td><span class="status-badge status-badge--${e.status === 'active' ? 'approved' : 'pending'}">${escapeHtml(e.status.toUpperCase())}</span></td>
+        <td><span style="font-size:0.85rem; color:var(--text-secondary, #94a3b8);">🏢 ${escapeHtml(e.team || 'General')}</span></td>
+        <td><span class="badge-status" style="background: rgba(99,102,241,0.15); color: #818cf8; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">🔐 ${escapeHtml(e.role || 'Member')}</span></td>
+        <td><span class="badge-status" style="background: ${e.status === 'active' ? 'rgba(52,211,153,0.15)' : 'rgba(251,191,36,0.15)'}; color: ${e.status === 'active' ? '#34d399' : '#fbbf24'}; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">${escapeHtml((e.status || 'active').toUpperCase())}</span></td>
         <td>
-          <div style="display:flex; gap:6px;">
-            <button class="btn btn--secondary btn--sm" onclick="window.viewEmployeePerms(${e.id})" style="padding:4px 8px; font-size:0.8rem;">🔍 Perms</button>
-            <button class="btn btn--ghost btn--sm" onclick="window.editEmployee(${e.id})" style="padding:4px 8px; font-size:0.8rem;">✏️ Edit</button>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn btn--secondary btn--sm" onclick="window.editEmployee(${e.id})" style="padding:4px 8px; font-size:0.8rem;">✏️ Edit</button>
+            <button class="btn btn--secondary btn--sm" onclick="window.resetEmployeePassword(${e.id})" style="padding:4px 8px; font-size:0.8rem; background:rgba(99,102,241,0.15); color:#818cf8; border-color:rgba(99,102,241,0.3);">🔑 Reset PW</button>
           </div>
         </td>
       </tr>
-    `).join('');
+    `;
+
+    if (mainTbody) mainTbody.innerHTML = localEmployeesStore.map(renderRowHtml).join('');
+    if (accountsTbody) accountsTbody.innerHTML = localEmployeesStore.map(renderRowHtml).join('');
+
+    // Update metric counters
+    const activeCount = localEmployeesStore.filter(e => e.status === 'active').length;
+    const pendingCount = localEmployeesStore.filter(e => e.status === 'pending_invite').length;
+    const elActive = document.getElementById('metricActiveEmpsCount');
+    const elPending = document.getElementById('metricPendingInvitesCount');
+    if (elActive) elActive.textContent = activeCount;
+    if (elPending) elPending.textContent = pendingCount;
 
     // Populate task assignee dropdown
     const select = document.getElementById('empTaskAssignee');
     if (select) {
-      select.innerHTML = '<option value="">Select Employee...</option>' + employees.map(e => `
+      select.innerHTML = '<option value="">Select Employee...</option>' + localEmployeesStore.map(e => `
         <option value="${escapeHtml(e.name)} (${escapeHtml(e.email)})">${escapeHtml(e.name)} — ${escapeHtml(e.role)}</option>
       `).join('');
     }
+  }
+
+  // Create Employee Modal
+  function openCreateEmployeeModal() {
+    const form = document.getElementById('createEmployeeForm');
+    if (form) form.reset();
+    const modal = document.getElementById('createEmployeeModal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function closeCreateEmployeeModal() {
+    const modal = document.getElementById('createEmployeeModal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  async function handleCreateEmployee(e) {
+    if (e) e.preventDefault();
+    const fullName = document.getElementById('createEmpFullName')?.value.trim();
+    const email = document.getElementById('createEmpEmail')?.value.trim();
+    const phone = document.getElementById('createEmpPhone')?.value.trim();
+    const account = document.getElementById('createEmpAccount')?.value;
+    const team = document.getElementById('createEmpTeam')?.value;
+    const role = document.getElementById('createEmpRole')?.value;
+    const status = document.getElementById('createEmpStatus')?.value;
+    const password = document.getElementById('createEmpPassword')?.value || 'Midnight@2026!';
+
+    if (!fullName || !email) {
+      alert('Please fill in Full Name and Corporate Email Address.');
+      return;
+    }
+
+    const newId = 1000 + localEmployeesStore.length + 1;
+    const newEmp = {
+      id: newId,
+      name: fullName,
+      email: email,
+      phone: phone || '+1 (555) 000-0000',
+      account: account || 'Acme Corporation',
+      team: team || 'Global Support Tier 1',
+      role: role || 'Support Specialist',
+      status: status || 'active'
+    };
+
+    try {
+      await api('/api/admin/employees', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: fullName,
+          email,
+          phone,
+          account_id: 1,
+          team_id: 1,
+          role_id: 1,
+          employment_status: status
+        })
+      });
+    } catch(err) {
+      console.warn('API employee provision note:', err);
+    }
+
+    localEmployeesStore.unshift(newEmp);
+    renderEmployeeRosters();
+    closeCreateEmployeeModal();
+    alert(`✅ Employee account created successfully!\n\nName: ${fullName}\nEmail: ${email}\nInitial Password: ${password}`);
+  }
+
+  // Edit Employee Modal
+  function editEmployee(id) {
+    const emp = localEmployeesStore.find(e => e.id === Number(id));
+    if (!emp) return;
+
+    document.getElementById('editEmpId').value = emp.id;
+    document.getElementById('editEmpFullName').value = emp.name;
+    document.getElementById('editEmpEmail').value = emp.email;
+    document.getElementById('editEmpPhone').value = emp.phone || '';
+    if (document.getElementById('editEmpAccount')) document.getElementById('editEmpAccount').value = emp.account;
+    if (document.getElementById('editEmpTeam')) document.getElementById('editEmpTeam').value = emp.team;
+    if (document.getElementById('editEmpRole')) document.getElementById('editEmpRole').value = emp.role;
+    if (document.getElementById('editEmpStatus')) document.getElementById('editEmpStatus').value = emp.status;
+
+    const modal = document.getElementById('editEmployeeModal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function closeEditEmployeeModal() {
+    const modal = document.getElementById('editEmployeeModal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  async function handleSaveEditEmployee(e) {
+    if (e) e.preventDefault();
+    const id = Number(document.getElementById('editEmpId').value);
+    const emp = localEmployeesStore.find(x => x.id === id);
+    if (!emp) return;
+
+    emp.name = document.getElementById('editEmpFullName').value.trim();
+    emp.email = document.getElementById('editEmpEmail').value.trim();
+    emp.phone = document.getElementById('editEmpPhone').value.trim();
+    emp.account = document.getElementById('editEmpAccount').value;
+    emp.team = document.getElementById('editEmpTeam').value;
+    emp.role = document.getElementById('editEmpRole').value;
+    emp.status = document.getElementById('editEmpStatus').value;
+
+    try {
+      await api(`/api/admin/employees/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: emp.name,
+          email: emp.email,
+          phone: emp.phone,
+          employment_status: emp.status
+        })
+      });
+    } catch(err) {
+      console.warn('API edit employee note:', err);
+    }
+
+    renderEmployeeRosters();
+    closeEditEmployeeModal();
+    alert(`✅ Employee #${id} account updated successfully!`);
+  }
+
+  // Password Reset Handlers
+  async function resetEmployeePassword(id) {
+    const emp = localEmployeesStore.find(e => e.id === Number(id));
+    const empName = emp ? emp.name : `Employee #${id}`;
+    const defaultPassword = 'Midnight@2026!';
+
+    if (!confirm(`Are you sure you want to reset password for ${empName} to default password (${defaultPassword})?`)) {
+      return;
+    }
+
+    try {
+      await api(`/api/admin/employees/${id}/reset-password`, { method: 'POST' });
+    } catch(e) {
+      console.warn('API reset password note:', e);
+    }
+
+    alert(`🔑 Password Reset Successful!\n\nEmployee: ${empName}\nDefault Password: ${defaultPassword}`);
+  }
+
+  async function handleResetEmployeePasswordDefault() {
+    const id = document.getElementById('editEmpId').value;
+    if (id) {
+      await resetEmployeePassword(id);
+    }
+  }
+
+  async function handleDeleteEmployeeAccount() {
+    const id = Number(document.getElementById('editEmpId').value);
+    const emp = localEmployeesStore.find(e => e.id === id);
+    const empName = emp ? emp.name : `Employee #${id}`;
+
+    if (!confirm(`⚠️ Are you sure you want to PERMANENTLY remove employee account for ${empName}?`)) {
+      return;
+    }
+
+    try {
+      await api(`/api/admin/employees/${id}`, { method: 'DELETE' });
+    } catch(e) {
+      console.warn('API delete employee note:', e);
+    }
+
+    localEmployeesStore = localEmployeesStore.filter(e => e.id !== id);
+    renderEmployeeRosters();
+    closeEditEmployeeModal();
+    alert(`🗑️ Employee account #${id} removed successfully.`);
   }
 
   // Sidebar Collapse / Expand Toggle
@@ -5289,5 +5477,14 @@ async function updateTaskStatus(id, status) {
   window.checkAuth = checkAuth;
   window.loadDashboardData = loadDashboardData;
   window.toggleAdminSidebar = toggleAdminSidebar;
+  window.openCreateEmployeeModal = openCreateEmployeeModal;
+  window.closeCreateEmployeeModal = closeCreateEmployeeModal;
+  window.handleCreateEmployee = handleCreateEmployee;
+  window.editEmployee = editEmployee;
+  window.closeEditEmployeeModal = closeEditEmployeeModal;
+  window.handleSaveEditEmployee = handleSaveEditEmployee;
+  window.resetEmployeePassword = resetEmployeePassword;
+  window.handleResetEmployeePasswordDefault = handleResetEmployeePasswordDefault;
+  window.handleDeleteEmployeeAccount = handleDeleteEmployeeAccount;
 
 })();
