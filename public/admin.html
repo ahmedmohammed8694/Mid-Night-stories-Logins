@@ -6,13 +6,12 @@
     '.admin-layout.hidden{display:none!important}',
     '.admin-panel{display:none!important;margin-top:0!important;padding-top:0!important}',
     '.admin-panel.active{display:block!important;margin-top:0!important;padding-top:0!important}',
-    '.admin-layout{display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;width:100%!important;margin-top:var(--header-height,60px)!important;min-height:calc(100vh - var(--header-height,60px))!important}',
-    '.admin-sidebar{width:100%!important;max-width:none!important;min-width:0!important;height:auto!important;min-height:0!important;display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;overflow-x:auto!important;overflow-y:hidden!important;padding:6px 16px!important;gap:2px!important;border-right:none!important;border-bottom:2px solid rgba(255,255,255,0.1)!important;position:sticky!important;top:var(--header-height,60px)!important;z-index:100!important;background:#0f1117!important}',
-    '.admin-sidebar__section{display:flex!important;flex-direction:row!important;align-items:center!important;gap:2px!important;margin:0!important;padding:0 6px!important;border-right:1px solid rgba(255,255,255,0.1)!important;flex-shrink:0!important}',
-    '.admin-sidebar__section:last-child{border-right:none!important}',
-    '.admin-sidebar__heading{display:none!important}',
-    '.admin-nav-item{width:auto!important;white-space:nowrap!important;padding:6px 10px!important;font-size:12.5px!important;flex-shrink:0!important}',
-    '.admin-main{flex:1 1 auto!important;width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;margin-top:0!important;padding:24px 32px!important;overflow-y:visible!important}'
+    '.admin-layout{display:flex!important;flex-direction:row!important;align-items:stretch!important;justify-content:flex-start!important;width:100%!important;margin-top:var(--header-height,60px)!important;min-height:calc(100vh - var(--header-height,60px))!important}',
+    '.admin-sidebar{width:260px!important;min-width:260px!important;max-width:260px!important;height:calc(100vh - var(--header-height,60px))!important;display:flex!important;flex-direction:column!important;overflow-y:auto!important;overflow-x:hidden!important;padding:16px 12px!important;gap:16px!important;border-right:1px solid rgba(255,255,255,0.08)!important;position:sticky!important;top:var(--header-height,60px)!important;z-index:100!important;background:#0f1117!important}',
+    '.admin-sidebar__section{display:flex!important;flex-direction:column!important;gap:3px!important;margin:0!important;padding:0!important;border-right:none!important}',
+    '.admin-sidebar__heading{display:block!important;font-size:11px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:0.08em!important;color:#64748b!important;margin:8px 8px 4px 8px!important}',
+    '.admin-nav-item{width:100%!important;display:flex!important;align-items:center!important;gap:10px!important;padding:9px 12px!important;font-size:13px!important;border-radius:8px!important;color:#94a3b8!important;justify-content:flex-start!important;text-align:left!important}',
+    '.admin-main{flex:1 1 auto!important;width:calc(100% - 260px)!important;min-width:0!important;padding:28px 36px!important;overflow-y:auto!important}'
   ].join('');(document.head||document.documentElement).appendChild(s)}();</script>
 
   <meta charset="UTF-8">
@@ -21,25 +20,19 @@
   <meta name="robots" content="noindex, nofollow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="./css/style.css?v=20260730_topnav_v3">
-  <link rel="stylesheet" href="./css/admin.css?v=20260730_topnav_v3">
+  <link rel="stylesheet" href="./css/style.css?v=20260731_sidebar_v1">
+  <link rel="stylesheet" href="./css/admin.css?v=20260731_sidebar_v1">
   <style>
     /* ══════════════════════════════════════════════════════
-       ADMIN LAYOUT — TOP HORIZONTAL NAV (FULL WIDTH)
-       All panels hidden by default, only .active shown
+       ADMIN LAYOUT — LEFT VERTICAL SIDEBAR NAVIGATION
     ══════════════════════════════════════════════════════ */
-
-    /* Ensure layout is 100% hidden when unauthenticated */
     .admin-layout.hidden { display: none !important; }
-
-    /* Panel visibility & zero gap */
     .admin-panel { display: none !important; margin-top: 0 !important; padding-top: 0 !important; }
     .admin-panel.active { display: block !important; margin-top: 0 !important; padding-top: 0 !important; }
 
-    /* Layout: column direction so nav is above content */
     .admin-layout {
       display: flex !important;
-      flex-direction: column !important;
+      flex-direction: row !important;
       align-items: stretch !important;
       justify-content: flex-start !important;
       width: 100% !important;
@@ -47,71 +40,69 @@
       margin-top: var(--header-height, 60px) !important;
     }
 
-    /* Sidebar becomes top horizontal nav bar */
     .admin-sidebar {
-      width: 100% !important;
-      min-width: 0 !important;
-      max-width: none !important;
-      height: auto !important;
-      min-height: 0 !important;
+      width: 260px !important;
+      min-width: 260px !important;
+      max-width: 260px !important;
+      height: calc(100vh - var(--header-height, 60px)) !important;
       display: flex !important;
-      flex-direction: row !important;
-      flex-wrap: nowrap !important;
-      align-items: center !important;
-      overflow-x: auto !important;
-      overflow-y: hidden !important;
+      flex-direction: column !important;
+      overflow-y: auto !important;
       position: sticky !important;
       top: var(--header-height, 60px) !important;
-      padding: 6px 16px !important;
-      gap: 2px !important;
-      border-right: none !important;
-      border-bottom: 2px solid var(--border-subtle, rgba(255,255,255,0.08)) !important;
+      padding: 16px 12px !important;
+      gap: 16px !important;
+      border-right: 1px solid var(--border-subtle, rgba(255,255,255,0.08)) !important;
       background: var(--bg-secondary, #0f1117) !important;
       z-index: 100 !important;
-      scrollbar-width: thin !important;
     }
-    .admin-sidebar::-webkit-scrollbar { height: 3px; }
-    .admin-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
 
-    /* Section wrappers become inline flex groups with separator */
     .admin-sidebar__section {
       display: flex !important;
-      flex-direction: row !important;
-      align-items: center !important;
-      gap: 2px !important;
+      flex-direction: column !important;
+      gap: 3px !important;
       margin: 0 !important;
-      padding: 0 8px !important;
-      border-right: 1px solid rgba(255,255,255,0.1) !important;
-      flex-shrink: 0 !important;
-    }
-    .admin-sidebar__section:last-child {
+      padding: 0 !important;
       border-right: none !important;
     }
 
-    /* Section headings hidden in horizontal mode */
-    .admin-sidebar__heading { display: none !important; }
-
-    /* Nav items compact horizontal buttons */
-    .admin-nav-item {
-      width: auto !important;
-      white-space: nowrap !important;
-      padding: 7px 12px !important;
-      font-size: 13px !important;
-      flex-shrink: 0 !important;
-      border-radius: 8px !important;
+    .admin-sidebar__heading {
+      display: block !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.08em !important;
+      color: #64748b !important;
+      margin: 8px 8px 4px 8px !important;
     }
-    .admin-nav-item__icon { font-size: 14px !important; }
 
-    /* Main content takes full remaining width without top gap */
+    .admin-nav-item {
+      width: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 10px !important;
+      padding: 9px 12px !important;
+      font-size: 13px !important;
+      border-radius: 8px !important;
+      color: #94a3b8 !important;
+      justify-content: flex-start !important;
+      text-align: left !important;
+      transition: all 0.2s ease !important;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    .admin-nav-item:hover, .admin-nav-item.active {
+      background: rgba(243, 199, 124, 0.12) !important;
+      color: #f3c77c !important;
+    }
+
     .admin-main {
       flex: 1 1 auto !important;
-      width: 100% !important;
+      width: calc(100% - 260px) !important;
       min-width: 0 !important;
-      height: auto !important;
-      min-height: 0 !important;
-      margin-top: 0 !important;
-      padding: 24px 32px !important;
-      overflow-y: visible !important;
+      padding: 28px 36px !important;
+      overflow-y: auto !important;
     }
   </style>
 
@@ -223,7 +214,7 @@
         <div class="admin-sidebar__section">
           <p class="admin-sidebar__heading">Administration</p>
           <button class="admin-nav-item" data-panel="accounts" onclick="switchPanel('accounts')">
-            <span class="admin-nav-item__icon">🏛️</span> Accounts
+            <span class="admin-nav-item__icon">🚀</span> Employees Onboarding
           </button>
           <button class="admin-nav-item" data-panel="taxonomy" onclick="switchPanel('taxonomy')">
             <span class="admin-nav-item__icon">🗂️</span> Ticket Taxonomy
@@ -949,6 +940,104 @@
               <input type="text" class="form-input" id="mfaSetupCode" placeholder="Enter 6-digit code" maxlength="6" style="text-align: center; font-size: 20px; letter-spacing: 6px; font-family: monospace;">
             </div>
             <button class="btn btn--primary mt-16" id="enableMfaBtn">Enable MFA</button>
+        <!-- Employees Onboarding Panel -->
+        <div class="admin-panel" id="panel-accounts">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+            <div>
+              <h1 class="admin-page-title" style="margin-bottom: 4px;">🚀 Employees Onboarding &amp; Provisioning Hub</h1>
+              <p class="admin-page-subtitle">Manage company employee accounts, provision corporate access, assign RBAC roles, and dispatch welcome kits.</p>
+            </div>
+            <a href="/employees" target="_blank" class="btn btn--primary" style="padding: 10px 20px; font-weight: 700; text-decoration: none;">
+              ➕ Open Employee Onboarding Suite →
+            </a>
+          </div>
+
+          <!-- Onboarding Metrics Cards -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8;">Onboarded Staff</span>
+                <span style="font-size: 1.4rem;">👥</span>
+              </div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: #fff;">18</div>
+              <div style="font-size: 0.75rem; color: #34d399; margin-top: 4px;">Active across all departments</div>
+            </div>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8;">Pending Invites</span>
+                <span style="font-size: 1.4rem;">📨</span>
+              </div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: #fbbf24;">3</div>
+              <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">Awaiting employee acceptance</div>
+            </div>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8;">Corporate Accounts</span>
+                <span style="font-size: 1.4rem;">🏛️</span>
+              </div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: #22d3ee;">4</div>
+              <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">105 total allocated seats</div>
+            </div>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8;">MFA Compliance</span>
+                <span style="font-size: 1.4rem;">🛡️</span>
+              </div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: #34d399;">100%</div>
+              <div style="font-size: 0.75rem; color: #34d399; margin-top: 4px;">Enforced across all accounts</div>
+            </div>
+          </div>
+
+          <!-- Onboarded Employees Table -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; overflow: hidden; margin-bottom: 24px;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-card); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+              <h3 style="margin: 0; font-size: 1rem; color: #fff;">👤 Onboarded Employees Roster &amp; Provisioned Access</h3>
+              <a href="/employees" class="btn btn--secondary btn--sm" style="text-decoration: none;">⚙️ Manage All Employees</a>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Employee Name</th>
+                    <th>Work Email</th>
+                    <th>Corporate Account</th>
+                    <th>Assigned Team</th>
+                    <th>RBAC Role</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span style="font-family: monospace; color: var(--primary-gold, #f3c77c);">#1001</span></td>
+                    <td style="font-weight: 600; color: #fff;">👤 Sarah Jenkins</td>
+                    <td><span style="color: #94a3b8; font-size: 0.85rem;">sarah.j@midnightstories.org</span></td>
+                    <td><span class="filter-chip" style="font-size: 0.75rem;">🏛️ Acme Corporation</span></td>
+                    <td><span style="color: #94a3b8; font-size: 0.85rem;">🏢 Global Support Tier 1</span></td>
+                    <td><span class="badge-status" style="background: rgba(99,102,241,0.15); color: #818cf8; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">Support Specialist</span></td>
+                    <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
+                  </tr>
+                  <tr>
+                    <td><span style="font-family: monospace; color: var(--primary-gold, #f3c77c);">#1002</span></td>
+                    <td style="font-weight: 600; color: #fff;">👤 Marcus Vance</td>
+                    <td><span style="color: #94a3b8; font-size: 0.85rem;">marcus.vance@starlight.org</span></td>
+                    <td><span class="filter-chip" style="font-size: 0.75rem;">🏛️ Starlight Publishing</span></td>
+                    <td><span style="color: #94a3b8; font-size: 0.85rem;">🏢 Editorial Guild</span></td>
+                    <td><span class="badge-status" style="background: rgba(245,158,11,0.15); color: #fbbf24; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">Senior Content Editor</span></td>
+                    <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
+                  </tr>
+                  <tr>
+                    <td><span style="font-family: monospace; color: var(--primary-gold, #f3c77c);">#1003</span></td>
+                    <td style="font-weight: 600; color: #fff;">👤 Elena Rostova</td>
+                    <td><span style="color: #94a3b8; font-size: 0.85rem;">elena.r@midnightstories.org</span></td>
+                    <td><span class="filter-chip" style="font-size: 0.75rem;">🏛️ Midnight Internal</span></td>
+                    <td><span style="color: #94a3b8; font-size: 0.85rem;">🏢 Security Ops (SIRT)</span></td>
+                    <td><span class="badge-status" style="background: rgba(239,68,68,0.15); color: #f87171; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">Security Officer</span></td>
+                    <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
