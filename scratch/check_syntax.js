@@ -1,16 +1,11 @@
 const fs = require('fs');
-const vm = require('vm');
+const acorn = require('acorn');
 
-function checkSyntax(filePath) {
-  try {
-    const code = fs.readFileSync(filePath, 'utf8');
-    vm.compileFunction(code);
-    console.log(`✅ Syntax OK: ${filePath}`);
-  } catch (err) {
-    console.error(`❌ Syntax Error in ${filePath}:`, err.message);
-  }
+const code = fs.readFileSync('src/worker.js', 'utf8');
+
+try {
+  acorn.parse(code, { ecmaVersion: 'latest', sourceType: 'module' });
+  console.log('✅ SYNTAX OK! worker.js parsed successfully with 0 errors.');
+} catch (err) {
+  console.error('❌ SYNTAX ERROR:', err.message, 'at line', err.loc ? err.loc.line : 'unknown', 'col', err.loc ? err.loc.column : '');
 }
-
-checkSyntax('public/js/admin.js');
-checkSyntax('admin/public/js/admin.js');
-checkSyntax('public/js/app.js');

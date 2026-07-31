@@ -305,7 +305,7 @@
     </div>
     <div class="metric-card">
       <div class="metric-card__header">
-        <span class="metric-card__title">Corporate Accounts</span>
+        <span class="metric-card__title">Employee Accounts</span>
         <span style="font-size: 1.4rem;">🏛️</span>
       </div>
       <div class="metric-card__value" id="metricCorporateAccts" style="color: var(--accent-cyan);">4</div>
@@ -337,7 +337,7 @@
       <button class="emp-tab-btn active" id="tabBtnMyPortal" onclick="switchEmpTab('my-portal')">👤 My Profile &amp; Team</button>
       <button class="emp-tab-btn" id="tabBtnRoster" onclick="switchEmpTab('roster')">👥 Employee Directory</button>
       <button class="emp-tab-btn" onclick="switchEmpTab('chat-tasks')">💬 Staff Chat &amp; Work Tasks</button>
-      <button class="emp-tab-btn" onclick="switchEmpTab('accounts')">🏛️ Corporate Accounts</button>
+      <button class="emp-tab-btn" id="tabBtnEmpAccounts" onclick="switchEmpTab('accounts')">🏛️ Employee Accounts</button>
       <button class="emp-tab-btn" onclick="switchEmpTab('roles-teams')">🔐 Roles &amp; Teams Matrix</button>
     </div>
 
@@ -483,7 +483,7 @@
           <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
             <select class="form-select" id="empAccountFilter" onchange="filterRosterTable()"
               style="height: 38px; width: auto;">
-              <option value="">All Corporate Accounts</option>
+              <option value="">All Employee Accounts</option>
               <option value="Acme Corporation">Acme Corporation</option>
               <option value="Starlight Publishing">Starlight Publishing</option>
               <option value="Midnight Internal">Midnight Internal</option>
@@ -729,70 +729,190 @@
     </div>
   </div>
 
-  <!-- Provision Employee Modal -->
+  <!-- Full Enterprise Employee Onboarding & Account Provisioning Wizard Modal -->
   <div id="provisionModal" class="modal-overlay"
-    style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 2500; backdrop-filter: blur(6px);">
+    style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2500; backdrop-filter: blur(8px);">
     <div class="modal"
-      style="max-width: 600px; width: 92%; padding: 28px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-card); text-align: left;">
-      <div
-        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-card); padding-bottom: 12px;">
-        <h2 style="font-family: 'Fraunces', serif; font-size: 1.4rem; color: #fff; margin: 0;">➕ Provision New Employee
-          Account</h2>
-        <button onclick="closeProvisionModal()"
-          style="background: none; border: none; font-size: 1.4rem; color: #94a3b8; cursor: pointer;">✕</button>
+      style="max-width: 680px; width: 92%; padding: 28px; background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-card); text-align: left; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
+      
+      <!-- Wizard Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-card); padding-bottom: 14px;">
+        <div>
+          <h2 style="font-family: 'Fraunces', serif; font-size: 1.35rem; color: #fff; margin: 0; display: flex; align-items: center; gap: 8px;">
+            <span>🚀</span> Employee Onboarding &amp; Account Provisioning
+          </h2>
+          <p style="margin: 2px 0 0 0; font-size: 0.82rem; color: #94a3b8;">Standard Enterprise HR &amp; IT Access Provisioning Workflow</p>
+        </div>
+        <button onclick="closeProvisionModal()" style="background: none; border: none; font-size: 1.4rem; color: #94a3b8; cursor: pointer;">✕</button>
       </div>
 
-      <form onsubmit="event.preventDefault(); saveNewEmployee();"
-        style="display: flex; flex-direction: column; gap: 14px;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-          <div>
-            <label class="form-label">Full Name *</label>
-            <input type="text" class="form-input" id="newEmpName" placeholder="e.g. Sarah Jenkins" required
-              style="height: 40px;">
+      <!-- Step Indicator Bar -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 20px;" id="onboardStepBar">
+        <div class="onboard-step-pill active" id="stepPill1" style="background: rgba(243, 199, 124, 0.2); border: 1px solid var(--primary-gold); color: var(--primary-gold); border-radius: 6px; padding: 6px 10px; font-size: 0.72rem; font-weight: 700; text-align: center;">1. Personal Info</div>
+        <div class="onboard-step-pill" id="stepPill2" style="background: rgba(255,255,255,0.04); border: 1px solid var(--border-card); color: #64748b; border-radius: 6px; padding: 6px 10px; font-size: 0.72rem; font-weight: 700; text-align: center;">2. Account &amp; Team</div>
+        <div class="onboard-step-pill" id="stepPill3" style="background: rgba(255,255,255,0.04); border: 1px solid var(--border-card); color: #64748b; border-radius: 6px; padding: 6px 10px; font-size: 0.72rem; font-weight: 700; text-align: center;">3. RBAC &amp; Security</div>
+        <div class="onboard-step-pill" id="stepPill4" style="background: rgba(255,255,255,0.04); border: 1px solid var(--border-card); color: #64748b; border-radius: 6px; padding: 6px 10px; font-size: 0.72rem; font-weight: 700; text-align: center;">4. Assets &amp; Kit</div>
+      </div>
+
+      <form id="onboardForm" onsubmit="event.preventDefault(); handleOnboardStepSubmit();" style="display: flex; flex-direction: column; gap: 16px;">
+        
+        <!-- STEP 1: Personal Details & Staff Code -->
+        <div class="onboard-step-content" id="onboardStep1" style="display: flex; flex-direction: column; gap: 14px;">
+          <h4 style="margin: 0; color: var(--primary-gold); font-size: 0.92rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Step 1: Employee Basic Info &amp; Identification</h4>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div>
+              <label class="form-label">Full Legal Name *</label>
+              <input type="text" class="form-input" id="newEmpName" placeholder="e.g. Eleanor Vance" required style="height: 40px;">
+            </div>
+            <div>
+              <label class="form-label">Corporate Work Email *</label>
+              <input type="email" class="form-input" id="newEmpEmail" placeholder="eleanor.v@company.com" required style="height: 40px;">
+            </div>
           </div>
-          <div>
-            <label class="form-label">Work Email *</label>
-            <input type="email" class="form-input" id="newEmpEmail" placeholder="sarah@company.com" required
-              style="height: 40px;">
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div>
+              <label class="form-label">Contact Phone Number</label>
+              <input type="text" class="form-input" id="newEmpPhone" placeholder="+1 (555) 019-2834" style="height: 40px;">
+            </div>
+            <div>
+              <label class="form-label">Staff Code / Employee Badge ID</label>
+              <input type="text" class="form-input" id="newEmpStaffCode" placeholder="EMP-2026-880" style="height: 40px;">
+            </div>
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-          <div>
-            <label class="form-label">Corporate Account *</label>
-            <select class="form-select" id="newEmpAccount" required style="height: 40px;">
-              <option value="Acme Corporation">Acme Corporation</option>
-              <option value="Starlight Publishing">Starlight Publishing</option>
-              <option value="Midnight Internal">Midnight Internal</option>
-              <option value="Apex Media House">Apex Media House</option>
-            </select>
+        <!-- STEP 2: Account & Organizational Structure -->
+        <div class="onboard-step-content" id="onboardStep2" style="display: none; flex-direction: column; gap: 14px;">
+          <h4 style="margin: 0; color: var(--accent-cyan); font-size: 0.92rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Step 2: Employee Account &amp; Department Structure</h4>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div>
+              <label class="form-label">Employee Account / Organization *</label>
+              <select class="form-select" id="newEmpAccount" required style="height: 40px;">
+                <option value="Acme Corporation">Acme Corporation</option>
+                <option value="Starlight Publishing">Starlight Publishing</option>
+                <option value="Midnight Internal">Midnight Internal</option>
+                <option value="Apex Media House">Apex Media House</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Assigned Department / Team *</label>
+              <select class="form-select" id="newEmpTeam" required style="height: 40px;">
+                <option value="Global Support Tier 1">Global Support Tier 1</option>
+                <option value="Editorial &amp; Moderation Guild">Editorial &amp; Moderation Guild</option>
+                <option value="Security Ops (SIRT)">Security Ops (SIRT)</option>
+                <option value="Billing &amp; Enterprise Accounts">Billing &amp; Enterprise Accounts</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label class="form-label">Assigned Team</label>
-            <select class="form-select" id="newEmpTeam" style="height: 40px;">
-              <option value="Global Support Tier 1">Global Support Tier 1</option>
-              <option value="Editorial &amp; Moderation Guild">Editorial &amp; Moderation Guild</option>
-              <option value="Security Ops (SIRT)">Security Ops (SIRT)</option>
-              <option value="Billing &amp; Enterprise Accounts">Billing &amp; Enterprise Accounts</option>
-            </select>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div>
+              <label class="form-label">Direct Supervisor / Manager</label>
+              <select class="form-select" id="newEmpManager" style="height: 40px;">
+                <option value="Elena Rostova (Security &amp; Ops Manager)">Elena Rostova (Security Ops Manager)</option>
+                <option value="Marcus Vance (Senior Content Editor)">Marcus Vance (Team Lead)</option>
+                <option value="Sarah Jenkins (Support Supervisor)">Sarah Jenkins (Support Lead)</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Work Shift / Region</label>
+              <select class="form-select" id="newEmpShift" style="height: 40px;">
+                <option value="08:00 AM - 05:00 PM UTC (Day Shift)">08:00 AM - 05:00 PM UTC (Day Shift)</option>
+                <option value="04:00 PM - 01:00 AM UTC (Evening Shift)">04:00 PM - 01:00 AM UTC (Evening Shift)</option>
+                <option value="12:00 AM - 08:00 AM UTC (Night SIRT Shift)">12:00 AM - 08:00 AM UTC (Night Shift)</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div>
-          <label class="form-label">RBAC Role *</label>
-          <select class="form-select" id="newEmpRole" required style="height: 40px;">
-            <option value="Support Specialist">Support &amp; Helpdesk Specialist</option>
-            <option value="Senior Content Editor">Senior Content Editor</option>
-            <option value="Security Compliance Officer">Security Compliance Officer</option>
-            <option value="Community Moderator">Community Moderator</option>
-            <option value="Super Administrator">Super Administrator</option>
-          </select>
+        <!-- STEP 3: RBAC Role & Security Policy -->
+        <div class="onboard-step-content" id="onboardStep3" style="display: none; flex-direction: column; gap: 14px;">
+          <h4 style="margin: 0; color: var(--accent-emerald); font-size: 0.92rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Step 3: RBAC Role &amp; Security Policy Allocation</h4>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div>
+              <label class="form-label">RBAC Role Designation *</label>
+              <select class="form-select" id="newEmpRole" required style="height: 40px;">
+                <option value="Support Specialist">Support &amp; Helpdesk Specialist</option>
+                <option value="Senior Content Editor">Senior Content Editor</option>
+                <option value="Security Compliance Officer">Security Compliance Officer</option>
+                <option value="Community Moderator">Community Moderator</option>
+                <option value="Super Administrator">Super Administrator</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">License Seat Type</label>
+              <select class="form-select" id="newEmpLicense" style="height: 40px;">
+                <option value="Full Enterprise License (Unrestricted)">Full Enterprise License</option>
+                <option value="Standard Support Seat (Helpdesk Tier)">Standard Support Seat</option>
+                <option value="Read-Only Auditor License">Read-Only Auditor License</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-card); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 0.85rem; color: #fff; font-weight: 600;">Enforce Mandatory Multi-Factor Auth (MFA/2FA)</span>
+              <input type="checkbox" id="newEmpMfaEnforce" checked style="width: 18px; height: 18px; accent-color: var(--primary-gold);">
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-size: 0.85rem; color: #fff; font-weight: 600;">Enforce 90-Day Password Rotation Policy</span>
+              <input type="checkbox" id="newEmpPwdRotation" checked style="width: 18px; height: 18px; accent-color: var(--primary-gold);">
+            </div>
+          </div>
         </div>
 
-        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 10px;">
-          <button type="button" class="btn btn--secondary" onclick="closeProvisionModal()">Cancel</button>
-          <button type="submit" class="btn btn--primary" style="height: 40px; padding: 0 24px;">🚀 Send Invite &amp;
-            Provision</button>
+        <!-- STEP 4: IT Assets & Corporate Welcome Kit -->
+        <div class="onboard-step-content" id="onboardStep4" style="display: none; flex-direction: column; gap: 14px;">
+          <h4 style="margin: 0; color: var(--accent-amber); font-size: 0.92rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Step 4: IT Assets &amp; Welcome Kit Dispatch</h4>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div>
+              <label class="form-label">Hardware Asset Tag / Device ID</label>
+              <input type="text" class="form-input" id="newEmpAssetTag" placeholder="MACBOOK-PRO-2026-99" style="height: 40px;">
+            </div>
+            <div>
+              <label class="form-label">Initial Authentication Method</label>
+              <select class="form-select" id="newEmpAuthMethod" style="height: 40px;">
+                <option value="invite_link">Send Secure Magic Invite Link via Email</option>
+                <option value="temp_pwd">Generate Temporary Password (Require Reset)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="background: rgba(52, 211, 153, 0.08); border: 1px solid rgba(52, 211, 153, 0.3); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 1.4rem;">✉️</span>
+            <div>
+              <div style="font-weight: 700; color: #34d399; font-size: 0.88rem;">Automated Welcome Credentials Email</div>
+              <div style="font-size: 0.78rem; color: #cbd5e1;">A personalized welcome kit with login instructions and security guidelines will be automatically dispatched upon provisioning.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Onboarding Complete Summary Card (Step 5 Success State) -->
+        <div class="onboard-step-content" id="onboardStepSuccess" style="display: none; flex-direction: column; gap: 14px; text-align: center;">
+          <div style="font-size: 3rem; margin: 10px 0 0 0;">🎉</div>
+          <h3 style="margin: 0; color: #fff; font-family: 'Fraunces', serif; font-size: 1.3rem;">Employee Onboarded Successfully!</h3>
+          <p style="color: #94a3b8; font-size: 0.88rem; margin: 0;">Employee record created and security credentials provisioned.</p>
+          
+          <div style="background: var(--bg-dark); border: 1px solid var(--border-card); border-radius: 10px; padding: 16px; text-align: left; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8; font-size: 0.83rem;">Employee:</span> <span style="color: #fff; font-weight: 700;" id="sumEmpName">Eleanor Vance</span></div>
+            <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8; font-size: 0.83rem;">Work Email:</span> <span style="color: #38bdf8; font-family: monospace; font-size: 0.83rem;" id="sumEmpEmail">eleanor@company.com</span></div>
+            <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8; font-size: 0.83rem;">Employee Account:</span> <span style="color: #f3c77c; font-weight: 600;" id="sumEmpAccount">Acme Corporation</span></div>
+            <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8; font-size: 0.83rem;">RBAC Role:</span> <span style="color: #34d399; font-weight: 600;" id="sumEmpRole">Support Specialist</span></div>
+            <div style="display: flex; justify-content: space-between;"><span style="color: #94a3b8; font-size: 0.83rem;">Initial Temp Access Token:</span> <span style="color: #fbbf24; font-family: monospace; font-size: 0.8rem;" id="sumEmpToken">TK-2026-8809-XQ</span></div>
+          </div>
+        </div>
+
+        <!-- Wizard Action Buttons -->
+        <div style="display: flex; gap: 12px; justify-content: space-between; margin-top: 10px; border-top: 1px solid var(--border-card); padding-top: 14px;">
+          <button type="button" class="btn btn--secondary" id="btnOnboardPrev" onclick="navigateOnboardStep(-1)" style="display: none;">← Back</button>
+          <button type="button" class="btn btn--secondary" id="btnOnboardCancel" onclick="closeProvisionModal()">Cancel</button>
+          <button type="button" class="btn btn--primary" id="btnOnboardNext" onclick="navigateOnboardStep(1)" style="height: 40px; padding: 0 24px;">Next Step →</button>
+          <button type="button" class="btn btn--primary" id="btnOnboardFinish" onclick="closeProvisionModal()" style="display: none; height: 40px; padding: 0 24px; background: #34d399; color: #000;">✅ Done &amp; Close</button>
         </div>
       </form>
     </div>
@@ -1153,11 +1273,15 @@
       }
     }
 
+    let currentOnboardStep = 1;
+
     function openProvisionModal() {
       if (currentUserRole === 'employee') {
         showToast('Permission Denied: Only Admins and Managers can provision employees.', 'warning');
         return;
       }
+      currentOnboardStep = 1;
+      updateOnboardStepUI();
       document.getElementById('provisionModal').style.display = 'flex';
     }
 
@@ -1165,24 +1289,102 @@
       document.getElementById('provisionModal').style.display = 'none';
     }
 
+    function updateOnboardStepUI() {
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById(`onboardStep${i}`);
+        const pill = document.getElementById(`stepPill${i}`);
+        if (el) el.style.display = (i === currentOnboardStep) ? 'flex' : 'none';
+        if (pill) {
+          if (i === currentOnboardStep) {
+            pill.style.background = 'rgba(243, 199, 124, 0.2)';
+            pill.style.borderColor = 'var(--primary-gold)';
+            pill.style.color = 'var(--primary-gold)';
+          } else if (i < currentOnboardStep) {
+            pill.style.background = 'rgba(52, 211, 153, 0.15)';
+            pill.style.borderColor = '#34d399';
+            pill.style.color = '#34d399';
+          } else {
+            pill.style.background = 'rgba(255,255,255,0.04)';
+            pill.style.borderColor = 'var(--border-card)';
+            pill.style.color = '#64748b';
+          }
+        }
+      }
+
+      const successEl = document.getElementById('onboardStepSuccess');
+      if (successEl) successEl.style.display = (currentOnboardStep === 5) ? 'flex' : 'none';
+
+      const btnPrev = document.getElementById('btnOnboardPrev');
+      const btnNext = document.getElementById('btnOnboardNext');
+      const btnCancel = document.getElementById('btnOnboardCancel');
+      const btnFinish = document.getElementById('btnOnboardFinish');
+
+      if (currentOnboardStep === 5) {
+        if (btnPrev) btnPrev.style.display = 'none';
+        if (btnNext) btnNext.style.display = 'none';
+        if (btnCancel) btnCancel.style.display = 'none';
+        if (btnFinish) btnFinish.style.display = 'block';
+      } else {
+        if (btnFinish) btnFinish.style.display = 'none';
+        if (btnCancel) btnCancel.style.display = 'block';
+        if (btnPrev) btnPrev.style.display = currentOnboardStep > 1 ? 'block' : 'none';
+        if (btnNext) {
+          btnNext.style.display = 'block';
+          btnNext.textContent = currentOnboardStep === 4 ? '🚀 Complete Onboarding' : 'Next Step →';
+        }
+      }
+    }
+
+    function navigateOnboardStep(delta) {
+      if (delta > 0 && currentOnboardStep === 1) {
+        const name = document.getElementById('newEmpName')?.value;
+        const email = document.getElementById('newEmpEmail')?.value;
+        if (!name || !email) {
+          showToast('Please fill out Full Name and Work Email before proceeding.', 'warning');
+          return;
+        }
+      }
+
+      if (delta > 0 && currentOnboardStep === 4) {
+        saveNewEmployee();
+        return;
+      }
+
+      currentOnboardStep += delta;
+      if (currentOnboardStep < 1) currentOnboardStep = 1;
+      if (currentOnboardStep > 5) currentOnboardStep = 5;
+      updateOnboardStepUI();
+    }
+
     function saveNewEmployee() {
       if (currentUserRole === 'employee') {
         showToast('Permission Denied: Only Admins can modify employee records.', 'warning');
         return;
       }
-      const name = document.getElementById('newEmpName')?.value;
-      const email = document.getElementById('newEmpEmail')?.value;
-      const account = document.getElementById('newEmpAccount')?.value;
-      const team = document.getElementById('newEmpTeam')?.value;
-      const role = document.getElementById('newEmpRole')?.value;
+      const name = document.getElementById('newEmpName')?.value || 'New Employee';
+      const email = document.getElementById('newEmpEmail')?.value || 'employee@company.com';
+      const account = document.getElementById('newEmpAccount')?.value || 'Acme Corporation';
+      const team = document.getElementById('newEmpTeam')?.value || 'Global Support Tier 1';
+      const role = document.getElementById('newEmpRole')?.value || 'Support Specialist';
 
       const newId = 1000 + employeesData.length + 1;
+      const tempToken = 'TK-2026-' + Math.floor(1000 + Math.random() * 9000) + '-MS';
+      
       employeesData.push({ id: newId, name, email, account, team, role, status: 'active' });
+
+      // Update summary view
+      const sumName = document.getElementById('sumEmpName'); if (sumName) sumName.textContent = name;
+      const sumEmail = document.getElementById('sumEmpEmail'); if (sumEmail) sumEmail.textContent = email;
+      const sumAcct = document.getElementById('sumEmpAccount'); if (sumAcct) sumAcct.textContent = account;
+      const sumRole = document.getElementById('sumEmpRole'); if (sumRole) sumRole.textContent = role;
+      const sumToken = document.getElementById('sumEmpToken'); if (sumToken) sumToken.textContent = tempToken;
+
+      currentOnboardStep = 5;
+      updateOnboardStepUI();
 
       renderRosterTable();
       populateAssigneeDropdown();
-      closeProvisionModal();
-      showToast(`Employee ${name} provisioned successfully!`, 'success');
+      showToast(`Enterprise Onboarding completed for ${name}!`, 'success');
     }
 
     function toggleStatus(id) {

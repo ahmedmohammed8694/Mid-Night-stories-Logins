@@ -1,6 +1,7 @@
 {
   "name": "midnight-stories",
   "version": "1.0.0",
+  "type": "module",
   "description": "Anonymous Life Stories Platform — share personal stories safely and anonymously",
   "scripts": {
     "dev": "wrangler dev",

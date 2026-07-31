@@ -1,0 +1,3 @@
+# Ignore heavy uploaded book files and images from static asset bundling
+uploads/*
+uploads/**

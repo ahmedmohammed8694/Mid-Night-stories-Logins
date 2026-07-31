@@ -522,6 +522,25 @@ app.use('*', async (c, next) => {
   }
 });
 
+// ── Static Asset Performance Caching ──
+app.use('/css/*', async (c, next) => {
+  await next();
+  if (c.res && c.res.status === 200) {
+    const headers = new Headers(c.res.headers);
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    c.res = new Response(c.res.body, { status: c.res.status, statusText: c.res.statusText, headers });
+  }
+});
+
+app.use('/js/*', async (c, next) => {
+  await next();
+  if (c.res && c.res.status === 200) {
+    const headers = new Headers(c.res.headers);
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    c.res = new Response(c.res.body, { status: c.res.status, statusText: c.res.statusText, headers });
+  }
+});
+
 // ── CRM Analytics Route ──
 app.get('/api/admin/crm-analytics', async (c) => {
   const db = c.env.DB;
@@ -6389,7 +6408,6 @@ app.post('/api/admin/employees/:id/reset-password', requireAdmin, async (c) => {
 app.get('/api/admin/employees/:id/effective-permissions', requireAdmin, async (c) => {
   const db = c.env.DB;
   const empId = parseInt(c.req.param('id'));
-  const { getEffectivePermissions } = await import('./permissions.js');
   const perms = await getEffectivePermissions(db, empId);
   return c.json(perms);
 });
