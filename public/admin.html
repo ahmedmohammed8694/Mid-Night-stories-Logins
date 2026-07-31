@@ -7,11 +7,12 @@
     '.admin-panel{display:none!important;margin-top:0!important;padding-top:0!important}',
     '.admin-panel.active{display:block!important;margin-top:0!important;padding-top:0!important}',
     '.admin-layout{display:flex!important;flex-direction:row!important;align-items:stretch!important;justify-content:flex-start!important;width:100%!important;margin-top:var(--header-height,60px)!important;min-height:calc(100vh - var(--header-height,60px))!important}',
-    '.admin-sidebar{width:260px!important;min-width:260px!important;max-width:260px!important;height:calc(100vh - var(--header-height,60px))!important;display:flex!important;flex-direction:column!important;overflow-y:auto!important;overflow-x:hidden!important;padding:16px 12px!important;gap:16px!important;border-right:1px solid rgba(255,255,255,0.08)!important;position:sticky!important;top:var(--header-height,60px)!important;z-index:100!important;background:#0f1117!important}',
-    '.admin-sidebar__section{display:flex!important;flex-direction:column!important;gap:3px!important;margin:0!important;padding:0!important;border-right:none!important}',
-    '.admin-sidebar__heading{display:block!important;font-size:11px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:0.08em!important;color:#64748b!important;margin:8px 8px 4px 8px!important}',
-    '.admin-nav-item{width:100%!important;display:flex!important;align-items:center!important;gap:10px!important;padding:9px 12px!important;font-size:13px!important;border-radius:8px!important;color:#94a3b8!important;justify-content:flex-start!important;text-align:left!important}',
-    '.admin-main{flex:1 1 auto!important;width:calc(100% - 260px)!important;min-width:0!important;padding:28px 36px!important;overflow-y:auto!important}'
+    '.admin-sidebar{width:68px!important;min-width:68px!important;max-width:68px!important;height:calc(100vh - var(--header-height,60px))!important;display:flex!important;flex-direction:column!important;overflow-y:auto!important;overflow-x:hidden!important;padding:12px 8px!important;gap:8px!important;border-right:1px solid rgba(255,255,255,0.08)!important;position:sticky!important;top:var(--header-height,60px)!important;z-index:100!important;background:#0f1117!important;transition:width 0.3s cubic-bezier(0.4,0,0.2,1),min-width 0.3s cubic-bezier(0.4,0,0.2,1),box-shadow 0.3s ease!important}',
+    '.admin-sidebar:hover,.admin-sidebar.pinned{width:270px!important;min-width:270px!important;max-width:270px!important;box-shadow:8px 0 30px rgba(0,0,0,0.5)!important;border-right-color:rgba(243,199,124,0.25)!important}',
+    '.admin-sidebar__section{display:flex!important;flex-direction:column!important;gap:3px!important;margin:0!important;padding:0!important}',
+    '.admin-sidebar__heading{display:flex!important;align-items:center!important;justify-content:space-between!important;font-size:11px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:0.08em!important;color:#64748b!important;margin:8px 8px 4px 8px!important;cursor:pointer!important;user-select:none!important}',
+    '.admin-nav-item{width:100%!important;display:flex!important;align-items:center!important;gap:10px!important;padding:9px 12px!important;font-size:13px!important;border-radius:8px!important;color:#94a3b8!important;justify-content:flex-start!important;text-align:left!important;white-space:nowrap!important}',
+    '.admin-main{flex:1 1 auto!important;width:calc(100% - 68px)!important;min-width:0!important;padding:28px 36px!important;overflow-y:auto!important;transition:width 0.3s cubic-bezier(0.4,0,0.2,1)!important}'
   ].join('');(document.head||document.documentElement).appendChild(s)}();</script>
 
   <meta charset="UTF-8">
@@ -20,11 +21,11 @@
   <meta name="robots" content="noindex, nofollow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="./css/style.css?v=20260731_sidebar_v1">
-  <link rel="stylesheet" href="./css/admin.css?v=20260731_sidebar_v1">
+  <link rel="stylesheet" href="./css/style.css?v=20260731_hover_v2">
+  <link rel="stylesheet" href="./css/admin.css?v=20260731_hover_v2">
   <style>
     /* ══════════════════════════════════════════════════════
-       ADMIN LAYOUT — LEFT VERTICAL SIDEBAR NAVIGATION
+       ANIMATED AUTO-HIDING HOVER SIDEBAR & ACCORDION DROPDOWN
     ══════════════════════════════════════════════════════ */
     .admin-layout.hidden { display: none !important; }
     .admin-panel { display: none !important; margin-top: 0 !important; padding-top: 0 !important; }
@@ -40,47 +41,119 @@
       margin-top: var(--header-height, 60px) !important;
     }
 
+    /* Auto-hiding sidebar: shrinks to 68px mini icon bar when mouse is not hovering */
     .admin-sidebar {
-      width: 260px !important;
-      min-width: 260px !important;
-      max-width: 260px !important;
+      width: 68px !important;
+      min-width: 68px !important;
+      max-width: 68px !important;
       height: calc(100vh - var(--header-height, 60px)) !important;
       display: flex !important;
       flex-direction: column !important;
       overflow-y: auto !important;
+      overflow-x: hidden !important;
       position: sticky !important;
       top: var(--header-height, 60px) !important;
-      padding: 16px 12px !important;
-      gap: 16px !important;
+      padding: 14px 8px !important;
+      gap: 10px !important;
       border-right: 1px solid var(--border-subtle, rgba(255,255,255,0.08)) !important;
-      background: var(--bg-secondary, #0f1117) !important;
+      background: rgba(15, 17, 23, 0.96) !important;
+      backdrop-filter: blur(12px) !important;
       z-index: 100 !important;
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.35s ease !important;
     }
 
-    .admin-sidebar__section {
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 3px !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      border-right: none !important;
+    /* Expand smoothly when hovered or pinned */
+    .admin-sidebar:hover,
+    .admin-sidebar.pinned {
+      width: 270px !important;
+      min-width: 270px !important;
+      max-width: 270px !important;
+      box-shadow: 10px 0 35px rgba(0, 0, 0, 0.6) !important;
+      border-right-color: rgba(243, 199, 124, 0.25) !important;
     }
 
+    .admin-main {
+      flex: 1 1 auto !important;
+      width: calc(100% - 68px) !important;
+      min-width: 0 !important;
+      padding: 28px 36px !important;
+      overflow-y: auto !important;
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    /* Hide text labels in mini collapsed state */
+    .admin-sidebar .nav-text,
+    .admin-sidebar .admin-sidebar__heading span,
+    .admin-sidebar .accordion-chevron,
+    .admin-sidebar .sidebar-logo-title {
+      opacity: 0;
+      white-space: nowrap;
+      transition: opacity 0.25s ease;
+      pointer-events: none;
+    }
+    .admin-sidebar:hover .nav-text,
+    .admin-sidebar:hover .admin-sidebar__heading span,
+    .admin-sidebar:hover .accordion-chevron,
+    .admin-sidebar:hover .sidebar-logo-title,
+    .admin-sidebar.pinned .nav-text,
+    .admin-sidebar.pinned .admin-sidebar__heading span,
+    .admin-sidebar.pinned .accordion-chevron,
+    .admin-sidebar.pinned .sidebar-logo-title {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Accordion Section Heading */
     .admin-sidebar__heading {
-      display: block !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
       font-size: 11px !important;
       font-weight: 700 !important;
       text-transform: uppercase !important;
       letter-spacing: 0.08em !important;
       color: #64748b !important;
-      margin: 8px 8px 4px 8px !important;
+      padding: 8px 8px 4px 8px !important;
+      margin: 4px 0 2px 0 !important;
+      cursor: pointer !important;
+      user-select: none !important;
+      transition: color 0.2s ease !important;
+      border-radius: 6px;
+    }
+    .admin-sidebar__heading:hover {
+      color: #f3c77c !important;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .accordion-chevron {
+      font-size: 9px !important;
+      transition: transform 0.25s ease !important;
+      color: #94a3b8;
+    }
+
+    /* Accordion Menu items container */
+    .admin-sidebar__menu {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 3px !important;
+      max-height: 600px;
+      overflow: hidden;
+      transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+    }
+    .admin-sidebar__section.collapsed .admin-sidebar__menu {
+      max-height: 0 !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    .admin-sidebar__section.collapsed .accordion-chevron {
+      transform: rotate(-90deg) !important;
     }
 
     .admin-nav-item {
       width: 100% !important;
       display: flex !important;
       align-items: center !important;
-      gap: 10px !important;
+      gap: 12px !important;
       padding: 9px 12px !important;
       font-size: 13px !important;
       border-radius: 8px !important;
@@ -92,17 +165,15 @@
       border: none;
       cursor: pointer;
     }
-    .admin-nav-item:hover, .admin-nav-item.active {
-      background: rgba(243, 199, 124, 0.12) !important;
-      color: #f3c77c !important;
+    .admin-nav-item__icon {
+      font-size: 16px !important;
+      flex-shrink: 0 !important;
+      width: 24px;
+      text-align: center;
     }
-
-    .admin-main {
-      flex: 1 1 auto !important;
-      width: calc(100% - 260px) !important;
-      min-width: 0 !important;
-      padding: 28px 36px !important;
-      overflow-y: auto !important;
+    .admin-nav-item:hover, .admin-nav-item.active {
+      background: rgba(243, 199, 124, 0.14) !important;
+      color: #f3c77c !important;
     }
   </style>
 
@@ -167,76 +238,122 @@
 
     <!-- Dashboard (Hidden until login) -->
     <div class="admin-layout hidden" id="dashboardSection">
-      <!-- Sidebar -->
-      <aside class="admin-sidebar">
+      <!-- Animated Auto-Hiding Hover Sidebar with Dropdown Accordions -->
+      <aside class="admin-sidebar" id="adminSidebar">
         <div class="admin-sidebar__section">
-          <p class="admin-sidebar__heading">Dashboard</p>
-          <button class="admin-nav-item active" data-panel="overview" onclick="switchPanel('overview')">
-            <span class="admin-nav-item__icon">📊</span> Overview
-          </button>
+          <div class="admin-sidebar__heading" onclick="window.toggleSidebarAccordion(this)">
+            <span>Dashboard</span>
+            <span class="accordion-chevron">▼</span>
+          </div>
+          <div class="admin-sidebar__menu">
+            <button class="admin-nav-item active" data-panel="overview" onclick="switchPanel('overview')">
+              <span class="admin-nav-item__icon">📊</span>
+              <span class="nav-text">Overview</span>
+            </button>
+          </div>
         </div>
+
         <div class="admin-sidebar__section">
-          <p class="admin-sidebar__heading">Moderation &amp; CRM</p>
-          <button class="admin-nav-item" data-panel="stories-queue" onclick="switchPanel('stories-queue')">
-            <span class="admin-nav-item__icon">📝</span> Stories Queue
-            <span class="admin-nav-item__badge hidden" id="pendingStoriesBadge">0</span>
-          </button>
-          <button class="admin-nav-item" data-panel="comments-queue" onclick="switchPanel('comments-queue')">
-            <span class="admin-nav-item__icon">💬</span> Comments Queue
-            <span class="admin-nav-item__badge hidden" id="pendingCommentsBadge">0</span>
-          </button>
-          <button class="admin-nav-item" data-panel="reports" onclick="switchPanel('reports')">
-            <span class="admin-nav-item__icon">🎫</span> Helpdesk &amp; CRM Ops
-            <span class="admin-nav-item__badge hidden" id="reportsBadge">0</span>
-          </button>
-          <button class="admin-nav-item" data-panel="crm-analytics" onclick="switchPanel('crm-analytics')">
-            <span class="admin-nav-item__icon">📈</span> Executive CRM Analytics
-          </button>
+          <div class="admin-sidebar__heading" onclick="window.toggleSidebarAccordion(this)">
+            <span>Moderation &amp; CRM</span>
+            <span class="accordion-chevron">▼</span>
+          </div>
+          <div class="admin-sidebar__menu">
+            <button class="admin-nav-item" data-panel="stories-queue" onclick="switchPanel('stories-queue')">
+              <span class="admin-nav-item__icon">📝</span>
+              <span class="nav-text">Stories Queue</span>
+              <span class="admin-nav-item__badge hidden" id="pendingStoriesBadge">0</span>
+            </button>
+            <button class="admin-nav-item" data-panel="comments-queue" onclick="switchPanel('comments-queue')">
+              <span class="admin-nav-item__icon">💬</span>
+              <span class="nav-text">Comments Queue</span>
+              <span class="admin-nav-item__badge hidden" id="pendingCommentsBadge">0</span>
+            </button>
+            <button class="admin-nav-item" data-panel="reports" onclick="switchPanel('reports')">
+              <span class="admin-nav-item__icon">🎫</span>
+              <span class="nav-text">Helpdesk &amp; CRM Ops</span>
+              <span class="admin-nav-item__badge hidden" id="reportsBadge">0</span>
+            </button>
+            <button class="admin-nav-item" data-panel="crm-analytics" onclick="switchPanel('crm-analytics')">
+              <span class="admin-nav-item__icon">📈</span>
+              <span class="nav-text">Executive CRM Analytics</span>
+            </button>
+          </div>
         </div>
+
         <div class="admin-sidebar__section">
-          <p class="admin-sidebar__heading">Management</p>
-          <button class="admin-nav-item" data-panel="users" onclick="switchPanel('users')">
-            <span class="admin-nav-item__icon">👥</span> Users
-          </button>
-          <button class="admin-nav-item" data-panel="books" onclick="switchPanel('books')">
-            <span class="admin-nav-item__icon">📚</span> Books
-          </button>
-          <button class="admin-nav-item" data-panel="categories" onclick="switchPanel('categories')">
-            <span class="admin-nav-item__icon">🏷️</span> Categories
-          </button>
-          <button class="admin-nav-item" data-panel="bans" onclick="switchPanel('bans')">
-            <span class="admin-nav-item__icon">🚫</span> Bans
-          </button>
-          <button class="admin-nav-item" data-panel="settings" onclick="switchPanel('settings')">
-            <span class="admin-nav-item__icon">⚙️</span> Settings
-          </button>
+          <div class="admin-sidebar__heading" onclick="window.toggleSidebarAccordion(this)">
+            <span>Management</span>
+            <span class="accordion-chevron">▼</span>
+          </div>
+          <div class="admin-sidebar__menu">
+            <button class="admin-nav-item" data-panel="users" onclick="switchPanel('users')">
+              <span class="admin-nav-item__icon">👥</span>
+              <span class="nav-text">Users</span>
+            </button>
+            <button class="admin-nav-item" data-panel="books" onclick="switchPanel('books')">
+              <span class="admin-nav-item__icon">📚</span>
+              <span class="nav-text">Books</span>
+            </button>
+            <button class="admin-nav-item" data-panel="categories" onclick="switchPanel('categories')">
+              <span class="admin-nav-item__icon">🏷️</span>
+              <span class="nav-text">Categories</span>
+            </button>
+            <button class="admin-nav-item" data-panel="bans" onclick="switchPanel('bans')">
+              <span class="admin-nav-item__icon">🚫</span>
+              <span class="nav-text">Bans</span>
+            </button>
+            <button class="admin-nav-item" data-panel="settings" onclick="switchPanel('settings')">
+              <span class="admin-nav-item__icon">⚙️</span>
+              <span class="nav-text">Settings</span>
+            </button>
+          </div>
         </div>
+
         <div class="admin-sidebar__section">
-          <p class="admin-sidebar__heading">Administration</p>
-          <button class="admin-nav-item" data-panel="accounts" onclick="switchPanel('accounts')">
-            <span class="admin-nav-item__icon">🚀</span> Employees Onboarding
-          </button>
-          <button class="admin-nav-item" data-panel="taxonomy" onclick="switchPanel('taxonomy')">
-            <span class="admin-nav-item__icon">🗂️</span> Ticket Taxonomy
-          </button>
-          <button class="admin-nav-item" data-panel="roles" onclick="switchPanel('roles')">
-            <span class="admin-nav-item__icon">🔐</span> Roles &amp; Permissions
-          </button>
-          <button class="admin-nav-item" data-panel="teams" onclick="switchPanel('teams')">
-            <span class="admin-nav-item__icon">🏢</span> Teams
-          </button>
-          <button class="admin-nav-item" data-panel="employees" onclick="switchPanel('employees')">
-            <span class="admin-nav-item__icon">👤</span> Employees
-          </button>
+          <div class="admin-sidebar__heading" onclick="window.toggleSidebarAccordion(this)">
+            <span>Administration</span>
+            <span class="accordion-chevron">▼</span>
+          </div>
+          <div class="admin-sidebar__menu">
+            <button class="admin-nav-item" data-panel="accounts" onclick="switchPanel('accounts')">
+              <span class="admin-nav-item__icon">🚀</span>
+              <span class="nav-text">Employees Onboarding</span>
+            </button>
+            <button class="admin-nav-item" data-panel="taxonomy" onclick="switchPanel('taxonomy')">
+              <span class="admin-nav-item__icon">🗂️</span>
+              <span class="nav-text">Ticket Taxonomy</span>
+            </button>
+            <button class="admin-nav-item" data-panel="roles" onclick="switchPanel('roles')">
+              <span class="admin-nav-item__icon">🔐</span>
+              <span class="nav-text">Roles &amp; Permissions</span>
+            </button>
+            <button class="admin-nav-item" data-panel="teams" onclick="switchPanel('teams')">
+              <span class="admin-nav-item__icon">🏢</span>
+              <span class="nav-text">Teams</span>
+            </button>
+            <button class="admin-nav-item" data-panel="employees" onclick="switchPanel('employees')">
+              <span class="admin-nav-item__icon">👤</span>
+              <span class="nav-text">Employees</span>
+            </button>
+          </div>
         </div>
+
         <div class="admin-sidebar__section">
-          <p class="admin-sidebar__heading">System</p>
-          <button class="admin-nav-item" data-panel="audit-log" onclick="switchPanel('audit-log')">
-            <span class="admin-nav-item__icon">📋</span> Audit Log
-          </button>
-          <button class="admin-nav-item" data-panel="mfa-setup" onclick="switchPanel('mfa-setup')">
-            <span class="admin-nav-item__icon">🔑</span> MFA Setup
-          </button>
+          <div class="admin-sidebar__heading" onclick="window.toggleSidebarAccordion(this)">
+            <span>System</span>
+            <span class="accordion-chevron">▼</span>
+          </div>
+          <div class="admin-sidebar__menu">
+            <button class="admin-nav-item" data-panel="audit-log" onclick="switchPanel('audit-log')">
+              <span class="admin-nav-item__icon">📋</span>
+              <span class="nav-text">Audit Log</span>
+            </button>
+            <button class="admin-nav-item" data-panel="mfa-setup" onclick="switchPanel('mfa-setup')">
+              <span class="admin-nav-item__icon">🔑</span>
+              <span class="nav-text">MFA Setup</span>
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -1037,6 +1154,261 @@
                     <td><span style="color: #94a3b8; font-size: 0.85rem;">🏢 Security Ops (SIRT)</span></td>
                     <td><span class="badge-status" style="background: rgba(239,68,68,0.15); color: #f87171; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">Security Officer</span></td>
                     <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ticket Taxonomy Panel -->
+        <div class="admin-panel" id="panel-taxonomy">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+            <div>
+              <h1 class="admin-page-title" style="margin-bottom: 4px;">🗂️ Helpdesk Ticket Taxonomy &amp; SLA Categories</h1>
+              <p class="admin-page-subtitle">Configure support ticket classifications, SLA resolution targets, escalation paths, and automated tagging rules.</p>
+            </div>
+            <button class="btn btn--primary" onclick="alert('Creating new ticket taxonomy category!')" style="padding: 10px 20px; font-weight: 700;">
+              ➕ Create Taxonomy Category
+            </button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
+              <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Active Categories</div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: #fff;">8</div>
+              <div style="font-size: 0.75rem; color: #34d399; margin-top: 4px;">Across Technical, Billing &amp; General</div>
+            </div>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
+              <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Average Resolution SLA</div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: #22d3ee;">4.2 Hours</div>
+              <div style="font-size: 0.75rem; color: #34d399; margin-top: 4px;">98.4% On-time compliance</div>
+            </div>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
+              <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Automated Tag Rules</div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: #fbbf24;">14 Rules</div>
+              <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">Auto-route tickets to squads</div>
+            </div>
+          </div>
+
+          <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; overflow: hidden;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-card);">
+              <h3 style="margin: 0; font-size: 1rem; color: #fff;">🗂️ Configured Ticket Categories &amp; SLA Matrix</h3>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Category Key</th>
+                    <th>Category Name</th>
+                    <th>Default Priority</th>
+                    <th>SLA Target</th>
+                    <th>Escalation Team</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code style="color: #f3c77c;">TECH_BUG</code></td>
+                    <td style="font-weight: 600; color: #fff;">💻 Technical Bug / Error</td>
+                    <td><span class="badge-status" style="background: rgba(239,68,68,0.15); color: #f87171; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">HIGH</span></td>
+                    <td>2 Hours</td>
+                    <td>🏢 Tier 2 Engineering</td>
+                    <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
+                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Editing Taxonomy')">✏️ Edit SLA</button></td>
+                  </tr>
+                  <tr>
+                    <td><code style="color: #f3c77c;">BILLING_SUBS</code></td>
+                    <td style="font-weight: 600; color: #fff;">💳 Billing &amp; Subscriptions</td>
+                    <td><span class="badge-status" style="background: rgba(245,158,11,0.15); color: #fbbf24; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">MEDIUM</span></td>
+                    <td>6 Hours</td>
+                    <td>🏢 Finance &amp; Accounts</td>
+                    <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
+                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Editing Taxonomy')">✏️ Edit SLA</button></td>
+                  </tr>
+                  <tr>
+                    <td><code style="color: #f3c77c;">AUTH_ACCOUNT</code></td>
+                    <td style="font-weight: 600; color: #fff;">🔑 Account &amp; Login Security</td>
+                    <td><span class="badge-status" style="background: rgba(239,68,68,0.15); color: #f87171; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">URGENT</span></td>
+                    <td>1 Hour</td>
+                    <td>🏢 Security Ops (SIRT)</td>
+                    <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
+                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Editing Taxonomy')">✏️ Edit SLA</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Roles & Permissions Panel -->
+        <div class="admin-panel" id="panel-roles">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+            <div>
+              <h1 class="admin-page-title" style="margin-bottom: 4px;">🔐 Roles &amp; Security Access Matrix (RBAC)</h1>
+              <p class="admin-page-subtitle">Configure fine-grained system roles, permission scopes, administrative capabilities, and MFA mandates.</p>
+            </div>
+            <button class="btn btn--primary" onclick="alert('Creating new RBAC Role!')" style="padding: 10px 20px; font-weight: 700;">
+              ➕ Add RBAC Security Role
+            </button>
+          </div>
+
+          <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; overflow: hidden; margin-bottom: 24px;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-card);">
+              <h3 style="margin: 0; font-size: 1rem; color: #fff;">🔐 Role Access Privileges &amp; Policy Matrix</h3>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Role Key</th>
+                    <th>Role Label</th>
+                    <th>Guard Level</th>
+                    <th>MFA Requirement</th>
+                    <th>Permissions Granted</th>
+                    <th>Assigned Users</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code style="color: #f87171;">super_admin</code></td>
+                    <td style="font-weight: 700; color: #fff;">🛡️ Super Administrator</td>
+                    <td><span class="badge-status" style="background: rgba(239,68,68,0.2); color: #f87171; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">LEVEL 0 (FULL)</span></td>
+                    <td><span style="color: #34d399; font-weight: 700;">Mandatory TOTP</span></td>
+                    <td><span style="font-size: 0.8rem; color: #94a3b8;">* (All APIs, Data Exports, DB Mutations)</span></td>
+                    <td><strong>3 Admins</strong></td>
+                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Modifying Super Admin Permissions')">⚙️ Configure</button></td>
+                  </tr>
+                  <tr>
+                    <td><code style="color: #fbbf24;">editor_lead</code></td>
+                    <td style="font-weight: 700; color: #fff;">📚 Lead Editorial Officer</td>
+                    <td><span class="badge-status" style="background: rgba(245,158,11,0.2); color: #fbbf24; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">LEVEL 1</span></td>
+                    <td>Enforced</td>
+                    <td><span style="font-size: 0.8rem; color: #94a3b8;">Publish, Edit Stories, Review Submissions</span></td>
+                    <td><strong>5 Staff</strong></td>
+                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Modifying Permissions')">⚙️ Configure</button></td>
+                  </tr>
+                  <tr>
+                    <td><code style="color: #818cf8;">support_agent</code></td>
+                    <td style="font-weight: 700; color: #fff;">🎧 Helpdesk Support Specialist</td>
+                    <td><span class="badge-status" style="background: rgba(99,102,241,0.2); color: #818cf8; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">LEVEL 2</span></td>
+                    <td>Enforced</td>
+                    <td><span style="font-size: 0.8rem; color: #94a3b8;">Read/Write Tickets, User Notes, Status Updates</span></td>
+                    <td><strong>12 Staff</strong></td>
+                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Modifying Permissions')">⚙️ Configure</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Teams Panel -->
+        <div class="admin-panel" id="panel-teams">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+            <div>
+              <h1 class="admin-page-title" style="margin-bottom: 4px;">🏢 Operational Teams &amp; Department Directory</h1>
+              <p class="admin-page-subtitle">Organize support squads, editorial teams, security teams, and manage squad leads.</p>
+            </div>
+            <button class="btn btn--primary" onclick="alert('Creating new team!')" style="padding: 10px 20px; font-weight: 700;">
+              ➕ Create New Department / Team
+            </button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-bottom: 24px;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; padding: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 1.5rem;">🏢</span>
+                <span class="filter-chip" style="font-size: 0.75rem;">6 Members</span>
+              </div>
+              <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 4px;">Global Support Tier 1</h3>
+              <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 14px;">Handles front-line customer inquiries and ticket triage.</p>
+              <div style="font-size: 0.78rem; color: #f3c77c; font-weight: 600;">Team Lead: Sarah Jenkins</div>
+            </div>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; padding: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 1.5rem;">📚</span>
+                <span class="filter-chip" style="font-size: 0.75rem;">4 Members</span>
+              </div>
+              <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 4px;">Editorial Guild</h3>
+              <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 14px;">Reviews story submissions and manages publisher content.</p>
+              <div style="font-size: 0.78rem; color: #f3c77c; font-weight: 600;">Team Lead: Marcus Vance</div>
+            </div>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; padding: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-size: 1.5rem;">🛡️</span>
+                <span class="filter-chip" style="font-size: 0.75rem;">3 Members</span>
+              </div>
+              <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 4px;">Security Ops (SIRT)</h3>
+              <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 14px;">Monitors login security, MFA compliance, and user bans.</p>
+              <div style="font-size: 0.78rem; color: #f3c77c; font-weight: 600;">Team Lead: Elena Rostova</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Employees Panel -->
+        <div class="admin-panel" id="panel-employees">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+            <div>
+              <h1 class="admin-page-title" style="margin-bottom: 4px;">👤 Corporate Employees &amp; Staff Directory</h1>
+              <p class="admin-page-subtitle">Full roster of company employees, staff accounts, email credentials, and onboarding status.</p>
+            </div>
+            <a href="/employees" target="_blank" class="btn btn--primary" style="padding: 10px 20px; font-weight: 700; text-decoration: none;">
+              🚀 Open Full Onboarding Wizard →
+            </a>
+          </div>
+
+          <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; overflow: hidden;">
+            <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-card); display: flex; justify-content: space-between; align-items: center;">
+              <h3 style="margin: 0; font-size: 1rem; color: #fff;">👤 Company Employee Roster</h3>
+              <a href="/employees" class="btn btn--secondary btn--sm" style="text-decoration: none;">⚙️ Full Employee Portal</a>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Employee ID</th>
+                    <th>Name</th>
+                    <th>Work Email</th>
+                    <th>Organization Account</th>
+                    <th>Department / Team</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span style="font-family: monospace; color: var(--primary-gold, #f3c77c);">#1001</span></td>
+                    <td style="font-weight: 600; color: #fff;">👤 Sarah Jenkins</td>
+                    <td><span style="color: #94a3b8; font-size: 0.85rem;">sarah.j@midnightstories.org</span></td>
+                    <td><span class="filter-chip" style="font-size: 0.75rem;">🏛️ Acme Corporation</span></td>
+                    <td><span style="color: #94a3b8; font-size: 0.85rem;">🏢 Global Support Tier 1</span></td>
+                    <td><span class="badge-status" style="background: rgba(99,102,241,0.15); color: #818cf8; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">Support Specialist</span></td>
+                    <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
+                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Editing Employee Profile')">✏️ Edit Profile</button></td>
+                  </tr>
+                  <tr>
+                    <td><span style="font-family: monospace; color: var(--primary-gold, #f3c77c);">#1002</span></td>
+                    <td style="font-weight: 600; color: #fff;">👤 Marcus Vance</td>
+                    <td><span style="color: #94a3b8; font-size: 0.85rem;">marcus.vance@starlight.org</span></td>
+                    <td><span class="filter-chip" style="font-size: 0.75rem;">🏛️ Starlight Publishing</span></td>
+                    <td><span style="color: #94a3b8; font-size: 0.85rem;">🏢 Editorial Guild</span></td>
+                    <td><span class="badge-status" style="background: rgba(245,158,11,0.15); color: #fbbf24; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">Senior Content Editor</span></td>
+                    <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
+                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Editing Employee Profile')">✏️ Edit Profile</button></td>
+                  </tr>
+                  <tr>
+                    <td><span style="font-family: monospace; color: var(--primary-gold, #f3c77c);">#1003</span></td>
+                    <td style="font-weight: 600; color: #fff;">👤 Elena Rostova</td>
+                    <td><span style="color: #94a3b8; font-size: 0.85rem;">elena.r@midnightstories.org</span></td>
+                    <td><span class="filter-chip" style="font-size: 0.75rem;">🏛️ Midnight Internal</span></td>
+                    <td><span style="color: #94a3b8; font-size: 0.85rem;">🏢 Security Ops (SIRT)</span></td>
+                    <td><span class="badge-status" style="background: rgba(239,68,68,0.15); color: #f87171; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">Security Officer</span></td>
+                    <td><span class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></td>
+                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Editing Employee Profile')">✏️ Edit Profile</button></td>
                   </tr>
                 </tbody>
               </table>
@@ -2766,5 +3138,13 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script>
+    window.toggleSidebarAccordion = function(headingEl) {
+      const section = headingEl.closest('.admin-sidebar__section');
+      if (section) {
+        section.classList.toggle('collapsed');
+      }
+    };
+  </script>
 </body>
 </html>
