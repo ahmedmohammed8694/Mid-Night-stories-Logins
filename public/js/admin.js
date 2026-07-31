@@ -5081,6 +5081,8 @@ async function updateTaskStatus(id, status) {
         </td>
       </tr>
     `).join('');
+
+    loadEmployees();
   }
 
   // 2. Ticket Taxonomy
@@ -5486,5 +5488,14 @@ async function updateTaskStatus(id, status) {
   window.resetEmployeePassword = resetEmployeePassword;
   window.handleResetEmployeePasswordDefault = handleResetEmployeePasswordDefault;
   window.handleDeleteEmployeeAccount = handleDeleteEmployeeAccount;
+
+  // Auto-initialize employee rosters
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      loadEmployees();
+    });
+  } else {
+    loadEmployees();
+  }
 
 })();
