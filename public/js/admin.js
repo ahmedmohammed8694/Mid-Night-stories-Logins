@@ -5356,14 +5356,21 @@ async function updateTaskStatus(id, status) {
     const emp = localEmployeesStore.find(e => e.id === Number(id));
     if (!emp) return;
 
-    document.getElementById('editEmpId').value = emp.id;
-    document.getElementById('editEmpFullName').value = emp.name;
-    document.getElementById('editEmpEmail').value = emp.email;
-    document.getElementById('editEmpPhone').value = emp.phone || '';
-    if (document.getElementById('editEmpAccount')) document.getElementById('editEmpAccount').value = emp.account;
-    if (document.getElementById('editEmpTeam')) document.getElementById('editEmpTeam').value = emp.team;
-    if (document.getElementById('editEmpRole')) document.getElementById('editEmpRole').value = emp.role;
-    if (document.getElementById('editEmpStatus')) document.getElementById('editEmpStatus').value = emp.status;
+    if (document.getElementById('badgeEditEmpId')) document.getElementById('badgeEditEmpId').textContent = `#${emp.id}`;
+    if (document.getElementById('editEmpId')) document.getElementById('editEmpId').value = emp.id;
+    if (document.getElementById('editEmpFullName')) document.getElementById('editEmpFullName').value = emp.name;
+    if (document.getElementById('editEmpEmail')) document.getElementById('editEmpEmail').value = emp.email;
+    if (document.getElementById('editEmpPhone')) document.getElementById('editEmpPhone').value = emp.phone || '';
+    if (document.getElementById('editEmpAccount')) document.getElementById('editEmpAccount').value = emp.account || 'Acme Corporation';
+    if (document.getElementById('editEmpTeam')) document.getElementById('editEmpTeam').value = emp.team || 'Global Support Tier 1';
+    if (document.getElementById('editEmpSupervisor')) document.getElementById('editEmpSupervisor').value = emp.supervisor || 'Elena Rostova (Security Ops Manager)';
+    if (document.getElementById('editEmpWorkShift')) document.getElementById('editEmpWorkShift').value = emp.workShift || '08:00 AM - 05:00 PM UTC (Day Shift)';
+    if (document.getElementById('editEmpRole')) document.getElementById('editEmpRole').value = emp.role || 'Support Specialist';
+    if (document.getElementById('editEmpLicenseSeat')) document.getElementById('editEmpLicenseSeat').value = emp.licenseSeat || 'Full Enterprise License';
+    if (document.getElementById('editEmpStatus')) document.getElementById('editEmpStatus').value = emp.status || 'active';
+    if (document.getElementById('editEmpAssetTag')) document.getElementById('editEmpAssetTag').value = emp.assetTag || 'MACBOOK-PRO-2026-99';
+    if (document.getElementById('editEmpEnforceMfa')) document.getElementById('editEmpEnforceMfa').checked = emp.enforceMfa !== false;
+    if (document.getElementById('editEmpEnforceRotation')) document.getElementById('editEmpEnforceRotation').checked = emp.enforceRotation !== false;
 
     const modal = document.getElementById('editEmployeeModal');
     if (modal) modal.style.display = 'flex';
@@ -5380,13 +5387,19 @@ async function updateTaskStatus(id, status) {
     const emp = localEmployeesStore.find(x => x.id === id);
     if (!emp) return;
 
-    emp.name = document.getElementById('editEmpFullName').value.trim();
-    emp.email = document.getElementById('editEmpEmail').value.trim();
-    emp.phone = document.getElementById('editEmpPhone').value.trim();
-    emp.account = document.getElementById('editEmpAccount').value;
-    emp.team = document.getElementById('editEmpTeam').value;
-    emp.role = document.getElementById('editEmpRole').value;
-    emp.status = document.getElementById('editEmpStatus').value;
+    emp.name = document.getElementById('editEmpFullName')?.value.trim() || emp.name;
+    emp.email = document.getElementById('editEmpEmail')?.value.trim() || emp.email;
+    emp.phone = document.getElementById('editEmpPhone')?.value.trim() || emp.phone;
+    emp.account = document.getElementById('editEmpAccount')?.value || emp.account;
+    emp.team = document.getElementById('editEmpTeam')?.value || emp.team;
+    emp.supervisor = document.getElementById('editEmpSupervisor')?.value || emp.supervisor;
+    emp.workShift = document.getElementById('editEmpWorkShift')?.value || emp.workShift;
+    emp.role = document.getElementById('editEmpRole')?.value || emp.role;
+    emp.licenseSeat = document.getElementById('editEmpLicenseSeat')?.value || emp.licenseSeat;
+    emp.status = document.getElementById('editEmpStatus')?.value || emp.status;
+    emp.assetTag = document.getElementById('editEmpAssetTag')?.value || emp.assetTag;
+    emp.enforceMfa = document.getElementById('editEmpEnforceMfa')?.checked ?? true;
+    emp.enforceRotation = document.getElementById('editEmpEnforceRotation')?.checked ?? true;
 
     try {
       await api(`/api/admin/employees/${id}`, {
@@ -5404,7 +5417,7 @@ async function updateTaskStatus(id, status) {
 
     renderEmployeeRosters();
     closeEditEmployeeModal();
-    alert(`✅ Employee #${id} account updated successfully!`);
+    alert(`✅ Employee #${id} (${emp.name}) account details updated successfully!`);
   }
 
   // Password Reset Handlers

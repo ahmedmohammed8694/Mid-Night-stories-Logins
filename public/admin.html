@@ -17,8 +17,8 @@
   <meta name="robots" content="noindex, nofollow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="./css/style.css?v=20260731_v4">
-  <link rel="stylesheet" href="./css/admin.css?v=20260731_v4">
+  <link rel="stylesheet" href="./css/style.css?v=20260802_v15">
+  <link rel="stylesheet" href="./css/admin.css?v=20260802_v15">
 
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
 </head>
@@ -4161,47 +4161,43 @@
   <div id="editEmployeeModal" class="modal-overlay"
     style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center;">
     <div class="modal"
-      style="max-width: 680px; width: 92%; padding: 28px; background: #0f172a; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); position: relative; max-height: 90vh; overflow-y: auto; text-align: left;">
+      style="max-width: 720px; width: 92%; padding: 28px; background: #0f172a; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); position: relative; max-height: 90vh; overflow-y: auto; text-align: left;">
       <button class="modal__close" onclick="closeEditEmployeeModal()"
         style="position: absolute; right: 20px; top: 20px; background: none; border: none; font-size: 1.4rem; color: #94a3b8; cursor: pointer;">✕</button>
-      <h2
-        style="font-family: 'Inter', sans-serif; font-size: 1.4rem; font-weight: 700; color: #f8fafc; margin-bottom: 4px;">
-        ✏️ Edit Employee Account &amp; Credentials</h2>
-      <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 20px;">Update employee information, reset password to
-        default, or modify corporate access permissions.</p>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+        <h2 style="font-family: 'Inter', sans-serif; font-size: 1.4rem; font-weight: 700; color: #f8fafc; margin: 0;">
+          ✏️ Edit Employee Profile &amp; Corporate Credentials
+        </h2>
+        <span class="filter-chip" id="badgeEditEmpId" style="font-size: 0.78rem; font-weight: 700; color: #f3c77c; background: rgba(243,199,124,0.15);">#1001</span>
+      </div>
+      <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 20px;">View and update employee details, assigned supervisor, shift schedule, RBAC security policies, or reset password.</p>
 
       <form id="editEmployeeForm" onsubmit="handleSaveEditEmployee(event)">
         <input type="hidden" id="editEmpId">
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <h4 style="color: #38bdf8; margin: 0 0 10px 0; font-size: 0.85rem; font-weight: 700; text-transform: uppercase;">Personal &amp; Contact Details</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 16px;">
           <div class="form-group">
-            <label class="form-label"
-              style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Full
-              Name*</label>
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Full Name *</label>
             <input type="text" id="editEmpFullName" class="form-input" required
               style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
           </div>
           <div class="form-group">
-            <label class="form-label"
-              style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Corporate
-              Email Address*</label>
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Corporate Email Address *</label>
             <input type="email" id="editEmpEmail" class="form-input" required
+              style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Phone Number</label>
+            <input type="text" id="editEmpPhone" class="form-input"
               style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        <h4 style="color: #38bdf8; margin: 12px 0 10px 0; font-size: 0.85rem; font-weight: 700; text-transform: uppercase;">Organization &amp; Management Placement</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 16px;">
           <div class="form-group">
-            <label class="form-label"
-              style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Phone
-              Number</label>
-            <input type="text" id="editEmpPhone" class="form-input"
-              style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
-          </div>
-          <div class="form-group">
-            <label class="form-label"
-              style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Enterprise
-              Organization / Account</label>
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Enterprise Organization / Account</label>
             <select id="editEmpAccount" class="form-select"
               style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
               <option value="Acme Corporation">Acme Corporation</option>
@@ -4210,13 +4206,8 @@
               <option value="Midnight Internal">Midnight Internal</option>
             </select>
           </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
           <div class="form-group">
-            <label class="form-label"
-              style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Department
-              / Team</label>
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Department / Team</label>
             <select id="editEmpTeam" class="form-select"
               style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
               <option value="Global Support Tier 1">Global Support Tier 1</option>
@@ -4226,9 +4217,31 @@
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label"
-              style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Role
-              &amp; Permissions</label>
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Direct Supervisor / Manager</label>
+            <select id="editEmpSupervisor" class="form-select"
+              style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+              <option value="Elena Rostova (Security Ops Manager)">Elena Rostova (Security Ops Manager)</option>
+              <option value="Marcus Vance (Editorial Lead)">Marcus Vance (Editorial Lead)</option>
+              <option value="Sarah Jenkins (Support Lead)">Sarah Jenkins (Support Lead)</option>
+              <option value="Super Administrator">Super Administrator</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Work Shift / Region</label>
+            <select id="editEmpWorkShift" class="form-select"
+              style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+              <option value="08:00 AM - 05:00 PM UTC (Day Shift)">08:00 AM - 05:00 PM UTC (Day Shift)</option>
+              <option value="04:00 PM - 01:00 AM UTC (Evening Shift)">04:00 PM - 01:00 AM UTC (Evening Shift)</option>
+              <option value="12:00 AM - 08:00 AM UTC (Night Shift)">12:00 AM - 08:00 AM UTC (Night Shift)</option>
+              <option value="APAC Regional Hours">APAC Regional Hours</option>
+            </select>
+          </div>
+        </div>
+
+        <h4 style="color: #10b981; margin: 12px 0 10px 0; font-size: 0.85rem; font-weight: 700; text-transform: uppercase;">RBAC &amp; License Security</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">RBAC Role &amp; Permissions</label>
             <select id="editEmpRole" class="form-select"
               style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
               <option value="Support Specialist">Support Specialist</option>
@@ -4238,13 +4251,17 @@
               <option value="Super Administrator">Super Administrator</option>
             </select>
           </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
           <div class="form-group">
-            <label class="form-label"
-              style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Employment
-              Status</label>
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">License Seat Type</label>
+            <select id="editEmpLicenseSeat" class="form-select"
+              style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+              <option value="Full Enterprise License">Full Enterprise License</option>
+              <option value="Standard License">Standard License</option>
+              <option value="Guest License">Guest License</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Employment Status</label>
             <select id="editEmpStatus" class="form-select"
               style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
               <option value="active">Active</option>
@@ -4252,15 +4269,28 @@
               <option value="suspended">Suspended</option>
             </select>
           </div>
+          <div class="form-group">
+            <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Hardware Asset Tag</label>
+            <input type="text" id="editEmpAssetTag" class="form-input" placeholder="MACBOOK-PRO-2026-99"
+              style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+          </div>
+        </div>
+
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 14px; margin-bottom: 18px;">
+          <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer;">
+            <span style="font-size: 0.88rem; font-weight: 600; color: #f8fafc;">Enforce Mandatory Multi-Factor Auth (MFA/2FA)</span>
+            <input type="checkbox" id="editEmpEnforceMfa" checked style="transform: scale(1.2); cursor: pointer; accent-color: #f59e0b;">
+          </label>
+          <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+            <span style="font-size: 0.88rem; font-weight: 600; color: #f8fafc;">Enforce 90-Day Password Rotation Policy</span>
+            <input type="checkbox" id="editEmpEnforceRotation" checked style="transform: scale(1.2); cursor: pointer; accent-color: #f59e0b;">
+          </label>
         </div>
 
         <!-- Password Reset & Handling Box -->
-        <div
-          style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-          <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; color: #f8fafc;">🔑 Password &amp; Account Security Handling
-          </h4>
-          <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 12px;">Reset employee password to default system
-            credential or remove employee access.</p>
+        <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; color: #f8fafc;">🔑 Password &amp; Account Security Handling</h4>
+          <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 12px;">Reset employee password to default system credential (`Midnight@2026!`) or remove account.</p>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <button type="button" class="btn btn--secondary btn--sm" onclick="handleResetEmployeePasswordDefault()"
               style="background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); padding: 8px 14px; font-weight: 600;">
@@ -4273,11 +4303,15 @@
           </div>
         </div>
 
-        <div
-          style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08);">
+        <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08);">
           <button type="button" class="btn btn--secondary btn--sm" onclick="closeEditEmployeeModal()">Cancel</button>
-          <button type="submit" class="btn btn--primary btn--sm" style="height: 38px; padding: 0 20px;">💾 Save Employee
-            Changes</button>
+          <button type="submit" class="btn btn--primary btn--sm" style="height: 40px; padding: 0 24px; font-weight: 700; background: linear-gradient(135deg, #10b981, #059669);">
+            💾 Save Employee Account Updates
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
         </div>
       </form>
     </div>
@@ -4384,7 +4418,7 @@
     window.navigateWizardStep = navigateWizardStep;
     window.resetWizardForm = resetWizardForm;
   </script>
-  <script src="./js/admin.js?v=20260731_v9"></script>
+  <script src="./js/admin.js?v=20260802_v18"></script>
   <script>
     window.toggleSidebarAccordion = function (headingEl) {
       const section = headingEl.closest('.admin-sidebar__section');
