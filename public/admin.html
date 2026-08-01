@@ -1290,11 +1290,6 @@
               <p class="admin-page-subtitle">Manage company employee accounts, provision corporate access, assign RBAC
                 roles, and dispatch welcome kits.</p>
             </div>
-            <button type="button" class="btn btn--primary"
-              onclick="openCreateEmployeeModal()"
-              style="padding: 10px 20px; font-weight: 700;">
-              ➕ Create Employee Account
-            </button>
           </div>
 
           <!-- Onboarding Metrics Cards -->
@@ -1610,38 +1605,6 @@
                 </div>
               </div>
             </form>
-          </div>
-
-          <!-- Onboarded Employees Table -->
-          <div
-            style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; overflow: hidden; margin-bottom: 24px;">
-            <div
-              style="padding: 16px 20px; border-bottom: 1px solid var(--border-card); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-              <h3 style="margin: 0; font-size: 1rem; color: #fff;">👤 Onboarded Employees Roster &amp; Provisioned
-                Access</h3>
-              <button type="button" class="btn btn--secondary btn--sm"
-                onclick="openCreateEmployeeModal()">➕ Create Employee
-                Account</button>
-            </div>
-            <div style="overflow-x: auto;">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Employee Name</th>
-                    <th>Work Email</th>
-                    <th>Corporate Account</th>
-                    <th>Assigned Team</th>
-                    <th>RBAC Role</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="accountsEmployeeBody">
-                  <!-- Rendered dynamically -->
-                </tbody>
-              </table>
-            </div>
           </div>
         </div>
 
@@ -4493,7 +4456,7 @@
     window.navigateWizardStep = navigateWizardStep;
     window.resetWizardForm = resetWizardForm;
   </script>
-  <script src="./js/admin.js?v=20260802_v25"></script>
+  <script src="./js/admin.js?v=20260802_v28"></script>
   <script>
     window.toggleSidebarAccordion = function (headingEl) {
       const section = headingEl.closest('.admin-sidebar__section');
