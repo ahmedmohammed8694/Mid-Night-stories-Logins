@@ -4,8 +4,9 @@
   "type": "module",
   "description": "Anonymous Life Stories Platform — share personal stories safely and anonymously",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "node dev-server.js",
     "serve": "node dev-server.js",
+    "wrangler": "wrangler dev",
     "deploy": "wrangler deploy",
     "db:init": "wrangler d1 execute midnight-stories-login-db --remote --file=schema.sql"
   },

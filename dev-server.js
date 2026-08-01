@@ -22,8 +22,13 @@ const MIME_TYPES = {
 
 const server = http.createServer((req, res) => {
   let reqUrl = req.url.split('?')[0];
-  if (reqUrl === '/' || reqUrl === '/admin') {
+
+  if (reqUrl === '/') {
+    reqUrl = '/index.html';
+  } else if (reqUrl === '/admin') {
     reqUrl = '/admin.html';
+  } else if (reqUrl === '/user' || reqUrl === '/login') {
+    reqUrl = '/login.html';
   }
 
   let filePath = path.join(PUBLIC_DIR, reqUrl);
@@ -34,7 +39,12 @@ const server = http.createServer((req, res) => {
 
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {
-      filePath = path.join(PUBLIC_DIR, 'admin.html');
+      const htmlPath = filePath + '.html';
+      if (fs.existsSync(htmlPath)) {
+        filePath = htmlPath;
+      } else {
+        filePath = path.join(PUBLIC_DIR, 'index.html');
+      }
     }
 
     const ext = path.extname(filePath).toLowerCase();
@@ -46,5 +56,11 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`🚀 Local server running at http://localhost:${PORT}/admin`);
+  console.log(`\n==================================================`);
+  console.log(`🚀 Midnight Stories Local Server Active!`);
+  console.log(`==================================================`);
+  console.log(`👤 User Website:    http://localhost:${PORT}/`);
+  console.log(`🔑 User Login:      http://localhost:${PORT}/login.html`);
+  console.log(`👑 Admin Dashboard: http://localhost:${PORT}/admin`);
+  console.log(`==================================================\n`);
 });
