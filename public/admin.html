@@ -1342,6 +1342,110 @@
             </div>
           </div>
 
+          <!-- Direct In-Page Employee Account Creation Form Card -->
+          <div id="inlineCreateEmployeeFormCard"
+            style="background: #0f172a; border: 1px solid rgba(243, 199, 124, 0.35); border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <div
+              style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <h3 style="margin: 0 0 4px 0; font-size: 1.2rem; color: #f3c77c; display: flex; align-items: center; gap: 8px;">
+                  <span>➕</span> Create New Employee Account
+                </h3>
+                <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">Enter new employee account credentials and role assignments directly on this page.</p>
+              </div>
+              <span class="filter-chip"
+                style="background: rgba(243, 199, 124, 0.15); color: #f3c77c; border: 1px solid rgba(243, 199, 124, 0.35); font-weight: 700; font-size: 0.78rem; padding: 6px 12px;">
+                ⚡ Direct In-Page Employee Creation Form
+              </span>
+            </div>
+
+            <form id="inlineCreateEmployeeForm" onsubmit="handleCreateEmployee(event)">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                <div class="form-group">
+                  <label class="form-label"
+                    style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Full Name*</label>
+                  <input type="text" id="createEmpFullName" class="form-input" placeholder="e.g. Sarah Jenkins" required
+                    style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+                </div>
+                <div class="form-group">
+                  <label class="form-label"
+                    style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Corporate Work Email*</label>
+                  <input type="email" id="createEmpEmail" class="form-input" placeholder="sarah.j@midnightstories.org" required
+                    style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+                </div>
+                <div class="form-group">
+                  <label class="form-label"
+                    style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Phone Number (Optional)</label>
+                  <input type="text" id="createEmpPhone" class="form-input" placeholder="+1 (555) 000-0000"
+                    style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                <div class="form-group">
+                  <label class="form-label"
+                    style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Organization Account*</label>
+                  <select id="createEmpAccount" class="form-select"
+                    style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+                    <option value="Acme Corporation">Acme Corporation</option>
+                    <option value="Starlight Publishing">Starlight Publishing</option>
+                    <option value="Apex Media House">Apex Media House</option>
+                    <option value="Midnight Internal">Midnight Internal</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label"
+                    style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Department / Team*</label>
+                  <select id="createEmpTeam" class="form-select"
+                    style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+                    <option value="Global Support Tier 1">Global Support Tier 1</option>
+                    <option value="Editorial &amp; Moderation Guild">Editorial &amp; Moderation Guild</option>
+                    <option value="Security Ops (SIRT)">Security Ops (SIRT)</option>
+                    <option value="Billing &amp; Enterprise Accounts">Billing &amp; Enterprise Accounts</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label"
+                    style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Role &amp; Permissions*</label>
+                  <select id="createEmpRole" class="form-select"
+                    style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+                    <option value="Support Specialist">Support Specialist</option>
+                    <option value="Senior Content Editor">Senior Content Editor</option>
+                    <option value="Security Compliance Officer">Security Compliance Officer</option>
+                    <option value="Community Moderator">Community Moderator</option>
+                    <option value="Super Administrator">Super Administrator</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                <div class="form-group">
+                  <label class="form-label"
+                    style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Employment Status</label>
+                  <select id="createEmpStatus" class="form-select"
+                    style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+                    <option value="active">Active</option>
+                    <option value="pending_invite">Pending Invite</option>
+                    <option value="suspended">Suspended</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label"
+                    style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Initial Password (Default: Midnight@2026!)</label>
+                  <input type="text" id="createEmpPassword" class="form-input" value="Midnight@2026!"
+                    style="width: 100%; height: 40px; background: #1e293b; border: 1px solid #334155; color: #fff; border-radius: 8px; padding: 0 12px;">
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <button type="submit" class="btn btn--primary"
+                  style="padding: 12px 28px; font-weight: 700; background: linear-gradient(135deg, #6366f1, #8b5cf6); font-size: 0.95rem;">
+                  🚀 Save &amp; Provision Employee Account
+                </button>
+              </div>
+            </form>
+          </div>
+
           <!-- Onboarded Employees Table -->
           <div
             style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; overflow: hidden; margin-bottom: 24px;">
@@ -4084,6 +4188,14 @@
       const dashboardSection = document.getElementById('dashboardSection');
       if (loginSection) loginSection.classList.add('hidden');
       if (dashboardSection) dashboardSection.classList.remove('hidden');
+
+      var inlineCard = document.getElementById('inlineCreateEmployeeFormCard');
+      if (inlineCard) {
+        inlineCard.style.display = 'block';
+        inlineCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var nameInput = document.getElementById('createEmpFullName');
+        if (nameInput) setTimeout(function () { nameInput.focus(); }, 300);
+      }
 
       var modal = document.getElementById('createEmployeeModal');
       if (modal) modal.style.display = 'flex';
