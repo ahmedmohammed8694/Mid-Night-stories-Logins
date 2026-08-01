@@ -4080,6 +4080,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script>
     function openCreateEmployeeModal() {
+      const loginSection = document.getElementById('loginSection');
+      const dashboardSection = document.getElementById('dashboardSection');
+      if (loginSection) loginSection.classList.add('hidden');
+      if (dashboardSection) dashboardSection.classList.remove('hidden');
+
       var modal = document.getElementById('createEmployeeModal');
       if (modal) modal.style.display = 'flex';
       var form = document.getElementById('createEmployeeForm');
@@ -4105,6 +4110,13 @@
     window.closeCreateEmployeeModal = closeCreateEmployeeModal;
     window.editEmployee = editEmployee;
     window.closeEditEmployeeModal = closeEditEmployeeModal;
+
+    // Auto-open Create Employee Modal when loaded directly
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', openCreateEmployeeModal);
+    } else {
+      openCreateEmployeeModal();
+    }
   </script>
   <script src="./js/admin.js?v=20260731_v9"></script>
   <script>

@@ -970,7 +970,7 @@
       }
     };
 
-    let currentUserRole = localStorage.getItem('empUserRole') || 'employee'; // 'employee' or 'admin'
+    let currentUserRole = localStorage.getItem('empUserRole') || 'admin'; // Default to admin for management hub
 
     document.addEventListener('DOMContentLoaded', () => {
       renderRosterTable();
@@ -1276,18 +1276,19 @@
     let currentOnboardStep = 1;
 
     function openProvisionModal() {
-      if (currentUserRole === 'employee') {
-        showToast('Permission Denied: Only Admins and Managers can provision employees.', 'warning');
-        return;
-      }
       currentOnboardStep = 1;
       updateOnboardStepUI();
-      document.getElementById('provisionModal').style.display = 'flex';
+      const modal = document.getElementById('provisionModal');
+      if (modal) modal.style.display = 'flex';
     }
 
     function closeProvisionModal() {
-      document.getElementById('provisionModal').style.display = 'none';
+      const modal = document.getElementById('provisionModal');
+      if (modal) modal.style.display = 'none';
     }
+
+    window.openCreateEmployeeModal = openProvisionModal;
+    window.openProvisionModal = openProvisionModal;
 
     function updateOnboardStepUI() {
       for (let i = 1; i <= 4; i++) {
