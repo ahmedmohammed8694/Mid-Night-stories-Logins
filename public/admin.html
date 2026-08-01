@@ -1350,9 +1350,9 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px; flex-wrap: wrap; gap: 12px;">
               <div>
                 <h3 style="margin: 0 0 4px 0; font-size: 1.2rem; color: #f3c77c; display: flex; align-items: center; gap: 8px;">
-                  <span>➕</span> Provision New Employee Account (4-Step Onboarding Suite)
+                  <span>➕</span> Provision New Employee Account (5-Step Onboarding Suite)
                 </h3>
-                <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">Provision employee profile, organization placement, RBAC policies, and IT asset allocation.</p>
+                <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">Provision employee profile, organization placement, RBAC policies, IT assets, and document compliance vault.</p>
               </div>
               <span class="filter-chip"
                 style="background: rgba(243, 199, 124, 0.15); color: #f3c77c; border: 1px solid rgba(243, 199, 124, 0.35); font-weight: 700; font-size: 0.78rem; padding: 6px 12px;">
@@ -1360,23 +1360,27 @@
               </span>
             </div>
 
-            <!-- 4-Step Wizard Navigation Tabs -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 20px;">
+            <!-- 5-Step Wizard Navigation Tabs -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 20px;">
               <button type="button" class="wizard-step-tab active" id="tabStep1" onclick="switchWizardTab(1)"
-                style="padding: 10px 8px; font-weight: 700; font-size: 0.82rem; border-radius: 8px; border: 1px solid #10b981; background: rgba(16,185,129,0.15); color: #10b981; cursor: pointer; text-align: center;">
+                style="padding: 10px 6px; font-weight: 700; font-size: 0.8rem; border-radius: 8px; border: 1px solid #10b981; background: rgba(16,185,129,0.15); color: #10b981; cursor: pointer; text-align: center;">
                 1. Personal Info
               </button>
               <button type="button" class="wizard-step-tab" id="tabStep2" onclick="switchWizardTab(2)"
-                style="padding: 10px 8px; font-weight: 700; font-size: 0.82rem; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; cursor: pointer; text-align: center;">
+                style="padding: 10px 6px; font-weight: 700; font-size: 0.8rem; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; cursor: pointer; text-align: center;">
                 2. Account &amp; Team
               </button>
               <button type="button" class="wizard-step-tab" id="tabStep3" onclick="switchWizardTab(3)"
-                style="padding: 10px 8px; font-weight: 700; font-size: 0.82rem; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; cursor: pointer; text-align: center;">
+                style="padding: 10px 6px; font-weight: 700; font-size: 0.8rem; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; cursor: pointer; text-align: center;">
                 3. RBAC &amp; Security
               </button>
               <button type="button" class="wizard-step-tab" id="tabStep4" onclick="switchWizardTab(4)"
-                style="padding: 10px 8px; font-weight: 700; font-size: 0.82rem; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; cursor: pointer; text-align: center;">
+                style="padding: 10px 6px; font-weight: 700; font-size: 0.8rem; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; cursor: pointer; text-align: center;">
                 4. Assets &amp; Kit
+              </button>
+              <button type="button" class="wizard-step-tab" id="tabStep5" onclick="switchWizardTab(5)"
+                style="padding: 10px 6px; font-weight: 700; font-size: 0.8rem; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; cursor: pointer; text-align: center;">
+                5. Docs &amp; Agreements
               </button>
             </div>
 
@@ -1522,6 +1526,66 @@
                     <span style="color: #94a3b8; font-size: 0.82rem; line-height: 1.4; display: block; margin-top: 2px;">
                       A personalized welcome kit with login instructions and security guidelines will be automatically dispatched upon provisioning.
                     </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- STEP 5: DOCUMENTS & COMPLIANCE AGREEMENTS -->
+              <div class="wizard-step-pane" id="wizardPane5" style="display: none;">
+                <h4 style="color: #a855f7; margin: 0 0 14px 0; font-size: 0.92rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">STEP 5: EMPLOYEE DOCUMENTS &amp; COMPLIANCE VAULT</h4>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                  <div class="form-group">
+                    <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">📄 Resume / CV Document</label>
+                    <input type="file" id="createEmpDocResume" class="form-input" accept=".pdf,.doc,.docx"
+                      style="width: 100%; padding: 6px 12px; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; border-radius: 8px;">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">🪪 Government ID / Passport Proof</label>
+                    <input type="file" id="createEmpDocGovId" class="form-input" accept=".pdf,.png,.jpg,.jpeg"
+                      style="width: 100%; padding: 6px 12px; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; border-radius: 8px;">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">📜 Work Experience / Relieving Letters</label>
+                    <input type="file" id="createEmpDocExperience" class="form-input" accept=".pdf,.doc,.docx"
+                      style="width: 100%; padding: 6px 12px; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; border-radius: 8px;">
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                  <div class="form-group">
+                    <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">📝 Official Signed Offer Letter &amp; Contract</label>
+                    <input type="file" id="createEmpDocOfferLetter" class="form-input" accept=".pdf,.doc,.docx"
+                      style="width: 100%; padding: 6px 12px; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; border-radius: 8px;">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">💵 Salary Slips &amp; Payroll Bank Details</label>
+                    <input type="file" id="createEmpDocSalarySlips" class="form-input" accept=".pdf,.png,.jpg"
+                      style="width: 100%; padding: 6px 12px; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; border-radius: 8px;">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" style="display: block; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">📁 Additional Attachments / Certifications</label>
+                    <input type="file" id="createEmpDocOther" class="form-input"
+                      style="width: 100%; padding: 6px 12px; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; border-radius: 8px;">
+                  </div>
+                </div>
+
+                <!-- Company Agreements & Policy Acceptance Checklist -->
+                <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                  <h5 style="color: #c084fc; margin: 0 0 10px 0; font-size: 0.88rem; font-weight: 700;">🤝 COMPANY POLICIES &amp; LEGAL AGREEMENTS ACKNOWLEDGEMENT</h5>
+                  <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+                      <span style="font-size: 0.85rem; color: #f8fafc;">Signed Proprietary Information &amp; Non-Disclosure Agreement (NDA)</span>
+                      <input type="checkbox" id="createEmpAgreeNda" checked style="transform: scale(1.2); cursor: pointer; accent-color: #a855f7;">
+                    </label>
+                    <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+                      <span style="font-size: 0.85rem; color: #f8fafc;">Corporate Code of Conduct &amp; Ethics Policy Acknowledgement</span>
+                      <input type="checkbox" id="createEmpAgreeCode" checked style="transform: scale(1.2); cursor: pointer; accent-color: #a855f7;">
+                    </label>
+                    <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+                      <span style="font-size: 0.85rem; color: #f8fafc;">IT Security, Data Privacy &amp; Acceptable Use Policy Agreement</span>
+                      <input type="checkbox" id="createEmpAgreeItPolicy" checked style="transform: scale(1.2); cursor: pointer; accent-color: #a855f7;">
+                    </label>
                   </div>
                 </div>
               </div>
@@ -4287,6 +4351,17 @@
           </label>
         </div>
 
+        <!-- Attached Employee Documents & Compliance Section -->
+        <h4 style="color: #a855f7; margin: 16px 0 10px 0; font-size: 0.85rem; font-weight: 700; text-transform: uppercase;">Employee Document Vault &amp; Linked Files</h4>
+        <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 10px; padding: 14px; margin-bottom: 18px;">
+          <div id="editEmpDocsList" style="display: flex; flex-wrap: wrap; gap: 10px;">
+            <span class="filter-chip" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155; font-size: 0.8rem; padding: 6px 12px;">📄 Resume / CV: <strong id="lblEditEmpResume" style="color: #a855f7;">Verified &amp; Archived</strong></span>
+            <span class="filter-chip" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155; font-size: 0.8rem; padding: 6px 12px;">🪪 Government ID: <strong id="lblEditEmpGovId" style="color: #10b981;">Verified</strong></span>
+            <span class="filter-chip" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155; font-size: 0.8rem; padding: 6px 12px;">📝 Offer Letter: <strong id="lblEditEmpOffer" style="color: #38bdf8;">Signed &amp; On File</strong></span>
+            <span class="filter-chip" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155; font-size: 0.8rem; padding: 6px 12px;">🤝 NDA &amp; Policies: <strong style="color: #f59e0b;">Compliant &amp; Active</strong></span>
+          </div>
+        </div>
+
         <!-- Password Reset & Handling Box -->
         <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
           <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; color: #f8fafc;">🔑 Password &amp; Account Security Handling</h4>
@@ -4372,7 +4447,7 @@
     let currentWizardStep = 1;
     function switchWizardTab(stepNum) {
       currentWizardStep = stepNum;
-      for (let i = 1; i <= 4; i++) {
+      for (let i = 1; i <= 5; i++) {
         const pane = document.getElementById('wizardPane' + i);
         const tab = document.getElementById('tabStep' + i);
         if (pane) pane.style.display = (i === stepNum) ? 'block' : 'none';
@@ -4392,14 +4467,14 @@
       const btnSubmit = document.getElementById('btnWizardSubmit');
       const btnPrev = document.getElementById('btnWizardPrev');
       if (btnPrev) btnPrev.style.visibility = (stepNum === 1) ? 'hidden' : 'visible';
-      if (btnNext) btnNext.style.display = (stepNum === 4) ? 'none' : 'inline-block';
-      if (btnSubmit) btnSubmit.style.display = (stepNum === 4) ? 'inline-block' : 'none';
+      if (btnNext) btnNext.style.display = (stepNum === 5) ? 'none' : 'inline-block';
+      if (btnSubmit) btnSubmit.style.display = (stepNum === 5) ? 'inline-block' : 'none';
     }
 
     function navigateWizardStep(dir) {
       let target = currentWizardStep + dir;
       if (target < 1) target = 1;
-      if (target > 4) target = 4;
+      if (target > 5) target = 5;
       switchWizardTab(target);
     }
 
@@ -4418,7 +4493,7 @@
     window.navigateWizardStep = navigateWizardStep;
     window.resetWizardForm = resetWizardForm;
   </script>
-  <script src="./js/admin.js?v=20260802_v18"></script>
+  <script src="./js/admin.js?v=20260802_v25"></script>
   <script>
     window.toggleSidebarAccordion = function (headingEl) {
       const section = headingEl.closest('.admin-sidebar__section');

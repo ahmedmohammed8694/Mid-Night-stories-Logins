@@ -6356,15 +6356,25 @@ app.get('/api/admin/employees', requireAdmin, async (c) => {
 app.post('/api/admin/employees', requireAdmin, async (c) => {
   const db = c.env.DB;
   const adminPayload = c.get('admin');
-  const { name, full_name, email, phone, account_id, team_id, role_id, employment_status } = await c.req.json();
+  const body = await c.req.json();
+  const { name, full_name, email, phone, account_id, team_id, role_id, employment_status, supervisor, workShift, work_shift, licenseSeat, license_seat, enforceMfa, enforce_mfa, enforceRotation, enforce_rotation, assetTag, hardware_asset_tag, documents, documents_json, compliance, compliance_json } = body;
   const empName = (name || full_name || '').trim();
   if (!empName || !email || !account_id) return c.json({ error: 'name, email, and account_id are required.' }, 400);
 
   const inviteToken = crypto.randomUUID();
+  const docsStr = documents_json || (documents ? JSON.stringify(documents) : null);
+  const compStr = compliance_json || (compliance ? JSON.stringify(compliance) : null);
+
   const res = await db.prepare(`
-    INSERT INTO employee_users (full_name, email, phone, account_id, team_id, role_id, employment_status, invite_token)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(empName, email.trim().toLowerCase(), phone ? phone.trim() : null, account_id, team_id || null, role_id || null, employment_status || 'pending_invite', inviteToken).run();
+    INSERT INTO employee_users (
+      full_name, email, phone, account_id, team_id, role_id, employment_status, invite_token,
+      supervisor, work_shift, license_seat, enforce_mfa, enforce_rotation, hardware_asset_tag, documents_json, compliance_json
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    empName, email.trim().toLowerCase(), phone ? phone.trim() : null, account_id, team_id || null, role_id || null, employment_status || 'pending_invite', inviteToken,
+    supervisor || null, work_shift || workShift || null, license_seat || licenseSeat || null, (enforce_mfa ?? enforceMfa ?? true) ? 1 : 0, (enforce_rotation ?? enforceRotation ?? true) ? 1 : 0, hardware_asset_tag || assetTag || null, docsStr, compStr
+  ).run();
 
   const empId = res.meta.last_row_id;
   await writeAuditLog(db, { actorId: adminPayload.adminId, actorType: 'admin', action: 'employee.provision', targetType: 'employee', targetId: empId, newValue: { email, role_id } });
@@ -6374,16 +6384,27 @@ app.post('/api/admin/employees', requireAdmin, async (c) => {
 app.put('/api/admin/employees/:id', requireAdmin, async (c) => {
   const db = c.env.DB;
   const id = parseInt(c.req.param('id'));
-  const { name, full_name, email, phone, account_id, team_id, role_id, employment_status } = await c.req.json();
+  const body = await c.req.json();
+  const { name, full_name, email, phone, account_id, team_id, role_id, employment_status, supervisor, workShift, work_shift, licenseSeat, license_seat, enforceMfa, enforce_mfa, enforceRotation, enforce_rotation, assetTag, hardware_asset_tag, documents, documents_json, compliance, compliance_json } = body;
   const empName = name || full_name;
+
+  const docsStr = documents_json || (documents ? JSON.stringify(documents) : null);
+  const compStr = compliance_json || (compliance ? JSON.stringify(compliance) : null);
 
   await db.prepare(`
     UPDATE employee_users
     SET full_name = COALESCE(?, full_name), email = COALESCE(?, email), phone = COALESCE(?, phone),
         account_id = COALESCE(?, account_id), team_id = COALESCE(?, team_id), role_id = COALESCE(?, role_id),
-        employment_status = COALESCE(?, employment_status)
+        employment_status = COALESCE(?, employment_status),
+        supervisor = COALESCE(?, supervisor), work_shift = COALESCE(?, work_shift),
+        license_seat = COALESCE(?, license_seat), enforce_mfa = COALESCE(?, enforce_mfa),
+        enforce_rotation = COALESCE(?, enforce_rotation), hardware_asset_tag = COALESCE(?, hardware_asset_tag),
+        documents_json = COALESCE(?, documents_json), compliance_json = COALESCE(?, compliance_json)
     WHERE id = ?
-  `).bind(empName ? empName.trim() : null, email ? email.trim().toLowerCase() : null, phone, account_id, team_id, role_id, employment_status, id).run();
+  `).bind(
+    empName ? empName.trim() : null, email ? email.trim().toLowerCase() : null, phone, account_id, team_id, role_id, employment_status,
+    supervisor || null, work_shift || workShift || null, license_seat || licenseSeat || null, enforce_mfa ?? (enforceMfa !== undefined ? (enforceMfa ? 1 : 0) : null), enforce_rotation ?? (enforceRotation !== undefined ? (enforceRotation ? 1 : 0) : null), hardware_asset_tag || assetTag || null, docsStr, compStr, id
+  ).run();
 
   return c.json({ message: 'Employee updated.' });
 });
@@ -6393,6 +6414,36 @@ app.delete('/api/admin/employees/:id', requireAdmin, async (c) => {
   const id = parseInt(c.req.param('id'));
   await db.prepare('DELETE FROM employee_users WHERE id = ?').bind(id).run();
   return c.json({ message: 'Employee removed.' });
+});
+
+// Employee Document Vault API Endpoints
+app.get('/api/admin/employees/:id/documents', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const id = parseInt(c.req.param('id'));
+  try {
+    const { results } = await db.prepare('SELECT * FROM employee_documents WHERE employee_id = ? ORDER BY uploaded_at DESC').bind(id).all();
+    return c.json({ success: true, documents: results || [] });
+  } catch (err) {
+    return c.json({ success: true, documents: [] });
+  }
+});
+
+app.post('/api/admin/employees/:id/documents', requireAdmin, async (c) => {
+  const db = c.env.DB;
+  const id = parseInt(c.req.param('id'));
+  const { doc_type, file_name, file_size, file_type, storage_url } = await c.req.json();
+  if (!file_name || !doc_type) return c.json({ error: 'file_name and doc_type are required.' }, 400);
+
+  try {
+    const res = await db.prepare(`
+      INSERT INTO employee_documents (employee_id, doc_type, file_name, file_size, file_type, storage_url)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(id, doc_type, file_name, file_size || 0, file_type || 'application/pdf', storage_url || null).run();
+
+    return c.json({ success: true, message: 'Document added to vault.', id: res.meta.last_row_id }, 201);
+  } catch (err) {
+    return c.json({ error: err.message }, 500);
+  }
 });
 
 app.post('/api/admin/employees/:id/reset-password', requireAdmin, async (c) => {

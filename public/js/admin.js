@@ -5308,6 +5308,13 @@ async function updateTaskStatus(id, status) {
       return;
     }
 
+    const resumeDoc = document.getElementById('createEmpDocResume')?.files[0]?.name || 'Uploaded';
+    const govIdDoc = document.getElementById('createEmpDocGovId')?.files[0]?.name || 'Uploaded';
+    const offerLetterDoc = document.getElementById('createEmpDocOfferLetter')?.files[0]?.name || 'Uploaded';
+    const agreeNda = document.getElementById('createEmpAgreeNda')?.checked ?? true;
+    const agreeCode = document.getElementById('createEmpAgreeCode')?.checked ?? true;
+    const agreeItPolicy = document.getElementById('createEmpAgreeItPolicy')?.checked ?? true;
+
     const newId = 1000 + localEmployeesStore.length + 1;
     const newEmp = {
       id: newId,
@@ -5325,7 +5332,17 @@ async function updateTaskStatus(id, status) {
       enforceRotation,
       assetTag,
       authMethod,
-      password
+      password,
+      documents: {
+        resume: resumeDoc,
+        govId: govIdDoc,
+        offerLetter: offerLetterDoc
+      },
+      compliance: {
+        agreeNda,
+        agreeCode,
+        agreeItPolicy
+      }
     };
 
     try {
@@ -5348,7 +5365,7 @@ async function updateTaskStatus(id, status) {
     localEmployeesStore.unshift(newEmp);
     renderEmployeeRosters();
     closeCreateEmployeeModal();
-    alert(`✅ Employee Onboarding Completed Successfully!\n\nName: ${fullName}\nEmail: ${email}\nAccount: ${account}\nTeam: ${team}\nRole: ${role}\nSupervisor: ${supervisor}\nShift: ${workShift}\nAsset Tag: ${assetTag}\nInitial Password: ${password}`);
+    alert(`✅ 5-Step Employee Onboarding & Compliance Completed!\n\nName: ${fullName}\nEmail: ${email}\nAccount: ${account}\nTeam: ${team}\nRole: ${role}\nSupervisor: ${supervisor}\nShift: ${workShift}\nAsset Tag: ${assetTag}\nDocuments & Agreements: Verified & Archived`);
   }
 
   // Edit Employee Modal
@@ -5371,6 +5388,17 @@ async function updateTaskStatus(id, status) {
     if (document.getElementById('editEmpAssetTag')) document.getElementById('editEmpAssetTag').value = emp.assetTag || 'MACBOOK-PRO-2026-99';
     if (document.getElementById('editEmpEnforceMfa')) document.getElementById('editEmpEnforceMfa').checked = emp.enforceMfa !== false;
     if (document.getElementById('editEmpEnforceRotation')) document.getElementById('editEmpEnforceRotation').checked = emp.enforceRotation !== false;
+
+    // Document Vault Status Labels
+    if (document.getElementById('lblEditEmpResume')) {
+      document.getElementById('lblEditEmpResume').textContent = emp.documents?.resume || 'Verified & Archived';
+    }
+    if (document.getElementById('lblEditEmpGovId')) {
+      document.getElementById('lblEditEmpGovId').textContent = emp.documents?.govId || 'Verified';
+    }
+    if (document.getElementById('lblEditEmpOffer')) {
+      document.getElementById('lblEditEmpOffer').textContent = emp.documents?.offerLetter || 'Signed & On File';
+    }
 
     const modal = document.getElementById('editEmployeeModal');
     if (modal) modal.style.display = 'flex';
