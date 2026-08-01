@@ -4395,8 +4395,83 @@
       </form>
     </div>
   </div>
+
+  <!-- View Employee Account Full Profile & Document Vault Modal -->
+  <div class="modal-overlay" id="viewEmployeeModal"
+    style="display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; backdrop-filter: blur(8px);">
+    <div class="modal-card"
+      style="background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 16px; width: 95%; max-width: 780px; max-height: 90vh; overflow-y: auto; padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.7);">
+      
+      <!-- Modal Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 2.2rem;">👤</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1.25rem; color: #fff; display: flex; align-items: center; gap: 8px;">
+              <span id="viewEmpName">Sarah Jenkins</span>
+              <span id="viewEmpBadge" style="font-size: 0.8rem; background: rgba(56,189,248,0.2); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); padding: 2px 8px; border-radius: 99px; font-weight: 700;">#1001</span>
+            </h3>
+            <p style="margin: 2px 0 0 0; font-size: 0.85rem; color: #94a3b8;">Corporate Employee Profile, Experience Details &amp; Linked Documents</p>
+          </div>
         </div>
-      </form>
+        <button type="button" onclick="closeViewEmployeeModal()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; padding: 4px 8px;">✕</button>
+      </div>
+
+      <!-- Main Profile Information Grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px;">
+        
+        <!-- Personal & Contact Info -->
+        <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px;">
+          <h4 style="color: #38bdf8; margin: 0 0 12px 0; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Identity &amp; Contact</h4>
+          <div style="font-size: 0.85rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 8px;">
+            <div><strong style="color: #94a3b8;">Corporate Email:</strong> <span id="lblViewEmpEmail" style="color: #fff; word-break: break-all;">sarah.j@midnightstories.org</span></div>
+            <div><strong style="color: #94a3b8;">Phone Number:</strong> <span id="lblViewEmpPhone" style="color: #fff;">+1 (555) 123-4567</span></div>
+            <div><strong style="color: #94a3b8;">Account Status:</strong> <span id="lblViewEmpStatus" class="badge-status" style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span></div>
+          </div>
+        </div>
+
+        <!-- Organization & Department -->
+        <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px;">
+          <h4 style="color: #f3c77c; margin: 0 0 12px 0; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Organization &amp; Team</h4>
+          <div style="font-size: 0.85rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 8px;">
+            <div><strong style="color: #94a3b8;">Account:</strong> <span id="lblViewEmpAccount" style="color: #fff;">Acme Corporation</span></div>
+            <div><strong style="color: #94a3b8;">Department:</strong> <span id="lblViewEmpTeam" style="color: #fff;">Global Support Tier 1</span></div>
+            <div><strong style="color: #94a3b8;">Supervisor:</strong> <span id="lblViewEmpSupervisor" style="color: #fff;">Elena Rostova</span></div>
+            <div><strong style="color: #94a3b8;">Work Shift:</strong> <span id="lblViewEmpShift" style="color: #fff;">Day Shift (08:00 AM - 05:00 PM UTC)</span></div>
+          </div>
+        </div>
+
+        <!-- Role, License & IT Assets -->
+        <div style="background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px;">
+          <h4 style="color: #10b981; margin: 0 0 12px 0; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">RBAC &amp; IT Hardware</h4>
+          <div style="font-size: 0.85rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 8px;">
+            <div><strong style="color: #94a3b8;">RBAC Role:</strong> <span id="lblViewEmpRole" style="color: #fff;">Support Specialist</span></div>
+            <div><strong style="color: #94a3b8;">License Seat:</strong> <span id="lblViewEmpLicense" style="color: #fff;">Full Enterprise License</span></div>
+            <div><strong style="color: #94a3b8;">Hardware Tag:</strong> <span id="lblViewEmpAssetTag" style="color: #fff;">MACBOOK-PRO-2026-99</span></div>
+            <div><strong style="color: #94a3b8;">Security Policies:</strong> <span id="lblViewEmpSecurity" style="color: #f59e0b; font-weight: 600;">MFA Enforced | 90-Day Rotation</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Experience & Linked Documents Vault Section -->
+      <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <h4 style="color: #c084fc; margin: 0 0 12px 0; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+          <span>📂</span> Experience Details, Documents &amp; Compliance Vault
+        </h4>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;" id="viewEmpDocVault">
+          <span class="filter-chip" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155; font-size: 0.82rem; padding: 8px 14px;">📄 Resume / CV: <strong id="valViewResume" style="color: #a855f7;">Verified &amp; Archived</strong></span>
+          <span class="filter-chip" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155; font-size: 0.82rem; padding: 8px 14px;">🪪 Government ID: <strong id="valViewGovId" style="color: #10b981;">Verified</strong></span>
+          <span class="filter-chip" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155; font-size: 0.82rem; padding: 8px 14px;">📜 Experience Certs: <strong id="valViewExp" style="color: #f59e0b;">Verified</strong></span>
+          <span class="filter-chip" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155; font-size: 0.82rem; padding: 8px 14px;">📝 Offer Letter: <strong id="valViewOffer" style="color: #38bdf8;">Signed &amp; On File</strong></span>
+          <span class="filter-chip" style="background: #1e293b; color: #cbd5e1; border: 1px solid #334155; font-size: 0.82rem; padding: 8px 14px;">🤝 Company Policies: <strong style="color: #34d399;">NDA &amp; IT Security Compliant</strong></span>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
+        <button type="button" class="btn btn--secondary" onclick="closeViewEmployeeModal()" style="padding: 8px 20px;">Close Profile</button>
+        <button type="button" class="btn btn--primary" id="btnEditFromView" onclick="closeViewEmployeeModal(); editEmployee(_currentViewingEmpId);" style="padding: 8px 20px; font-weight: 700; background: linear-gradient(135deg, #38bdf8, #0284c7); color: #0f172a;">✏️ Edit Employee Account</button>
+      </div>
     </div>
   </div>
 
@@ -4423,6 +4498,18 @@
     }
     function closeCreateEmployeeModal() {
       var modal = document.getElementById('createEmployeeModal');
+      if (modal) modal.style.display = 'none';
+    }
+    function viewEmployee(id) {
+      if (window.adminViewEmployee) {
+        window.adminViewEmployee(id);
+        return;
+      }
+      var modal = document.getElementById('viewEmployeeModal');
+      if (modal) modal.style.display = 'flex';
+    }
+    function closeViewEmployeeModal() {
+      var modal = document.getElementById('viewEmployeeModal');
       if (modal) modal.style.display = 'none';
     }
     function editEmployee(id) {
@@ -4501,7 +4588,7 @@
     window.navigateWizardStep = navigateWizardStep;
     window.resetWizardForm = resetWizardForm;
   </script>
-  <script src="./js/admin.js?v=20260802_v35"></script>
+  <script src="./js/admin.js?v=20260802_v50"></script>
   <script>
     window.toggleSidebarAccordion = function (headingEl) {
       const section = headingEl.closest('.admin-sidebar__section');

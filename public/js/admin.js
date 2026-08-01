@@ -5298,9 +5298,9 @@ async function updateTaskStatus(id, status) {
         <td><span class="badge-status" style="background: ${e.status === 'active' ? 'rgba(52,211,153,0.15)' : 'rgba(251,191,36,0.15)'}; color: ${e.status === 'active' ? '#34d399' : '#fbbf24'}; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">${escapeHtml((e.status || 'active').toUpperCase())}</span></td>
         <td style="text-align: right;">
           <div style="display:flex; gap:6px; justify-content: flex-end; flex-wrap:wrap;">
-            <button class="btn btn--secondary btn--sm" onclick="window.viewEmployee(${e.id})" style="padding:4px 10px; font-size:0.8rem; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); font-weight:600;">👁️ View</button>
-            <button class="btn btn--secondary btn--sm" onclick="window.editEmployee(${e.id})" style="padding:4px 10px; font-size:0.8rem; font-weight:600;">✏️ Edit</button>
-            <button class="btn btn--secondary btn--sm" onclick="window.resetEmployeePassword(${e.id})" style="padding:4px 10px; font-size:0.8rem; background:rgba(99,102,241,0.15); color:#818cf8; border:1px solid rgba(99,102,241,0.3); font-weight:600;">🔑 Reset PW</button>
+            <button type="button" class="btn btn--secondary btn--sm btn-view-emp" data-action="view-emp" data-id="${e.id}" onclick="window.viewEmployee(${e.id})" style="padding:4px 10px; font-size:0.8rem; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); font-weight:600; cursor:pointer;">👁️ View</button>
+            <button type="button" class="btn btn--secondary btn--sm btn-edit-emp" data-action="edit-emp" data-id="${e.id}" onclick="window.editEmployee(${e.id})" style="padding:4px 10px; font-size:0.8rem; font-weight:600; cursor:pointer;">✏️ Edit</button>
+            <button type="button" class="btn btn--secondary btn--sm btn-reset-pw" data-action="reset-pw" data-id="${e.id}" onclick="window.resetEmployeePassword(${e.id})" style="padding:4px 10px; font-size:0.8rem; background:rgba(99,102,241,0.15); color:#818cf8; border:1px solid rgba(99,102,241,0.3); font-weight:600; cursor:pointer;">🔑 Reset PW</button>
           </div>
         </td>
       </tr>
@@ -5338,12 +5338,41 @@ async function updateTaskStatus(id, status) {
     }
   }
 
+  // Global Event Delegation for Employee Table Action Buttons
+  document.addEventListener('click', (evt) => {
+    const btnView = evt.target.closest('[data-action="view-emp"], .btn-view-emp');
+    if (btnView) {
+      evt.preventDefault();
+      const id = btnView.getAttribute('data-id');
+      if (id) viewEmployee(id);
+      return;
+    }
+
+    const btnEdit = evt.target.closest('[data-action="edit-emp"], .btn-edit-emp');
+    if (btnEdit) {
+      evt.preventDefault();
+      const id = btnEdit.getAttribute('data-id');
+      if (id) editEmployee(id);
+      return;
+    }
+
+    const btnReset = evt.target.closest('[data-action="reset-pw"], .btn-reset-pw');
+    if (btnReset) {
+      evt.preventDefault();
+      const id = btnReset.getAttribute('data-id');
+      if (id) resetEmployeePassword(id);
+      return;
+    }
+  });
+
   // View Employee Account Full Profile Modal
   function viewEmployee(id) {
     const emp = localEmployeesStore.find(e => e.id === Number(id));
     if (!emp) return;
 
     _currentViewingEmpId = emp.id;
+    window._currentViewingEmpId = emp.id;
+
     const set = (elId, text) => {
       const el = document.getElementById(elId);
       if (el) el.textContent = text;
@@ -5689,6 +5718,7 @@ async function updateTaskStatus(id, status) {
   window.handleCreateEmployee = handleCreateEmployee;
   window.adminHandleCreateEmployee = handleCreateEmployee;
   window.viewEmployee = viewEmployee;
+  window.adminViewEmployee = viewEmployee;
   window.closeViewEmployeeModal = closeViewEmployeeModal;
   window.renderEmployeeRosters = renderEmployeeRosters;
   window.editEmployee = editEmployee;
