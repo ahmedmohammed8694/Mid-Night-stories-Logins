@@ -5288,7 +5288,7 @@ async function updateTaskStatus(id, status) {
     });
 
     const renderRowHtml = (e) => `
-      <tr>
+      <tr onclick="if(!event.target.closest('button')){ window.viewEmployee('${e.id}'); }" style="cursor:pointer; transition: background 0.2s ease;" onmouseover="this.style.background='rgba(56,189,248,0.05)'" onmouseout="this.style.background='transparent'">
         <td><span style="font-family:monospace; color:var(--page-accent, #f3c77c); font-weight:700;">#${e.id}</span></td>
         <td style="font-weight:600; color:var(--text-primary, #fff);">👤 ${escapeHtml(e.name)}</td>
         <td><span style="font-size:0.85rem; color:var(--text-secondary, #94a3b8);">${escapeHtml(e.email)}</span></td>
@@ -5298,9 +5298,9 @@ async function updateTaskStatus(id, status) {
         <td><span class="badge-status" style="background: ${e.status === 'active' ? 'rgba(52,211,153,0.15)' : 'rgba(251,191,36,0.15)'}; color: ${e.status === 'active' ? '#34d399' : '#fbbf24'}; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">${escapeHtml((e.status || 'active').toUpperCase())}</span></td>
         <td style="text-align: right;">
           <div style="display:flex; gap:6px; justify-content: flex-end; flex-wrap:wrap;">
-            <button type="button" class="btn btn--secondary btn--sm btn-view-emp" data-action="view-emp" data-id="${e.id}" onclick="window.viewEmployee(${e.id})" style="padding:4px 10px; font-size:0.8rem; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); font-weight:600; cursor:pointer;">👁️ View</button>
-            <button type="button" class="btn btn--secondary btn--sm btn-edit-emp" data-action="edit-emp" data-id="${e.id}" onclick="window.editEmployee(${e.id})" style="padding:4px 10px; font-size:0.8rem; font-weight:600; cursor:pointer;">✏️ Edit</button>
-            <button type="button" class="btn btn--secondary btn--sm btn-reset-pw" data-action="reset-pw" data-id="${e.id}" onclick="window.resetEmployeePassword(${e.id})" style="padding:4px 10px; font-size:0.8rem; background:rgba(99,102,241,0.15); color:#818cf8; border:1px solid rgba(99,102,241,0.3); font-weight:600; cursor:pointer;">🔑 Reset PW</button>
+            <button type="button" class="btn btn--secondary btn--sm btn-view-emp" data-action="view-emp" data-id="${e.id}" onclick="window.viewEmployee('${e.id}')" style="padding:4px 10px; font-size:0.8rem; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); font-weight:600; cursor:pointer;">👁️ View Profile</button>
+            <button type="button" class="btn btn--secondary btn--sm btn-edit-emp" data-action="edit-emp" data-id="${e.id}" onclick="window.editEmployee('${e.id}')" style="padding:4px 10px; font-size:0.8rem; font-weight:600; cursor:pointer;">✏️ Edit</button>
+            <button type="button" class="btn btn--secondary btn--sm btn-reset-pw" data-action="reset-pw" data-id="${e.id}" onclick="window.resetEmployeePassword('${e.id}')" style="padding:4px 10px; font-size:0.8rem; background:rgba(99,102,241,0.15); color:#818cf8; border:1px solid rgba(99,102,241,0.3); font-weight:600; cursor:pointer;">🔑 Reset PW</button>
           </div>
         </td>
       </tr>
@@ -5392,32 +5392,40 @@ async function updateTaskStatus(id, status) {
     _currentViewingEmpId = emp.id;
     window._currentViewingEmpId = emp.id;
 
-    const set = (elId, text) => {
-      const el = document.getElementById(elId);
-      if (el) el.textContent = text;
-    };
+    // Populate Inline Downside Card
+    set('inlineViewEmpName', emp.name);
+    set('inlineViewEmpBadge', `#${emp.id}`);
+    set('inlineLblEmail', emp.email);
+    set('inlineLblPhone', emp.phone || '+1 (555) 123-4567');
+    set('inlineLblStatus', (emp.status || 'ACTIVE').toUpperCase());
+    set('inlineLblAccount', emp.account || 'Acme Corporation');
+    set('inlineLblTeam', emp.team || 'Global Support Tier 1');
+    set('inlineLblSupervisor', emp.supervisor || 'Elena Rostova (Security Ops Manager)');
+    set('inlineLblShift', emp.workShift || '08:00 AM - 05:00 PM UTC (Day Shift)');
+    set('inlineLblRole', emp.role || 'Support Specialist');
+    set('inlineLblLicense', emp.licenseSeat || 'Full Enterprise License');
+    set('inlineLblAssetTag', emp.assetTag || 'MACBOOK-PRO-2026-99');
+    set('inlineLblSecurity', `${emp.enforceMfa !== false ? 'MFA Enforced' : 'MFA Optional'} | ${emp.enforceRotation !== false ? '90-Day Rotation Policy' : 'Standard Password Policy'}`);
 
-    set('viewEmpName', emp.name);
-    set('viewEmpBadge', `#${emp.id}`);
-    set('lblViewEmpEmail', emp.email);
-    set('lblViewEmpPhone', emp.phone || '+1 (555) 123-4567');
-    set('lblViewEmpStatus', (emp.status || 'ACTIVE').toUpperCase());
-    set('lblViewEmpAccount', emp.account || 'Acme Corporation');
-    set('lblViewEmpTeam', emp.team || 'Global Support Tier 1');
-    set('lblViewEmpSupervisor', emp.supervisor || 'Elena Rostova (Security Ops Manager)');
-    set('lblViewEmpShift', emp.workShift || '08:00 AM - 05:00 PM UTC (Day Shift)');
-    set('lblViewEmpRole', emp.role || 'Support Specialist');
-    set('lblViewEmpLicense', emp.licenseSeat || 'Full Enterprise License');
-    set('lblViewEmpAssetTag', emp.assetTag || 'MACBOOK-PRO-2026-99');
-    set('lblViewEmpSecurity', `${emp.enforceMfa !== false ? 'MFA Enforced' : 'MFA Optional'} | ${emp.enforceRotation !== false ? '90-Day Rotation Policy' : 'Standard Password Policy'}`);
+    set('inlineValResume', emp.documents?.resume || 'Verified & Archived');
+    set('inlineValGovId', emp.documents?.govId || 'Verified & On File');
+    set('inlineValExp', 'Verified Work Experience & Certs');
+    set('inlineValOffer', emp.documents?.offerLetter || 'Signed & Archived');
 
-    set('valViewResume', emp.documents?.resume || 'Verified & Archived');
-    set('valViewGovId', emp.documents?.govId || 'Verified & On File');
-    set('valViewExp', 'Verified Work Experience & Certs');
-    set('valViewOffer', emp.documents?.offerLetter || 'Signed & Archived');
+    // Unhide inline downside card and smooth scroll down
+    const card = document.getElementById('inlineEmployeeProfileCard');
+    if (card) {
+      card.style.display = 'block';
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
     const modal = document.getElementById('viewEmployeeModal');
-    if (modal) modal.style.display = 'flex';
+    if (modal) modal.style.display = 'none';
+  }
+
+  function closeInlineEmployeeProfile() {
+    const card = document.getElementById('inlineEmployeeProfileCard');
+    if (card) card.style.display = 'none';
   }
 
   function closeViewEmployeeModal() {
@@ -5758,6 +5766,7 @@ async function updateTaskStatus(id, status) {
   window.viewEmployee = viewEmployee;
   window.adminViewEmployee = viewEmployee;
   window.closeViewEmployeeModal = closeViewEmployeeModal;
+  window.closeInlineEmployeeProfile = closeInlineEmployeeProfile;
   window.renderEmployeeRosters = renderEmployeeRosters;
   window.editEmployee = editEmployee;
   window.adminEditEmployee = editEmployee;
