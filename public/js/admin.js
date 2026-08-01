@@ -5292,8 +5292,15 @@ async function updateTaskStatus(id, status) {
     const phone = document.getElementById('createEmpPhone')?.value.trim();
     const account = document.getElementById('createEmpAccount')?.value;
     const team = document.getElementById('createEmpTeam')?.value;
+    const supervisor = document.getElementById('createEmpSupervisor')?.value;
+    const workShift = document.getElementById('createEmpWorkShift')?.value;
     const role = document.getElementById('createEmpRole')?.value;
+    const licenseSeat = document.getElementById('createEmpLicenseSeat')?.value;
     const status = document.getElementById('createEmpStatus')?.value;
+    const enforceMfa = document.getElementById('createEmpEnforceMfa')?.checked ?? true;
+    const enforceRotation = document.getElementById('createEmpEnforceRotation')?.checked ?? true;
+    const assetTag = document.getElementById('createEmpAssetTag')?.value || 'MACBOOK-PRO-2026-99';
+    const authMethod = document.getElementById('createEmpAuthMethod')?.value;
     const password = document.getElementById('createEmpPassword')?.value || 'Midnight@2026!';
 
     if (!fullName || !email) {
@@ -5309,8 +5316,16 @@ async function updateTaskStatus(id, status) {
       phone: phone || '+1 (555) 000-0000',
       account: account || 'Acme Corporation',
       team: team || 'Global Support Tier 1',
+      supervisor: supervisor || 'Elena Rostova (Security Ops Manager)',
+      workShift: workShift || '08:00 AM - 05:00 PM UTC (Day Shift)',
       role: role || 'Support Specialist',
-      status: status || 'active'
+      licenseSeat: licenseSeat || 'Full Enterprise License',
+      status: status || 'active',
+      enforceMfa,
+      enforceRotation,
+      assetTag,
+      authMethod,
+      password
     };
 
     try {
@@ -5333,7 +5348,7 @@ async function updateTaskStatus(id, status) {
     localEmployeesStore.unshift(newEmp);
     renderEmployeeRosters();
     closeCreateEmployeeModal();
-    alert(`✅ Employee account created successfully!\n\nName: ${fullName}\nEmail: ${email}\nInitial Password: ${password}`);
+    alert(`✅ Employee Onboarding Completed Successfully!\n\nName: ${fullName}\nEmail: ${email}\nAccount: ${account}\nTeam: ${team}\nRole: ${role}\nSupervisor: ${supervisor}\nShift: ${workShift}\nAsset Tag: ${assetTag}\nInitial Password: ${password}`);
   }
 
   // Edit Employee Modal
