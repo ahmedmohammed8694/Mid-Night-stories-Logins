@@ -5209,22 +5209,55 @@ async function updateTaskStatus(id, status) {
   ];
 
   async function loadEmployees() {
+    const savedLocal = localStorage.getItem('ms_employee_roster');
+    if (savedLocal) {
+      try {
+        const parsed = JSON.parse(savedLocal);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          localEmployeesStore = parsed;
+        }
+      } catch (err) {
+        console.warn('Error reading ms_employee_roster from localStorage:', err);
+      }
+    }
+
     try {
       const res = await api('/api/admin/employees');
       if (res && Array.isArray(res) && res.length > 0) {
-        localEmployeesStore = res.map(e => ({
-          id: e.id,
-          name: e.full_name || e.name || 'Employee',
-          email: e.email,
-          phone: e.phone || '+1 (555) 000-0000',
-          account: e.account_name || e.account || 'Acme Corporation',
-          team: e.team_name || e.team || 'Global Support Tier 1',
-          role: e.role_name || e.role || 'Support Specialist',
-          status: e.employment_status || e.status || 'active'
-        }));
+        const dbEmps = res.map(e => {
+          let docsObj = null;
+          let compObj = null;
+          try { if (e.documents_json) docsObj = JSON.parse(e.documents_json); } catch(x) {}
+          try { if (e.compliance_json) compObj = JSON.parse(e.compliance_json); } catch(x) {}
+
+          return {
+            id: e.id,
+            name: e.full_name || e.name || 'Employee',
+            email: e.email,
+            phone: e.phone || '+1 (555) 000-0000',
+            account: e.account_name || e.account || 'Acme Corporation',
+            team: e.team_name || e.team || 'Global Support Tier 1',
+            supervisor: e.supervisor || 'Elena Rostova (Security Ops Manager)',
+            workShift: e.work_shift || e.workShift || '08:00 AM - 05:00 PM UTC (Day Shift)',
+            role: e.role_name || e.role || 'Support Specialist',
+            licenseSeat: e.license_seat || e.licenseSeat || 'Full Enterprise License',
+            status: e.employment_status || e.status || 'active',
+            assetTag: e.hardware_asset_tag || e.assetTag || 'MACBOOK-PRO-2026-99',
+            enforceMfa: e.enforce_mfa !== 0 && e.enforceMfa !== false,
+            enforceRotation: e.enforce_rotation !== 0 && e.enforceRotation !== false,
+            documents: docsObj || e.documents || { resume: 'Verified & Archived', govId: 'Verified', offerLetter: 'Signed' },
+            compliance: compObj || e.compliance || { agreeNda: true, agreeCode: true, agreeItPolicy: true }
+          };
+        });
+
+        // Merge DB employees with local store (preferring local additions/edits)
+        const dbIds = new Set(dbEmps.map(x => x.id));
+        const localOnly = localEmployeesStore.filter(x => !dbIds.has(x.id));
+        localEmployeesStore = [...dbEmps, ...localOnly];
+        localStorage.setItem('ms_employee_roster', JSON.stringify(localEmployeesStore));
       }
     } catch(e) {
-      console.warn('API /api/admin/employees error, rendering local store roster:', e);
+      console.warn('API /api/admin/employees error, rendering stored roster:', e);
     }
 
     renderEmployeeRosters();
@@ -5429,12 +5462,32 @@ async function updateTaskStatus(id, status) {
         method: 'POST',
         body: JSON.stringify({
           name: fullName,
+          full_name: fullName,
           email,
           phone,
           account_id: 1,
           team_id: 1,
           role_id: 1,
-          employment_status: status
+          account: account || 'Acme Corporation',
+          team: team || 'Global Support Tier 1',
+          supervisor,
+          workShift,
+          work_shift: workShift,
+          role: role || 'Support Specialist',
+          licenseSeat,
+          license_seat: licenseSeat,
+          employment_status: status,
+          status,
+          enforceMfa,
+          enforce_mfa: enforceMfa ? 1 : 0,
+          enforceRotation,
+          enforce_rotation: enforceRotation ? 1 : 0,
+          assetTag,
+          hardware_asset_tag: assetTag,
+          documents: newEmp.documents,
+          documents_json: JSON.stringify(newEmp.documents),
+          compliance: newEmp.compliance,
+          compliance_json: JSON.stringify(newEmp.compliance)
         })
       });
     } catch(err) {
@@ -5442,6 +5495,7 @@ async function updateTaskStatus(id, status) {
     }
 
     localEmployeesStore.unshift(newEmp);
+    localStorage.setItem('ms_employee_roster', JSON.stringify(localEmployeesStore));
     renderEmployeeRosters();
     closeCreateEmployeeModal();
     alert(`✅ 5-Step Employee Onboarding & Compliance Completed!\n\nName: ${fullName}\nEmail: ${email}\nAccount: ${account}\nTeam: ${team}\nRole: ${role}\nSupervisor: ${supervisor}\nShift: ${workShift}\nAsset Tag: ${assetTag}\nDocuments & Agreements: Verified & Archived`);
@@ -5513,15 +5567,30 @@ async function updateTaskStatus(id, status) {
         method: 'PUT',
         body: JSON.stringify({
           name: emp.name,
+          full_name: emp.name,
           email: emp.email,
           phone: emp.phone,
-          employment_status: emp.status
+          employment_status: emp.status,
+          account: emp.account,
+          team: emp.team,
+          supervisor: emp.supervisor,
+          workShift: emp.workShift,
+          work_shift: emp.workShift,
+          role: emp.role,
+          licenseSeat: emp.licenseSeat,
+          license_seat: emp.licenseSeat,
+          hardware_asset_tag: emp.assetTag,
+          enforceMfa: emp.enforceMfa,
+          enforce_mfa: emp.enforceMfa ? 1 : 0,
+          enforceRotation: emp.enforceRotation,
+          enforce_rotation: emp.enforceRotation ? 1 : 0
         })
       });
     } catch(err) {
       console.warn('API edit employee note:', err);
     }
 
+    localStorage.setItem('ms_employee_roster', JSON.stringify(localEmployeesStore));
     renderEmployeeRosters();
     closeEditEmployeeModal();
     alert(`✅ Employee #${id} (${emp.name}) account details updated successfully!`);
@@ -5569,6 +5638,7 @@ async function updateTaskStatus(id, status) {
     }
 
     localEmployeesStore = localEmployeesStore.filter(e => e.id !== id);
+    localStorage.setItem('ms_employee_roster', JSON.stringify(localEmployeesStore));
     renderEmployeeRosters();
     closeEditEmployeeModal();
     alert(`🗑️ Employee account #${id} removed successfully.`);
