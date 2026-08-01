@@ -4106,17 +4106,26 @@
       var modal = document.getElementById('editEmployeeModal');
       if (modal) modal.style.display = 'none';
     }
+    function handleCreateEmployee(e) {
+      if (window.adminHandleCreateEmployee) {
+        window.adminHandleCreateEmployee(e);
+        return;
+      }
+      if (e) e.preventDefault();
+      var fullName = document.getElementById('createEmpFullName')?.value.trim();
+      var email = document.getElementById('createEmpEmail')?.value.trim();
+      if (!fullName || !email) {
+        alert('Please fill in Full Name and Corporate Email Address.');
+        return;
+      }
+      closeCreateEmployeeModal();
+    }
+
     window.openCreateEmployeeModal = openCreateEmployeeModal;
     window.closeCreateEmployeeModal = closeCreateEmployeeModal;
     window.editEmployee = editEmployee;
     window.closeEditEmployeeModal = closeEditEmployeeModal;
-
-    // Auto-open Create Employee Modal when loaded directly
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', openCreateEmployeeModal);
-    } else {
-      openCreateEmployeeModal();
-    }
+    window.handleCreateEmployee = handleCreateEmployee;
   </script>
   <script src="./js/admin.js?v=20260731_v9"></script>
   <script>

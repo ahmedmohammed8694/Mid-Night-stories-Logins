@@ -5482,6 +5482,7 @@ async function updateTaskStatus(id, status) {
   window.openCreateEmployeeModal = openCreateEmployeeModal;
   window.closeCreateEmployeeModal = closeCreateEmployeeModal;
   window.handleCreateEmployee = handleCreateEmployee;
+  window.adminHandleCreateEmployee = handleCreateEmployee;
   window.editEmployee = editEmployee;
   window.adminEditEmployee = editEmployee;
   window.closeEditEmployeeModal = closeEditEmployeeModal;
