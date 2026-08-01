@@ -2868,44 +2868,89 @@
 
             <!-- Employees Panel -->
             <div class="admin-panel" id="panel-employees">
-              <div class="admin-header-flex">
+              <!-- Top Page Header -->
+              <div class="admin-header-flex" style="margin-bottom: 20px;">
                 <div>
-                  <h1 class="admin-page-title">Employee Provisioning</h1>
-                  <p class="admin-page-subtitle">Invite and manage support staff with role-based access control.</p>
+                  <h1 class="admin-page-title" style="display: flex; align-items: center; gap: 10px;">
+                    <span>👤</span> Employees Accounts Management
+                  </h1>
+                  <p class="admin-page-subtitle">Full roster of company employees, staff accounts, email credentials, and onboarding status.</p>
                 </div>
-                <button class="btn btn--primary" id="openProvisionEmployeeBtn">＋ Provision Employee</button>
+                <button type="button" class="btn btn--primary" onclick="openCreateEmployeeModal()" style="padding: 10px 20px; font-weight: 700; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff;">
+                  ➕ Create Employee Account
+                </button>
               </div>
-              <div class="filter-row">
-                <div class="filter-row__search">
-                  <span class="filter-row__search-icon">🔍</span>
-                  <input type="text" class="form-input" id="employeesSearch" placeholder="Search employees…">
+
+              <!-- Company Employee Roster Card Container -->
+              <div style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; overflow: hidden; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                <!-- Card Header Bar -->
+                <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-card); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                  <h3 style="margin: 0; font-size: 1.05rem; color: #fff; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                    <span>👤</span> Company Employee Roster
+                  </h3>
+                  <button type="button" class="btn btn--secondary btn--sm" onclick="openCreateEmployeeModal()" style="font-weight: 700; background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);">
+                    ➕ Create Employee Account
+                  </button>
                 </div>
-                <select class="form-input" id="employeesAccountFilter" style="width:auto;">
-                  <option value="">All Accounts</option>
-                </select>
-                <select class="form-input" id="employeesStatusFilter" style="width:auto;">
-                  <option value="">All Statuses</option>
-                  <option value="active">Active</option>
-                  <option value="pending_invite">Pending Invite</option>
-                  <option value="suspended">Suspended</option>
-                </select>
-              </div>
-              <div class="admin-table-wrapper">
-                <table class="admin-table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Account</th>
-                      <th>Team</th>
-                      <th>Role</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="employeesBody"></tbody>
-                </table>
+
+                <!-- Rich Search & Filters Toolbar -->
+                <div style="padding: 14px 20px; background: rgba(15, 23, 42, 0.5); border-bottom: 1px solid var(--border-card); display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+                  <div style="flex: 1; min-width: 240px; display: flex; align-items: center; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 0 12px; height: 38px;">
+                    <span style="font-size: 0.9rem; margin-right: 8px; color: #94a3b8;">🔍</span>
+                    <input type="text" id="employeesSearch" placeholder="Search employee name, work email, or ID..." oninput="renderEmployeeRosters()"
+                      style="width: 100%; background: transparent; border: none; color: #fff; font-size: 0.88rem; outline: none;">
+                  </div>
+                  
+                  <select id="employeesAccountFilter" onchange="renderEmployeeRosters()" class="form-select"
+                    style="height: 38px; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; border-radius: 8px; padding: 0 12px; font-size: 0.85rem; cursor: pointer; min-width: 170px;">
+                    <option value="">🏢 All Accounts</option>
+                    <option value="Acme Corporation">Acme Corporation</option>
+                    <option value="Starlight Publishing">Starlight Publishing</option>
+                    <option value="Apex Media House">Apex Media House</option>
+                    <option value="Midnight Internal">Midnight Internal</option>
+                  </select>
+
+                  <select id="employeesRoleFilter" onchange="renderEmployeeRosters()" class="form-select"
+                    style="height: 38px; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; border-radius: 8px; padding: 0 12px; font-size: 0.85rem; cursor: pointer; min-width: 170px;">
+                    <option value="">🛡️ All RBAC Roles</option>
+                    <option value="Support Specialist">Support Specialist</option>
+                    <option value="Senior Content Editor">Senior Content Editor</option>
+                    <option value="Security Compliance Officer">Security Compliance Officer</option>
+                    <option value="Community Moderator">Community Moderator</option>
+                    <option value="Super Administrator">Super Administrator</option>
+                  </select>
+
+                  <select id="employeesStatusFilter" onchange="renderEmployeeRosters()" class="form-select"
+                    style="height: 38px; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; border-radius: 8px; padding: 0 12px; font-size: 0.85rem; cursor: pointer; min-width: 140px;">
+                    <option value="">🟢 All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="pending_invite">Pending Invite</option>
+                    <option value="suspended">Suspended</option>
+                  </select>
+                </div>
+
+                <!-- Table Wrapper -->
+                <div style="overflow-x: auto;">
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th>EMPLOYEE ID</th>
+                        <th>NAME</th>
+                        <th>WORK EMAIL</th>
+                        <th>ORGANIZATION ACCOUNT</th>
+                        <th>DEPARTMENT / TEAM</th>
+                        <th>ROLE</th>
+                        <th>STATUS</th>
+                        <th style="text-align: right; padding-right: 20px;">ACTIONS</th>
+                      </tr>
+                    </thead>
+                    <tbody id="employeesBody">
+                      <tr>
+                        <td colspan="8" style="text-align: center; color: #94a3b8; padding: 32px;">Loading employee roster...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <!-- Employee Communication & Work Assignment Workspace -->
@@ -4456,7 +4501,7 @@
     window.navigateWizardStep = navigateWizardStep;
     window.resetWizardForm = resetWizardForm;
   </script>
-  <script src="./js/admin.js?v=20260802_v28"></script>
+  <script src="./js/admin.js?v=20260802_v32"></script>
   <script>
     window.toggleSidebarAccordion = function (headingEl) {
       const section = headingEl.closest('.admin-sidebar__section');

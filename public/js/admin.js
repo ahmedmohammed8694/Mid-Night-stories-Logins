@@ -5230,30 +5230,63 @@ async function updateTaskStatus(id, status) {
     renderEmployeeRosters();
   }
 
+  let _currentViewingEmpId = null;
+
   function renderEmployeeRosters() {
     const mainTbody = document.getElementById('employeesBody');
     const accountsTbody = document.getElementById('accountsEmployeeBody');
 
+    const searchVal = (document.getElementById('employeesSearch')?.value || '').toLowerCase().trim();
+    const accountFilter = document.getElementById('employeesAccountFilter')?.value || '';
+    const roleFilter = document.getElementById('employeesRoleFilter')?.value || '';
+    const statusFilter = document.getElementById('employeesStatusFilter')?.value || '';
+
+    let filtered = localEmployeesStore.filter(e => {
+      if (searchVal) {
+        const matchesName = (e.name || '').toLowerCase().includes(searchVal);
+        const matchesEmail = (e.email || '').toLowerCase().includes(searchVal);
+        const matchesId = String(e.id).includes(searchVal);
+        if (!matchesName && !matchesEmail && !matchesId) return false;
+      }
+      if (accountFilter && e.account !== accountFilter) return false;
+      if (roleFilter && e.role !== roleFilter) return false;
+      if (statusFilter && e.status !== statusFilter) return false;
+      return true;
+    });
+
     const renderRowHtml = (e) => `
       <tr>
-        <td><span style="font-family:monospace; color:var(--page-accent, #f3c77c);">#${e.id}</span></td>
+        <td><span style="font-family:monospace; color:var(--page-accent, #f3c77c); font-weight:700;">#${e.id}</span></td>
         <td style="font-weight:600; color:var(--text-primary, #fff);">👤 ${escapeHtml(e.name)}</td>
         <td><span style="font-size:0.85rem; color:var(--text-secondary, #94a3b8);">${escapeHtml(e.email)}</span></td>
-        <td><span class="filter-chip" style="font-size:0.75rem;">🏛️ ${escapeHtml(e.account || 'Platform')}</span></td>
+        <td><span class="filter-chip" style="font-size:0.75rem; background:#1e293b; color:#cbd5e1; border:1px solid #334155;">🏛️ ${escapeHtml(e.account || 'Platform')}</span></td>
         <td><span style="font-size:0.85rem; color:var(--text-secondary, #94a3b8);">🏢 ${escapeHtml(e.team || 'General')}</span></td>
         <td><span class="badge-status" style="background: rgba(99,102,241,0.15); color: #818cf8; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">🔐 ${escapeHtml(e.role || 'Member')}</span></td>
         <td><span class="badge-status" style="background: ${e.status === 'active' ? 'rgba(52,211,153,0.15)' : 'rgba(251,191,36,0.15)'}; color: ${e.status === 'active' ? '#34d399' : '#fbbf24'}; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">${escapeHtml((e.status || 'active').toUpperCase())}</span></td>
-        <td>
-          <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="btn btn--secondary btn--sm" onclick="window.editEmployee(${e.id})" style="padding:4px 8px; font-size:0.8rem;">✏️ Edit</button>
-            <button class="btn btn--secondary btn--sm" onclick="window.resetEmployeePassword(${e.id})" style="padding:4px 8px; font-size:0.8rem; background:rgba(99,102,241,0.15); color:#818cf8; border-color:rgba(99,102,241,0.3);">🔑 Reset PW</button>
+        <td style="text-align: right;">
+          <div style="display:flex; gap:6px; justify-content: flex-end; flex-wrap:wrap;">
+            <button class="btn btn--secondary btn--sm" onclick="window.viewEmployee(${e.id})" style="padding:4px 10px; font-size:0.8rem; background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid rgba(56,189,248,0.3); font-weight:600;">👁️ View</button>
+            <button class="btn btn--secondary btn--sm" onclick="window.editEmployee(${e.id})" style="padding:4px 10px; font-size:0.8rem; font-weight:600;">✏️ Edit</button>
+            <button class="btn btn--secondary btn--sm" onclick="window.resetEmployeePassword(${e.id})" style="padding:4px 10px; font-size:0.8rem; background:rgba(99,102,241,0.15); color:#818cf8; border:1px solid rgba(99,102,241,0.3); font-weight:600;">🔑 Reset PW</button>
           </div>
         </td>
       </tr>
     `;
 
-    if (mainTbody) mainTbody.innerHTML = localEmployeesStore.map(renderRowHtml).join('');
-    if (accountsTbody) accountsTbody.innerHTML = localEmployeesStore.map(renderRowHtml).join('');
+    if (mainTbody) {
+      if (filtered.length === 0) {
+        mainTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#94a3b8; padding:32px;">No matching employee records found.</td></tr>';
+      } else {
+        mainTbody.innerHTML = filtered.map(renderRowHtml).join('');
+      }
+    }
+    if (accountsTbody) {
+      if (filtered.length === 0) {
+        accountsTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#94a3b8; padding:32px;">No matching employee records found.</td></tr>';
+      } else {
+        accountsTbody.innerHTML = filtered.map(renderRowHtml).join('');
+      }
+    }
 
     // Update metric counters
     const activeCount = localEmployeesStore.filter(e => e.status === 'active').length;
@@ -5272,8 +5305,54 @@ async function updateTaskStatus(id, status) {
     }
   }
 
+  // View Employee Account Full Profile Modal
+  function viewEmployee(id) {
+    const emp = localEmployeesStore.find(e => e.id === Number(id));
+    if (!emp) return;
+
+    _currentViewingEmpId = emp.id;
+    const set = (elId, text) => {
+      const el = document.getElementById(elId);
+      if (el) el.textContent = text;
+    };
+
+    set('viewEmpName', emp.name);
+    set('viewEmpBadge', `#${emp.id}`);
+    set('lblViewEmpEmail', emp.email);
+    set('lblViewEmpPhone', emp.phone || '+1 (555) 123-4567');
+    set('lblViewEmpStatus', (emp.status || 'ACTIVE').toUpperCase());
+    set('lblViewEmpAccount', emp.account || 'Acme Corporation');
+    set('lblViewEmpTeam', emp.team || 'Global Support Tier 1');
+    set('lblViewEmpSupervisor', emp.supervisor || 'Elena Rostova (Security Ops Manager)');
+    set('lblViewEmpShift', emp.workShift || '08:00 AM - 05:00 PM UTC (Day Shift)');
+    set('lblViewEmpRole', emp.role || 'Support Specialist');
+    set('lblViewEmpLicense', emp.licenseSeat || 'Full Enterprise License');
+    set('lblViewEmpAssetTag', emp.assetTag || 'MACBOOK-PRO-2026-99');
+    set('lblViewEmpSecurity', `${emp.enforceMfa !== false ? 'MFA Enforced' : 'MFA Optional'} | ${emp.enforceRotation !== false ? '90-Day Rotation Policy' : 'Standard Password Policy'}`);
+
+    set('valViewResume', emp.documents?.resume || 'Verified & Archived');
+    set('valViewGovId', emp.documents?.govId || 'Verified & On File');
+    set('valViewExp', 'Verified Work Experience & Certs');
+    set('valViewOffer', emp.documents?.offerLetter || 'Signed & Archived');
+
+    const modal = document.getElementById('viewEmployeeModal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function closeViewEmployeeModal() {
+    const modal = document.getElementById('viewEmployeeModal');
+    if (modal) modal.style.display = 'none';
+  }
+
   // Create Employee Modal
   function openCreateEmployeeModal() {
+    if (window.switchPanel) {
+      window.switchPanel('accounts');
+    }
+    const card = document.getElementById('inlineCreateEmployeeFormCard');
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
     const form = document.getElementById('createEmployeeForm');
     if (form) form.reset();
     const modal = document.getElementById('createEmployeeModal');
@@ -5539,6 +5618,9 @@ async function updateTaskStatus(id, status) {
   window.closeCreateEmployeeModal = closeCreateEmployeeModal;
   window.handleCreateEmployee = handleCreateEmployee;
   window.adminHandleCreateEmployee = handleCreateEmployee;
+  window.viewEmployee = viewEmployee;
+  window.closeViewEmployeeModal = closeViewEmployeeModal;
+  window.renderEmployeeRosters = renderEmployeeRosters;
   window.editEmployee = editEmployee;
   window.adminEditEmployee = editEmployee;
   window.closeEditEmployeeModal = closeEditEmployeeModal;
