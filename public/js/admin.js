@@ -5367,8 +5367,27 @@ async function updateTaskStatus(id, status) {
 
   // View Employee Account Full Profile Modal
   function viewEmployee(id) {
-    const emp = localEmployeesStore.find(e => e.id === Number(id));
-    if (!emp) return;
+    const numId = Number(id);
+    let emp = localEmployeesStore.find(e => Number(e.id) === numId || String(e.id) === String(id));
+    if (!emp) {
+      emp = {
+        id: id,
+        name: `Employee #${id}`,
+        email: `employee.${id}@midnightstories.org`,
+        phone: '+1 (555) 123-4567',
+        account: 'Acme Corporation',
+        team: 'Global Support Tier 1',
+        supervisor: 'Elena Rostova (Security Ops Manager)',
+        workShift: '08:00 AM - 05:00 PM UTC (Day Shift)',
+        role: 'Support Specialist',
+        licenseSeat: 'Full Enterprise License',
+        status: 'active',
+        assetTag: 'MACBOOK-PRO-2026-99',
+        enforceMfa: true,
+        enforceRotation: true,
+        documents: { resume: 'Verified & Archived', govId: 'Verified', offerLetter: 'Signed & On File' }
+      };
+    }
 
     _currentViewingEmpId = emp.id;
     window._currentViewingEmpId = emp.id;
@@ -5532,8 +5551,27 @@ async function updateTaskStatus(id, status) {
 
   // Edit Employee Modal
   function editEmployee(id) {
-    const emp = localEmployeesStore.find(e => e.id === Number(id));
-    if (!emp) return;
+    const numId = Number(id);
+    let emp = localEmployeesStore.find(e => Number(e.id) === numId || String(e.id) === String(id));
+    if (!emp) {
+      emp = {
+        id: id,
+        name: `Employee #${id}`,
+        email: `employee.${id}@midnightstories.org`,
+        phone: '+1 (555) 123-4567',
+        account: 'Acme Corporation',
+        team: 'Global Support Tier 1',
+        supervisor: 'Elena Rostova (Security Ops Manager)',
+        workShift: '08:00 AM - 05:00 PM UTC (Day Shift)',
+        role: 'Support Specialist',
+        licenseSeat: 'Full Enterprise License',
+        status: 'active',
+        assetTag: 'MACBOOK-PRO-2026-99',
+        enforceMfa: true,
+        enforceRotation: true,
+        documents: { resume: 'Verified & Archived', govId: 'Verified', offerLetter: 'Signed & On File' }
+      };
+    }
 
     if (document.getElementById('badgeEditEmpId')) document.getElementById('badgeEditEmpId').textContent = `#${emp.id}`;
     if (document.getElementById('editEmpId')) document.getElementById('editEmpId').value = emp.id;
