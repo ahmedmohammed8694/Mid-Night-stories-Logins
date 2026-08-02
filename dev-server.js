@@ -49,6 +49,35 @@ const MIME_TYPES = {
 const server = http.createServer((req, res) => {
   let reqUrl = req.url.split('?')[0];
 
+  if (reqUrl === '/api/public/books' || reqUrl === '/api/books') {
+    try {
+      const booksData = JSON.parse(fs.readFileSync(path.join(__dirname, 'books_database.json'), 'utf8'));
+      const booksList = booksData.map((b, index) => ({
+        id: b.id || (index + 1),
+        title: b.title,
+        author: b.author,
+        author_name: b.author,
+        cover_image: b.cover_image_url || '/images/default-cover.svg',
+        image_url: b.cover_image_url || '/images/default-cover.svg',
+        description: b.description,
+        file_type: b.file_format || 'epub'
+      }));
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      return res.end(JSON.stringify(booksList));
+    } catch(e) {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      return res.end(JSON.stringify([]));
+    }
+  }
+
+  if (reqUrl === '/api/auth/google') {
+    const clientId = '602442085348-14ndm8n4t50lv7j93mqn9n3t80vjvu79.apps.googleusercontent.com';
+    const redirectUri = 'https://midnightstories.dpdns.org/api/auth/google/callback';
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=profile%20email`;
+    res.writeHead(302, { 'Location': googleAuthUrl });
+    return res.end();
+  }
+
   if (reqUrl === '/') {
     reqUrl = '/index.html';
   } else if (reqUrl === '/admin') {

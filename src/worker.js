@@ -1764,24 +1764,23 @@ app.get('/api/stories', optionalUser, async (c) => {
 // PUBLIC BOOKS API ENDPOINT FOR LOGIN/SIGNUP ROTATOR & HOME CAROUSEL
 app.get('/api/public/books', async (c) => {
   const db = c.env.DB;
-  const limit = Math.min(parseInt(c.req.query('limit') || '24'), 48);
+  const limit = Math.min(parseInt(c.req.query('limit') || '48'), 48);
   try {
     const { results: books } = await db.prepare(
-      `SELECT id, title, description, cover_image, cover_image as image_url, author_name, created_at FROM books ORDER BY RANDOM() LIMIT ?`
+      `SELECT id, title, description, author, author as author_name, COALESCE(cover_image_url, '/images/default-cover.svg') as cover_image, COALESCE(cover_image_url, '/images/default-cover.svg') as image_url, created_at FROM books WHERE status = 'published' OR status IS NULL OR status = 'draft' ORDER BY id DESC LIMIT ?`
     ).bind(limit).all();
     if (books && books.length > 0) {
       return c.json(books);
     }
-  } catch (err) {}
+  } catch (err) {
+    console.error('Error fetching books for carousel:', err);
+  }
 
   try {
-    const { results: stories } = await db.prepare(`
-      SELECT s.id, s.title, s.content as description, s.image_url, s.image_url as cover_image, u.full_name as author_name, s.created_at
-      FROM stories s
-      LEFT JOIN users u ON s.user_id = u.id
-      ORDER BY RANDOM() LIMIT ?
-    `).bind(limit).all();
-    return c.json(stories || []);
+    const { results: booksFallback } = await db.prepare(
+      `SELECT id, title, description, author, author as author_name, COALESCE(cover_image_url, '/images/default-cover.svg') as cover_image, COALESCE(cover_image_url, '/images/default-cover.svg') as image_url, created_at FROM books LIMIT ?`
+    ).bind(limit).all();
+    return c.json(booksFallback || []);
   } catch (err) {
     return c.json([]);
   }
