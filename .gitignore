@@ -6,4 +6,5 @@ data/
 *.log
 .DS_Store
 .wrangler/
+.dev.vars
 C:\Users\Mohammed Ahmed\.gemini\antigravity-ide\scratch/
