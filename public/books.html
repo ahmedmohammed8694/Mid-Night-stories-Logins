@@ -8,7 +8,7 @@
   <link rel="canonical" href="https://midnightstories.dpdns.org/books" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/style.css?v=20260802_v122">
   <link rel="stylesheet" href="/css/reader.css">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 </head>
@@ -67,18 +67,29 @@
     <main class="page-content" style="padding-top: 0;">
       <div class="container">
         
-        <!-- Hero Section -->
-        <section class="hero" id="hero" style="min-height: 250px; margin-bottom: 2rem;">
-          <div class="slideshow-slide active" style="background-image: url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=1600&q=80')"></div>
-          <div class="hero__overlay"></div>
-          <div class="hero__content">
-            <h1 class="hero__title">Discover &amp; Read Books Online</h1>
-            <p class="hero__subtitle">Find books, read in our distraction-free reader, and continue where you left off.</p>
+        <!-- ═══ PAGE HERO BANNER ═══ -->
+        <section style="padding: 3rem 0 2rem; text-align:center; position:relative; margin-bottom: 2rem;">
+          <div style="position:absolute;top:0;left:18%;width:320px;height:220px;background:radial-gradient(ellipse,rgba(96,165,250,0.15) 0%,transparent 70%);pointer-events:none;"></div>
+          <div style="position:absolute;top:0;right:12%;width:220px;height:180px;background:radial-gradient(ellipse,rgba(59,130,246,0.12) 0%,transparent 70%);pointer-events:none;"></div>
+
+          <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.3);border-radius:99px;padding:5px 18px;font-size:0.78rem;color:#60A5FA;font-weight:700;margin-bottom:1.2rem;letter-spacing:0.05em;">
+            🏛️ &nbsp;OPEN LIBRARY
+          </div>
+
+          <h1 style="font-family:'Fraunces',serif; font-size:clamp(1.9rem,4.5vw,3rem); font-weight:800; color:#fff; margin:0 0 0.8rem; line-height:1.15;">
+            Discover &amp; Read Books Online
+          </h1>
+          <p style="font-size:clamp(0.95rem,2vw,1.1rem); color:rgba(255,255,255,0.65); max-width:560px; margin:0 auto 1.5rem; line-height:1.65;">
+            Find books, read in our distraction-free reader, and continue where you left off.
+          </p>
+          <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">
+            <a href="/upload-book" class="btn btn--primary" style="font-size:0.9rem;">📚 Upload a Book</a>
+            <a href="#books-grid" class="btn btn--secondary" style="font-size:0.9rem;">🔍 Browse Library</a>
           </div>
         </section>
 
-        <!-- Library Catalog Description Section (H2 Heading & Content Depth Expansion) -->
-        <section class="library-intro" style="margin-bottom: 2rem; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 24px; color: var(--text-secondary); line-height: 1.7;">
+        <!-- Library Catalog Description Section -->
+        <section class="library-intro" id="books-grid" style="margin-bottom: 2rem; background: rgba(6, 5, 20, 0.5); backdrop-filter:blur(20px); border: 1px solid rgba(96,165,250,0.15); border-radius: var(--radius-lg); padding: 24px; color: var(--text-secondary); line-height: 1.7;">
           <h2 style="color: var(--text-primary); font-size: 1.4rem; margin-bottom: 12px; border-bottom: 1px solid var(--border-card); padding-bottom: 8px;">Explore Digital Literature & Reference Books</h2>
           <p style="margin-bottom: 12px;">Welcome to the official Midnight Stories Digital Book Library. Our curated collection offers access to educational volumes, navel historical references, literature, and community-submitted works. Readers can enjoy a seamless, distraction-free reading experience powered by our built-in EPUB and PDF Reader engine.</p>
           <p style="margin: 0;">Filter your search by channel, genre category, language, or file format. Registered readers can track reading progress, bookmark important pages, save highlights, and sync their personal reading shelf across devices.</p>

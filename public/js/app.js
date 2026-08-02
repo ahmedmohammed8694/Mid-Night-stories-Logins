@@ -792,5 +792,73 @@ async function checkAdminMessages() {
   } catch(e) {}
 }
 
+// ── Header Scroll Detection ──
+// Adds .scrolled class to make nav slightly more opaque when user scrolls down
+function initHeaderScroll() {
+  const header = document.getElementById('header');
+  if (!header) return;
 
+  const onScroll = () => {
+    if (window.scrollY > 30) {
+      header.classList.add('scrolled');
+    } else {
+      header.classList.remove('scrolled');
+    }
+  };
 
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll(); // run once on load
+}
+
+// ── Global App Initializer ──
+// Called automatically on DOMContentLoaded to wire up shared UI elements
+function initGlobalUI() {
+  initTheme();
+  initCrisisBanner();
+  initMobileNav();
+  initHeaderScroll();
+
+  // Theme toggle button
+  const themeBtn = document.getElementById('themeToggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', toggleTheme);
+  }
+
+  // Logout button
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          await api('/api/auth/logout', { method: 'POST' });
+        }
+      } catch (e) { /* ignore */ }
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    });
+  }
+
+  // Auth state: show/hide auth-only vs guest-only elements
+  const token = localStorage.getItem('token');
+  if (token) {
+    document.querySelectorAll('.guest-only').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.auth-only').forEach(el => el.style.display = '');
+  }
+
+  // Scroll animations
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.scroll-animate').forEach(el => io.observe(el));
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initGlobalUI);

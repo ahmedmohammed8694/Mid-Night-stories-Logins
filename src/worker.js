@@ -1761,6 +1761,32 @@ app.get('/api/stories', optionalUser, async (c) => {
   });
 });
 
+// PUBLIC BOOKS API ENDPOINT FOR LOGIN/SIGNUP ROTATOR & HOME CAROUSEL
+app.get('/api/public/books', async (c) => {
+  const db = c.env.DB;
+  const limit = Math.min(parseInt(c.req.query('limit') || '24'), 48);
+  try {
+    const { results: books } = await db.prepare(
+      `SELECT id, title, description, cover_image, cover_image as image_url, author_name, created_at FROM books ORDER BY RANDOM() LIMIT ?`
+    ).bind(limit).all();
+    if (books && books.length > 0) {
+      return c.json(books);
+    }
+  } catch (err) {}
+
+  try {
+    const { results: stories } = await db.prepare(`
+      SELECT s.id, s.title, s.content as description, s.image_url, s.image_url as cover_image, u.full_name as author_name, s.created_at
+      FROM stories s
+      LEFT JOIN users u ON s.user_id = u.id
+      ORDER BY RANDOM() LIMIT ?
+    `).bind(limit).all();
+    return c.json(stories || []);
+  } catch (err) {
+    return c.json([]);
+  }
+});
+
 app.post('/api/stories', optionalUser, checkBan, rateLimit('story', 10), async (c) => {
   const db = c.env.DB;
   const user = c.get('user');

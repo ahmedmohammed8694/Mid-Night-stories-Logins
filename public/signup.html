@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..800;1,9..144,400..800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=20260730_v2">
+  <link rel="stylesheet" href="/css/style.css?v=20260802_v118">
   <!-- Cropper.js -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
@@ -35,7 +35,8 @@
     }
 
     body {
-      background-color: var(--bg-dark);
+      background: #070914 url('/images/signup_theme_bg.png') no-repeat center center fixed !important;
+      background-size: cover !important;
       color: #e2e8f0;
       font-family: 'Inter', sans-serif;
       min-height: 100vh;
@@ -43,31 +44,72 @@
       flex-direction: column;
     }
 
-    /* Dual-Panel Layout */
+    /* Floating Dual Glass Cards Layout */
     .dual-container {
-      display: grid;
-      grid-template-columns: 1fr 1.1fr;
-      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      gap: 36px;
       width: 100%;
+      max-width: 1180px;
+      margin: auto;
+      padding: 40px 24px;
     }
 
     @media (max-width: 960px) {
       .dual-container {
-        grid-template-columns: 1fr;
-        min-height: auto;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        padding: 24px 16px;
       }
+    }
+
+    /* Left Glass Card: Discover Trending Stories */
+    .left-glass-card {
+      flex: 1;
+      max-width: 550px;
+      background: rgba(255, 255, 255, 0.07) !important;
+      backdrop-filter: blur(28px) saturate(190%) !important;
+      -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+      border-radius: 24px !important;
+      padding: 36px !important;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    /* Right Glass Card: Signup Form */
+    .right-glass-card {
+      flex: 1;
+      max-width: 550px;
+      background: rgba(255, 255, 255, 0.08) !important;
+      backdrop-filter: blur(28px) saturate(190%) !important;
+      -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+      border-radius: 24px !important;
+      padding: 36px !important;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
     /* Left Panel: Branding & Media */
     .branding-panel {
       position: relative;
-      background: linear-gradient(135deg, #0f0c29 0%, #24243e 50%, #302b63 100%);
+      background: transparent !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
       padding: 60px 48px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       overflow: hidden;
-      border-right: 1px solid var(--border-color);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .branding-panel::before {
@@ -209,7 +251,9 @@
 
     /* Right Panel: Form Container */
     .form-panel {
-      background-color: var(--bg-surface);
+      background: transparent !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
       padding: 50px 48px;
       display: flex;
       flex-direction: column;
@@ -232,7 +276,59 @@
 
     .form-card {
       width: 100%;
-      max-width: 500px;
+      background: transparent !important;
+      background-color: transparent !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+    }
+
+    .card-logo-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      text-align: left;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+    }
+
+    .card-logo-title {
+      font-family: 'Fraunces', serif;
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #FFFFFF !important;
+      background: transparent !important;
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+    }
+
+    /* Glowing Primary Button */
+    .btn-submit-glowing {
+      width: 100%;
+      padding: 15px 24px;
+      border-radius: 99px;
+      background: linear-gradient(135deg, #4338ca 0%, #6d28d9 50%, #9333ea 100%) !important;
+      color: #FFFFFF !important;
+      font-weight: 700;
+      font-size: 1.05rem;
+      border: 1px solid rgba(255, 255, 255, 0.3) !important;
+      cursor: pointer;
+      box-shadow: 0 0 25px rgba(147, 51, 234, 0.65), 0 8px 25px rgba(67, 56, 202, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
+      transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn-submit-glowing:hover {
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 0 35px rgba(168, 85, 247, 0.85), 0 12px 30px rgba(79, 70, 229, 0.65), inset 0 1px 3px rgba(255, 255, 255, 0.6) !important;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%) !important;
     }
 
     .form-header {
@@ -526,57 +622,120 @@
 
   <div class="dual-container">
     
-    <!-- Left Side: Branding & Media -->
-    <div class="branding-panel">
-      <div class="brand-header">
-        <div class="brand-logo-icon">🌙</div>
-        <a href="/" class="brand-logo-text">Midnight Stories</a>
-      </div>
+    <!-- Left Glass Card: Discover Trending Stories -->
+    <div class="left-glass-card">
+      <div class="brand-hero-content" style="padding:0; margin:0;">
+        <h1 class="brand-headline" style="font-size: 2.2rem; margin-bottom: 8px; font-family:'Fraunces',serif; color:#FFFFFF;">Discover Trending<br><span style="color: #FFFFFF;">Stories &amp; Books</span></h1>
+        <p style="color:#cbd5e1; font-size:0.9rem; line-height:1.5; margin-top:6px; margin-bottom:14px;">
+          Immerse yourself in handpicked fantasy legends, dark starlight tales, and community-curated audiobooks updated live from our library.
+        </p>
 
-      <div class="brand-hero-content">
-        <div class="brand-badge">🚀 Join the Guild</div>
-        <h1 class="brand-headline">Share Your Story <span>Anonymously</span></h1>
-        <p class="brand-subheadline">Create your creator profile to write web novels, post secret confessions, and connect with thousands of supportive readers worldwide.</p>
-
-        <div class="feature-highlights">
-          <div class="feature-item">
-            <div class="feature-item-icon">✍️</div>
-            <div class="feature-item-text">
-              <h4>Publish Web Novels &amp; Stories</h4>
-              <p>Format chapters, customize book covers, and reach dedicated fantasy &amp; drama fans.</p>
-            </div>
+        <!-- Live Platform Stats Pills -->
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+          <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); padding:5px 12px; border-radius:99px; font-size:0.78rem; color:#fff; display:flex; align-items:center; gap:5px; font-weight:600;">
+            <span style="color:#f59e0b;">✨</span> 50k+ Readers
           </div>
-
-          <div class="feature-item">
-            <div class="feature-item-icon">💬</div>
-            <div class="feature-item-text">
-              <h4>Engage in Live Reader Guilds</h4>
-              <p>Discuss plot twists, participate in voting polls, and give chapter feedback.</p>
-            </div>
+          <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); padding:5px 12px; border-radius:99px; font-size:0.78rem; color:#fff; display:flex; align-items:center; gap:5px; font-weight:600;">
+            <span style="color:#a855f7;">📚</span> 10k+ Stories
           </div>
-
-          <div class="feature-item">
-            <div class="feature-item-icon">🛡️</div>
-            <div class="feature-item-text">
-              <h4>End-to-End Privacy Protection</h4>
-              <p>Your real identity remains 100% confidential. You control what you display.</p>
-            </div>
+          <div style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); padding:5px 12px; border-radius:99px; font-size:0.78rem; color:#fff; display:flex; align-items:center; gap:5px; font-weight:600;">
+            <span style="color:#38bdf8;">✍️</span> 1.2k+ Authors
           </div>
         </div>
       </div>
 
-      <div class="brand-footer">
-        © 2026 Midnight Stories Inc. All rights reserved. • <a href="/" style="color: #94a3b8; text-decoration: none;">Home</a>
+      <!-- Why Join Us Features -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:8px;">
+          <div style="width:36px; height:36px; background:linear-gradient(135deg,#6d28d9,#4338ca); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">🌙</div>
+          <h4 style="color:#fff; font-size:0.9rem; font-weight:700; margin:0;">Midnight Reading</h4>
+          <p style="color:#94a3b8; font-size:0.78rem; margin:0; line-height:1.4;">Curated dark fantasy stories for late-night explorers.</p>
+        </div>
+        <div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:8px;">
+          <div style="width:36px; height:36px; background:linear-gradient(135deg,#b45309,#f59e0b); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">⭐</div>
+          <h4 style="color:#fff; font-size:0.9rem; font-weight:700; margin:0;">Top Rated</h4>
+          <p style="color:#94a3b8; font-size:0.78rem; margin:0; line-height:1.4;">Community voted stories ranked and featured weekly.</p>
+        </div>
+        <div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:8px;">
+          <div style="width:36px; height:36px; background:linear-gradient(135deg,#065f46,#10b981); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">✍️</div>
+          <h4 style="color:#fff; font-size:0.9rem; font-weight:700; margin:0;">Publish Stories</h4>
+          <p style="color:#94a3b8; font-size:0.78rem; margin:0; line-height:1.4;">Share your own tales with thousands of passionate readers.</p>
+        </div>
+        <div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:16px; display:flex; flex-direction:column; gap:8px;">
+          <div style="width:36px; height:36px; background:linear-gradient(135deg,#1e40af,#38bdf8); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem;">💬</div>
+          <h4 style="color:#fff; font-size:0.9rem; font-weight:700; margin:0;">Community</h4>
+          <p style="color:#94a3b8; font-size:0.78rem; margin:0; line-height:1.4;">Join discussions, follow authors, and build connections.</p>
+        </div>
+      </div>
+
+      <div id="trendingStoriesContainer" class="feature-highlights" style="gap: 18px; display:flex; flex-direction:column;">
+        <!-- Story Item 1 -->
+        <div class="glass-story-item" style="display:flex; align-items:center; gap:18px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); border-radius:18px; padding:16px 20px;">
+          <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=200&q=80" style="width:82px; height:82px; border-radius:14px; object-fit:cover; flex-shrink:0; box-shadow: 0 4px 15px rgba(0,0,0,0.3);" alt="The Starweaver's Chronicles">
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+              <h4 style="color:#fff; font-size:1.08rem; font-weight:700; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">The Starweaver's Chronicles</h4>
+              <span style="color:#f59e0b; font-size:0.9rem; margin-left:6px;">✦</span>
+            </div>
+            <p style="color:#cbd5e1; font-size:0.85rem; margin-bottom:8px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Enchanted realms and ancient starlight prophecies awaiting discovery...</p>
+            <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; color:#94a3b8;">
+              <span>by Elara Vance</span>
+              <span style="background: rgba(255,255,255,0.15); padding: 5px 14px; border-radius: 99px; color:#fff; font-weight:600;">Read More</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Story Item 2 -->
+        <div class="glass-story-item" style="display:flex; align-items:center; gap:18px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); border-radius:18px; padding:16px 20px;">
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+              <h4 style="color:#fff; font-size:1.08rem; font-weight:700; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Shadows of Aethelgard</h4>
+              <span style="color:#f59e0b; font-size:0.9rem; margin-left:6px;">✦</span>
+            </div>
+            <p style="color:#cbd5e1; font-size:0.85rem; margin-bottom:8px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Deep dark forest mysteries and mythical creatures lurking in shadows...</p>
+            <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; color:#94a3b8;">
+              <span>Kaelen Croft</span>
+              <span style="background: rgba(255,255,255,0.15); padding: 5px 14px; border-radius: 99px; color:#fff; font-weight:600;">Read More</span>
+            </div>
+          </div>
+          <img src="https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?auto=format&fit=crop&w=200&q=80" style="width:82px; height:82px; border-radius:14px; object-fit:cover; flex-shrink:0; box-shadow: 0 4px 15px rgba(0,0,0,0.3);" alt="Shadows of Aethelgard">
+        </div>
+
+        <!-- Story Item 3 -->
+        <div class="glass-story-item" style="display:flex; align-items:center; gap:18px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); border-radius:18px; padding:16px 20px;">
+          <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=200&q=80" style="width:82px; height:82px; border-radius:14px; object-fit:cover; flex-shrink:0; box-shadow: 0 4px 15px rgba(0,0,0,0.3);" alt="Echoes of the Void">
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+              <h4 style="color:#fff; font-size:1.08rem; font-weight:700; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Echoes of the Void</h4>
+              <span style="color:#f59e0b; font-size:0.9rem; margin-left:6px;">✦</span>
+            </div>
+            <p style="color:#cbd5e1; font-size:0.85rem; margin-bottom:8px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">Uncovering hidden celestial secrets in whispers from space...</p>
+            <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; color:#94a3b8;">
+              <span>by Elara Vance</span>
+              <span style="background: rgba(255,255,255,0.15); padding: 5px 14px; border-radius: 99px; color:#fff; font-weight:600;">Read More</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Right Side: Sign-Up Form Panel -->
-    <div class="form-panel">
-      <div class="form-card">
+    <!-- Right Glass Card: Signup Form Panel -->
+    <div class="right-glass-card">
+      <div class="form-container-inner" style="background:transparent !important; border:none !important; box-shadow:none !important; padding:0 !important; width:100%;">
         
+        <div class="main-app-logo-header" style="display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:24px; background:none !important; border:none !important; box-shadow:none !important; padding:0 !important;">
+          <svg class="main-app-logo-svg" width="60" height="60" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0; background:none !important; filter: drop-shadow(0 3px 12px rgba(255,255,255,0.35));">
+            <path d="M26.4 7.2C17.12 7.2 9.6 14.72 9.6 24C9.6 33.28 17.12 40.8 26.4 40.8C29.84 40.8 33.03 39.76 35.69 37.97C28.62 36.78 23.21 30.64 23.21 23.21C23.21 15.78 28.62 9.64 35.69 8.45C33.03 6.66 29.84 7.2 26.4 7.2Z" fill="#FFFFFF"/>
+            <path d="M34.8 13.2L35.76 15.36L37.92 16.32L35.76 17.28L34.8 19.44L33.84 17.28L31.68 16.32L33.84 15.36L34.8 13.2Z" fill="#FFFFFF"/>
+            <path d="M40.8 21.6L41.4 22.92L42.72 23.52L41.4 24.12L40.8 25.44L40.2 24.12L38.88 23.52L40.2 22.92L40.8 21.6Z" fill="#FFFFFF"/>
+            <circle cx="31.2" cy="28.8" r="1.8" fill="#FFFFFF"/>
+          </svg>
+          <div class="main-app-logo-title" style="font-family:'Fraunces', 'Times New Roman', Georgia, serif !important; font-size:1.85rem !important; font-weight:800 !important; color:#FFFFFF !important; background:none !important; border:none !important; box-shadow:none !important; padding:0 !important; line-height:0.95 !important; letter-spacing:-0.02em !important; border-radius:0 !important;">Midnight<br>Stories</div>
+        </div>
+
         <div class="form-header">
-          <h2 class="form-title">Create an Account</h2>
-          <p class="form-subtitle">Fill in your details below to start your storytelling journey.</p>
+          <h2 class="form-title" style="text-align: center;">Create an Account</h2>
+          <p class="form-subtitle" style="text-align: center;">Fill in your details below to start your storytelling journey.</p>
         </div>
 
         <form id="signupForm" enctype="multipart/form-data">
@@ -662,17 +821,17 @@
             <span>I agree to the <a href="/terms" target="_blank">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank">Privacy Policy</a>. I confirm that I am at least 18 years of age.</span>
           </label>
 
-          <button type="submit" id="submitBtn" class="btn-submit">
-            <span>Create Account 🚀</span>
+          <button type="submit" id="submitBtn" class="btn-submit-glowing">
+            Create Account 🚀
           </button>
 
         </form>
 
         <div class="divider"><span>or sign up with</span></div>
 
-        <button type="button" onclick="window.location.href='/api/auth/google'" class="btn-google">
-          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          Google SSO
+        <button type="button" onclick="window.location.href='/api/auth/google'" class="btn-social-sso" style="width: 100%; padding: 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff; font-weight: 600; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s ease;">
+          <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          <span>Create account with Google</span>
         </button>
 
         <div class="toggle-auth-link">
@@ -952,6 +1111,89 @@
         submitBtn.innerHTML = '<span>Create Account 🚀</span>';
       }
     });
+
+    // ── DYNAMIC DATABASE BOOKS & STORIES AUTOROTATOR ──
+    async function loadTrendingStoriesFromDatabase() {
+      const container = document.getElementById('trendingStoriesContainer');
+      if (!container) return;
+
+      try {
+        let stories = [];
+        try {
+          const res = await fetch('/api/public/books');
+          if (res.ok) {
+            const data = await res.json();
+            stories = Array.isArray(data) ? data : (data.books || data.stories || []);
+          }
+        } catch (e) {}
+
+        if (!stories || stories.length === 0) {
+          const res2 = await fetch('/api/stories?limit=12');
+          if (res2.ok) {
+            const data2 = await res2.json();
+            stories = Array.isArray(data2) ? data2 : (data2.stories || []);
+          }
+        }
+
+        if (!Array.isArray(stories) || stories.length === 0) return;
+
+        let currentIndex = 0;
+
+        function renderStories() {
+          const displayItems = [];
+          for (let i = 0; i < 3; i++) {
+            const item = stories[(currentIndex + i) % stories.length];
+            if (item) displayItems.push(item);
+          }
+
+          const defaultCovers = [
+            'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=200&q=80',
+            'https://images.unsplash.com/photo-1511447333015-45b65e60f6d5?auto=format&fit=crop&w=200&q=80',
+            'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=200&q=80'
+          ];
+
+          container.innerHTML = displayItems.map((story, idx) => {
+            const cover = story.image_url || story.cover_image || defaultCovers[idx % defaultCovers.length];
+            const title = story.title || 'Untitled Fantasy Legend';
+            const rawContent = story.description || story.content || story.body || story.excerpt || 'Enchanted realms and ancient starlight prophecies awaiting discovery...';
+            const excerpt = rawContent.replace(/<[^>]*>?/gm, '').slice(0, 75) + '...';
+            const author = story.author_name || story.full_name || story.username || 'Anonymous Writer';
+            const imgLeft = idx % 2 === 0;
+
+            return `
+              <div class="glass-story-item" style="display:flex; align-items:center; gap:18px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); border-radius:18px; padding:16px 20px; transition:all 0.5s cubic-bezier(0.25, 1, 0.5, 1);">
+                ${imgLeft ? `<img src="${cover}" style="width:82px; height:82px; border-radius:14px; object-fit:cover; flex-shrink:0; box-shadow: 0 4px 15px rgba(0,0,0,0.3);" alt="${title}" onerror="this.src='${defaultCovers[idx % defaultCovers.length]}'">` : ''}
+                <div style="flex:1; min-width:0;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                    <h4 style="color:#fff; font-size:1.08rem; font-weight:700; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${title}</h4>
+                    <span style="color:#f59e0b; font-size:0.9rem; margin-left:6px;">✦</span>
+                  </div>
+                  <p style="color:#cbd5e1; font-size:0.85rem; margin-bottom:8px; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">${excerpt}</p>
+                  <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.78rem; color:#94a3b8;">
+                    <span>by ${author}</span>
+                    <a href="/story.html?id=${story.id || 1}" style="background: rgba(255,255,255,0.15); padding: 5px 14px; border-radius: 99px; color:#fff; font-weight:600; text-decoration:none; transition:background 0.2s;">Read More</a>
+                  </div>
+                </div>
+                ${!imgLeft ? `<img src="${cover}" style="width:82px; height:82px; border-radius:14px; object-fit:cover; flex-shrink:0; box-shadow: 0 4px 15px rgba(0,0,0,0.3);" alt="${title}" onerror="this.src='${defaultCovers[idx % defaultCovers.length]}'">` : ''}
+              </div>
+            `;
+          }).join('');
+        }
+
+        renderStories();
+
+        if (stories.length > 3) {
+          setInterval(() => {
+            currentIndex = (currentIndex + 1) % stories.length;
+            renderStories();
+          }, 6000);
+        }
+      } catch (err) {
+        console.warn('Fallback to static trending stories', err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadTrendingStoriesFromDatabase);
   </script>
 </body>
 </html>

@@ -12,7 +12,7 @@
   <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/style.css?v=20260802_v130">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <script type="application/ld+json">
   {
@@ -31,8 +31,10 @@
       <div class="header__inner">
         <a href="/" class="header__logo">
           <div class="header__logo-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-              <path d="M60 20c0 22-18 40-40 40-2 0-5 0-7-.5 7 13.5 21 22.5 37 22.5 24.8 0 45-20.2 45-45 0-16-8.5-30-22-37 .5 2 .5 5 .5 7z"/>
+            <svg width="34" height="34" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22 6C14.268 6 8 12.268 8 20C8 27.732 14.268 34 22 34C24.87 34 27.53 33.13 29.74 31.64C23.85 30.65 19.34 25.53 19.34 19.34C19.34 13.15 23.85 8.03 29.74 7.04C27.53 5.55 24.87 6 22 6Z" fill="#FFFFFF"/>
+              <path d="M29 11L29.8 12.8L31.6 13.6L29.8 14.4L29 16.2L28.2 14.4L26.4 13.6L28.2 12.8L29 11Z" fill="#F59E0B"/>
+              <path d="M34 18L34.5 19.1L35.6 19.6L34.5 20.1L34 21.2L33.5 20.1L32.4 19.6L33.5 19.1L34 18Z" fill="#F59E0B"/>
             </svg>
           </div>
           <span class="header__logo-text">Midnight Stories</span>
@@ -79,50 +81,248 @@
     <!-- Main Content -->
     <main class="page-content">
       <div class="container">
-        <!-- Hero -->
-        <!-- Slideshow Hero -->
-        <section class="hero" id="hero">
-          <div class="slideshow-slide active" style="background-image: url('https://images.unsplash.com/photo-1436891620584-47fd0e565afb?auto=format&fit=crop&w=1600&q=80')"></div>
-          <div class="slideshow-slide" style="background-image: url('https://images.unsplash.com/photo-1488866022504-f2584929ca5f?auto=format&fit=crop&w=1600&q=80')"></div>
-          <div class="slideshow-slide" style="background-image: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1600&q=80')"></div>
-          <div class="slideshow-slide" style="background-image: url('https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1600&q=80')"></div>
-          <div class="hero__overlay"></div>
-          <div class="hero__text">
-            <h1 class="hero__title">Uncover and Share Unforgettable Online Stories</h1>
-            <p class="hero__subtitle">Every story deserves to be heard, even the ones told in whispers.</p>
-            <div class="hero__actions">
-              <a href="/submit" class="btn btn--primary btn--lg">✍️ Share Your Story</a>
-              <a href="#stories" class="btn btn--secondary btn--lg">📖 Read Stories</a>
+
+
+        <!-- ═══ HERO BANNER ═══ -->
+        <section style="text-align:center; padding: 3rem 1rem 2rem; position:relative;">
+          <!-- Glow orbs -->
+          <div style="position:absolute;top:20px;left:15%;width:260px;height:260px;background:radial-gradient(circle,rgba(139,92,246,0.18) 0%,transparent 70%);border-radius:50%;pointer-events:none;"></div>
+          <div style="position:absolute;top:10px;right:12%;width:200px;height:200px;background:radial-gradient(circle,rgba(245,158,11,0.14) 0%,transparent 70%);border-radius:50%;pointer-events:none;"></div>
+
+          <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);border-radius:99px;padding:5px 16px;font-size:0.78rem;color:#f59e0b;font-weight:600;margin-bottom:1.2rem;letter-spacing:0.04em;">
+            🌙 &nbsp;YOUR MIDNIGHT READING DESTINATION
+          </div>
+
+          <h1 style="font-family:'Fraunces',serif; font-size:clamp(2rem,5vw,3.4rem); font-weight:800; color:#fff; margin:0 0 1rem; line-height:1.15;">
+            Discover Stories &amp; Books<br>
+            <span style="background:linear-gradient(135deg,#f59e0b,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">That Move You</span>
+          </h1>
+          <p style="font-size:clamp(0.95rem,2vw,1.12rem); color:rgba(255,255,255,0.65); max-width:580px; margin:0 auto 1.8rem; line-height:1.65;">
+            A safe community to read, share, and connect through real stories and curated books — updated live every day.
+          </p>
+
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">
+            <a href="/submit" class="btn btn--primary btn--lg" style="font-size:0.95rem;padding:0.7rem 1.6rem;">✍️ Share Your Story</a>
+            <a href="/books" class="btn btn--secondary btn--lg" style="font-size:0.95rem;padding:0.7rem 1.6rem;">📚 Browse Books</a>
+            <a href="/stories" class="btn btn--secondary btn--lg" style="font-size:0.95rem;padding:0.7rem 1.6rem;">📖 Read Stories</a>
+          </div>
+
+          <!-- Live mini-stats -->
+          <div id="heroLiveStats" style="display:flex;align-items:center;justify-content:center;gap:28px;margin-top:2rem;flex-wrap:wrap;">
+            <div style="text-align:center;">
+              <div id="liveStatBooks" style="font-size:1.5rem;font-weight:800;color:#f59e0b;font-family:'Fraunces',serif;">—</div>
+              <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.06em;">Books</div>
+            </div>
+            <div style="width:1px;height:32px;background:rgba(255,255,255,0.15);"></div>
+            <div style="text-align:center;">
+              <div id="liveStatStories" style="font-size:1.5rem;font-weight:800;color:#a855f7;font-family:'Fraunces',serif;">—</div>
+              <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.06em;">Stories</div>
+            </div>
+            <div style="width:1px;height:32px;background:rgba(255,255,255,0.15);"></div>
+            <div style="text-align:center;">
+              <div id="liveStatReaders" style="font-size:1.5rem;font-weight:800;color:#38bdf8;font-family:'Fraunces',serif;">—</div>
+              <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.06em;">Readers</div>
             </div>
           </div>
+          <script>
+          // Fetch live stats from DB
+          (async () => {
+            try {
+              const [booksRes, storiesRes, usersRes] = await Promise.all([
+                fetch('/api/public/books?limit=1').then(r=>r.json()).catch(()=>[]),
+                fetch('/api/stories?limit=1&page=1').then(r=>r.json()).catch(()=>({})),
+                Promise.resolve(null)
+              ]);
+              // Get books count
+              const booksCount = Array.isArray(booksRes) ? booksRes.length : 0;
+              const storiesCount = storiesRes?.total || storiesRes?.count || 0;
+              if(document.getElementById('liveStatBooks')) document.getElementById('liveStatBooks').textContent = booksCount > 0 ? booksCount + '+' : '—';
+              if(document.getElementById('liveStatStories')) document.getElementById('liveStatStories').textContent = storiesCount > 0 ? storiesCount + '+' : '—';
+            } catch(e) {}
+          })();
+          </script>
         </section>
 
-        <!-- Community Stats Bar -->
-        <div class="community-stats" id="communityStats">
-          <div class="community-stat">
-            <span class="community-stat__icon">🌍</span>
-            <span class="community-stat__value" id="statVisitors">—</span>
-            <span class="community-stat__label">Visitors</span>
+        <!-- ═══ LIVE BOOKS CAROUSEL ═══ -->
+        <section id="booksCarouselSection" style="margin-bottom:2.5rem;">
+          <!-- Header row -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap;gap:0.75rem;">
+            <div>
+              <h2 style="font-size:1.5rem;font-family:'Fraunces',serif;color:var(--text-primary);margin:0 0 3px;display:flex;align-items:center;gap:8px;">
+                📚 Featured Books
+                <span style="font-size:0.72rem;background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);border-radius:99px;padding:2px 10px;font-weight:600;letter-spacing:0.04em;">LIVE</span>
+              </h2>
+              <p style="font-size:0.82rem;color:var(--text-secondary);margin:0;">Click any book to open and start reading instantly</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button id="carouselPrev" aria-label="Previous" style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">‹</button>
+              <button id="carouselNext" aria-label="Next" style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;">›</button>
+              <a href="/books" class="btn btn--secondary btn--sm">View All Books →</a>
+            </div>
           </div>
-          <div class="community-stat__divider"></div>
-          <div class="community-stat">
-            <span class="community-stat__icon">❤️</span>
-            <span class="community-stat__value" id="statLikes">—</span>
-            <span class="community-stat__label">Total Likes</span>
+
+          <!-- Carousel wrapper -->
+          <div style="position:relative;overflow:hidden;border-radius:18px;padding:4px 0 8px;">
+            <div id="carouselTrack" style="display:flex;gap:14px;transition:transform 0.55s cubic-bezier(0.4,0,0.2,1);will-change:transform;">
+              <!-- Skeletons -->
+              <div class="card skeleton" style="min-width:160px;height:268px;border-radius:14px;flex-shrink:0;"></div>
+              <div class="card skeleton" style="min-width:160px;height:268px;border-radius:14px;flex-shrink:0;"></div>
+              <div class="card skeleton" style="min-width:160px;height:268px;border-radius:14px;flex-shrink:0;"></div>
+              <div class="card skeleton" style="min-width:160px;height:268px;border-radius:14px;flex-shrink:0;"></div>
+              <div class="card skeleton" style="min-width:160px;height:268px;border-radius:14px;flex-shrink:0;"></div>
+              <div class="card skeleton" style="min-width:160px;height:268px;border-radius:14px;flex-shrink:0;"></div>
+              <div class="card skeleton" style="min-width:160px;height:268px;border-radius:14px;flex-shrink:0;"></div>
+            </div>
           </div>
-          <div class="community-stat__divider"></div>
-          <div class="community-stat">
-            <span class="community-stat__icon">📖</span>
-            <span class="community-stat__value" id="statStories">—</span>
-            <span class="community-stat__label">Stories Shared</span>
-          </div>
-          <div class="community-stat__divider"></div>
-          <div class="community-stat">
-            <span class="community-stat__icon">💬</span>
-            <span class="community-stat__value" id="statComments">—</span>
-            <span class="community-stat__label">Comments</span>
-          </div>
-        </div>
+          <!-- Dots -->
+          <div id="carouselDots" style="display:flex;justify-content:center;gap:6px;margin-top:14px;"></div>
+        </section>
+
+        <style>
+          .book-slide-card {
+            min-width: 160px; max-width: 160px;
+            height: 268px;
+            border-radius: 14px;
+            overflow: hidden;
+            cursor: pointer;
+            flex-shrink: 0;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.09);
+            transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s;
+            background: var(--bg-card);
+            user-select: none;
+          }
+          .book-slide-card:hover {
+            transform: translateY(-8px) scale(1.04);
+            box-shadow: 0 24px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(245,158,11,0.35);
+            border-color: rgba(245,158,11,0.45);
+            z-index: 2;
+          }
+          .book-slide-card img {
+            width: 100%; height: 196px;
+            object-fit: cover; display: block;
+          }
+          .book-slide-card .book-info {
+            padding: 9px 11px 10px;
+            background: var(--bg-card);
+          }
+          .book-slide-card .book-title {
+            font-size: 0.8rem; font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin-bottom: 3px;
+          }
+          .book-slide-card .book-author {
+            font-size: 0.7rem; color: var(--text-secondary);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          }
+          .book-slide-card .book-badge {
+            position: absolute; top: 8px; right: 8px;
+            background: rgba(10,7,20,0.75);
+            color: #f59e0b;
+            font-size: 0.6rem; font-weight: 700;
+            padding: 3px 8px; border-radius: 99px;
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(245,158,11,0.35);
+          }
+          .carousel-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: rgba(255,255,255,0.2); cursor: pointer;
+            transition: all 0.25s;
+          }
+          .carousel-dot.active { background:#f59e0b; transform:scale(1.4); }
+          #carouselPrev:hover, #carouselNext:hover {
+            background: rgba(245,158,11,0.18) !important;
+            border-color: rgba(245,158,11,0.5) !important;
+            color: #f59e0b !important;
+          }
+        </style>
+
+        <script>
+        (async function initBooksCarousel() {
+          const track = document.getElementById('carouselTrack');
+          const dotsContainer = document.getElementById('carouselDots');
+          const CARD_W = 160 + 14; // card width + gap
+          let books = [], currentIndex = 0, autoTimer = null;
+
+          // Calculate visible cards based on container width
+          function getVisible() {
+            const w = track.parentElement.offsetWidth;
+            return Math.max(2, Math.floor(w / CARD_W));
+          }
+
+          // ── Fetch live from DB ──
+          try {
+            const res = await fetch('/api/public/books?limit=48');
+            if (res.ok) {
+              const data = await res.json();
+              books = Array.isArray(data) ? data : (data.books || data.results || []);
+            }
+          } catch(e) {}
+
+          if (!books.length) {
+            track.innerHTML = '<div style="padding:40px;color:var(--text-muted);font-size:0.9rem;">No books in the library yet. <a href="/upload-book" style="color:#f59e0b;">Upload the first one →</a></div>';
+            return;
+          }
+
+          // Shuffle randomly
+          books = books.sort(() => Math.random() - 0.5);
+
+          // Update live stats
+          const liveStatEl = document.getElementById('liveStatBooks');
+          if (liveStatEl) liveStatEl.textContent = books.length + '+';
+
+          // ── Render cards ──
+          track.innerHTML = books.map(b => {
+            const cover = b.cover_image || b.image_url || '/images/default-cover.svg';
+            const title = (b.title || 'Untitled').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const author = (b.author_name || b.author || 'Unknown').replace(/</g,'&lt;');
+            return `<div class="book-slide-card" role="button" tabindex="0"
+                onclick="openBookFromCarousel(${b.id})"
+                onkeydown="if(event.key==='Enter')openBookFromCarousel(${b.id})"
+                title="${title}">
+              <span class="book-badge">READ</span>
+              <img src="${cover}" alt="${title}" loading="lazy" onerror="this.src='/images/default-cover.svg'">
+              <div class="book-info">
+                <div class="book-title">${title}</div>
+                <div class="book-author">by ${author}</div>
+              </div>
+            </div>`;
+          }).join('');
+
+          // ── Dots ──
+          const VISIBLE = getVisible();
+          const maxIndex = Math.max(0, books.length - VISIBLE);
+          const pages = Math.ceil(books.length / VISIBLE);
+          dotsContainer.innerHTML = Array.from({length: pages}, (_,i) =>
+            `<div class="carousel-dot ${i===0?'active':''}" onclick="carouselGoTo(${i*VISIBLE})"></div>`
+          ).join('');
+
+          // ── Navigate ──
+          window.carouselGoTo = (idx) => {
+            const vis = getVisible();
+            const max = Math.max(0, books.length - vis);
+            currentIndex = Math.max(0, Math.min(idx, max));
+            track.style.transform = `translateX(-${currentIndex * CARD_W}px)`;
+            document.querySelectorAll('.carousel-dot').forEach((d,i) =>
+              d.classList.toggle('active', i === Math.floor(currentIndex / vis)));
+          };
+
+          document.getElementById('carouselPrev').onclick = () => { carouselGoTo(currentIndex - getVisible()); resetAuto(); };
+          document.getElementById('carouselNext').onclick = () => {
+            const vis = getVisible();
+            const next = currentIndex + vis > Math.max(0,books.length-vis) ? 0 : currentIndex + vis;
+            carouselGoTo(next); resetAuto();
+          };
+
+          // ── Auto-rotate every 3.5s ──
+          const startAuto = () => { autoTimer = setInterval(() => { const vis=getVisible(); const max=Math.max(0,books.length-vis); carouselGoTo(currentIndex+1>max?0:currentIndex+1); }, 3500); };
+          const resetAuto = () => { clearInterval(autoTimer); startAuto(); };
+          startAuto();
+
+          window.openBookFromCarousel = (id) => { window.location.href = `/books?bookId=${id}`; };
+        })();
+        </script>
 
         <!-- Platform Highlights / Why Midnight Stories -->
         <section style="margin-top: 2.5rem; margin-bottom: 2.5rem;">
