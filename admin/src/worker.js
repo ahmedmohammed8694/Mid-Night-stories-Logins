@@ -395,10 +395,13 @@ app.post('/api/admin/moderate', requireAdmin, async (c) => {
   }
 
   const statusMap = { approve: 'approved', reject: 'rejected', remove: 'removed' };
-  const table = target_type === 'story' ? 'stories' : 'comments';
   const targetIdInt = parseInt(target_id);
 
-  await db.prepare(`UPDATE ${table} SET status = ? WHERE id = ?`).bind(statusMap[action], targetIdInt).run();
+  if (target_type === 'story') {
+    await db.prepare("UPDATE stories SET status = ? WHERE id = ?").bind(statusMap[action], targetIdInt).run();
+  } else {
+    await db.prepare("UPDATE comments SET status = ? WHERE id = ?").bind(statusMap[action], targetIdInt).run();
+  }
 
   // Update comment count if moderating a comment
   if (target_type === 'comment') {

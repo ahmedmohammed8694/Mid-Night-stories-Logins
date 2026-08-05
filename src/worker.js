@@ -3353,13 +3353,17 @@ app.post('/api/admin/moderate', requireAdmin, async (c) => {
   const { target_type, target_id, action, reason } = await c.req.json();
 
   const statusMap = { approve: 'approved', reject: 'rejected', remove: 'removed' };
-  const table = target_type === 'story' ? 'stories' : 'comments';
   const targetIdInt = parseInt(target_id);
 
   try {
-    await db.prepare(`UPDATE ${table} SET status = ? WHERE id = ?`).bind(statusMap[action] || 'approved', targetIdInt).run();
+    if (target_type === 'story') {
+      await db.prepare("UPDATE stories SET status = ? WHERE id = ?").bind(statusMap[action] || 'approved', targetIdInt).run();
+    } else {
+      await db.prepare("UPDATE comments SET status = ? WHERE id = ?").bind(statusMap[action] || 'approved', targetIdInt).run();
+    }
     await db.prepare('INSERT INTO moderation_log (target_type, target_id, admin_id, action, reason) VALUES (?, ?, ?, ?, ?)').bind(target_type, targetIdInt, adminPayload.adminId, action, reason || null).run();
   } catch(e) {}
+
   return c.json({ message: `Content updated successfully.` });
 });
 // ── Categories ──

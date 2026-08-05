@@ -13,6 +13,20 @@ const app = new Hono().basePath('/api');
 // ── In-Memory Rate Limiting (Isolate-level) ──
 const rateLimitMap = new Map();
 
+// Periodic sliding window cleanup to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  const windowMs = 60 * 60 * 1000; // 1 hour window
+  for (const [key, timestamps] of rateLimitMap.entries()) {
+    const activeTimestamps = timestamps.filter(t => now - t < windowMs);
+    if (activeTimestamps.length === 0) {
+      rateLimitMap.delete(key);
+    } else {
+      rateLimitMap.set(key, activeTimestamps);
+    }
+  }
+}, 30 * 60 * 1000); // Clean every 30 minutes
+
 function rateLimit(type, maxPerHour) {
   return async (c, next) => {
     const ip = c.req.header('cf-connecting-ip') || '127.0.0.1';
@@ -393,8 +407,11 @@ app.post('/reports', checkBan, rateLimit('report', 10), async (c) => {
   const reportCount = reportCountRes ? reportCountRes.count : 0;
 
   if (reportCount >= thresholdVal) {
-    const table = target_type === 'story' ? 'stories' : 'comments';
-    await db.prepare(`UPDATE ${table} SET status = 'pending' WHERE id = ? AND status = 'approved'`).bind(targetIdInt).run();
+    if (target_type === 'story') {
+      await db.prepare("UPDATE stories SET status = 'pending' WHERE id = ? AND status = 'approved'").bind(targetIdInt).run();
+    } else {
+      await db.prepare("UPDATE comments SET status = 'pending' WHERE id = ? AND status = 'approved'").bind(targetIdInt).run();
+    }
   }
 
   return c.json({ message: 'Report submitted. Thank you for helping keep our community safe.' });
@@ -645,10 +662,13 @@ app.post('/admin/moderate', requireAdmin, async (c) => {
   }
 
   const statusMap = { approve: 'approved', reject: 'rejected', remove: 'removed' };
-  const table = target_type === 'story' ? 'stories' : 'comments';
   const targetIdInt = parseInt(target_id);
 
-  await db.prepare(`UPDATE ${table} SET status = ? WHERE id = ?`).bind(statusMap[action], targetIdInt).run();
+  if (target_type === 'story') {
+    await db.prepare("UPDATE stories SET status = ? WHERE id = ?").bind(statusMap[action], targetIdInt).run();
+  } else {
+    await db.prepare("UPDATE comments SET status = ? WHERE id = ?").bind(statusMap[action], targetIdInt).run();
+  }
 
   // Update comment count if approving/rejecting a comment
   if (target_type === 'comment') {

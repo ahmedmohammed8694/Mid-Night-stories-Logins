@@ -701,9 +701,11 @@ app.post('/api/admin/moderate', requireAdmin, (req, res) => {
   }
 
   const statusMap = { approve: 'approved', reject: 'rejected', remove: 'removed' };
-  const table = target_type === 'story' ? 'stories' : 'comments';
-
-  db.prepare(`UPDATE ${table} SET status = ? WHERE id = ?`).run(statusMap[action], parseInt(target_id));
+  if (target_type === 'story') {
+    db.prepare("UPDATE stories SET status = ? WHERE id = ?").run(statusMap[action], parseInt(target_id));
+  } else {
+    db.prepare("UPDATE comments SET status = ? WHERE id = ?").run(statusMap[action], parseInt(target_id));
+  }
 
   // Update comment count if approving/rejecting a comment
   if (target_type === 'comment') {

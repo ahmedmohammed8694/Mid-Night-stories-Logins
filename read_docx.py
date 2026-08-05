@@ -29,8 +29,9 @@ def docx_to_txt(docx_path):
     except Exception as e:
         return f"Error parsing docx: {str(e)}"
 
-docx_path = r"d:\My Applications\Webside\Midnight_Stories_Implementation_Plan_V1.01.docx"
+base_dir = os.path.dirname(os.path.abspath(__file__))
+docx_path = os.path.join(base_dir, "Midnight_Stories_Implementation_Plan_V1.01.docx")
 text = docx_to_txt(docx_path)
-with open(r"d:\My Applications\Webside\extracted_text_midnight.txt", "w", encoding="utf-8") as f:
+with open(os.path.join(base_dir, "extracted_text_midnight.txt"), "w", encoding="utf-8") as f:
     f.write(text)
 print("Done extracting text to extracted_text_midnight.txt")
