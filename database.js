@@ -301,9 +301,6 @@ function initializeDatabase() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
-    INSERT OR IGNORE INTO admin_users (username, email, password_hash, mfa_secret, mfa_enabled, role)
-    VALUES ('admin', 'admin@midnightstories.com', '$2a$10$Zu8oMzAP3uh0WqtOWQzexeox2bs6BO60iQWO/FBlOOT.l.YCXuqI6', 'JBSWY3DPEHPK3PXP', 0, 'superadmin');
-
     CREATE TABLE IF NOT EXISTS admin_messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -395,17 +392,21 @@ function initializeDatabase() {
   // ── Seed Admin User ──
   const existingAdmin = db.prepare('SELECT id FROM admin_users LIMIT 1').get();
   if (!existingAdmin) {
-    const passwordHash = bcrypt.hashSync('Admin@2026!', 12);
+    const adminUsername = process.env.INITIAL_ADMIN_USERNAME || 'admin';
+    const adminPassword = process.env.INITIAL_ADMIN_PASSWORD || 'Admin@2026!';
+    const adminEmail = process.env.INITIAL_ADMIN_EMAIL || 'admin@lifestories.com';
+
+    const passwordHash = bcrypt.hashSync(adminPassword, 12);
     const mfaSecret = authenticator.generateSecret();
     db.prepare(
       'INSERT INTO admin_users (username, email, password_hash, mfa_secret, mfa_enabled, role) VALUES (?, ?, ?, ?, ?, ?)'
-    ).run('admin', 'admin@lifestories.com', passwordHash, mfaSecret, 0, 'superadmin');
+    ).run(adminUsername, adminEmail, passwordHash, mfaSecret, 0, 'superadmin');
     console.log('\n╔══════════════════════════════════════════════════════╗');
     console.log('║          ADMIN ACCOUNT CREATED                       ║');
     console.log('╠══════════════════════════════════════════════════════╣');
-    console.log('║  Username : admin                                    ║');
-    console.log('║  Password : Admin@2026!                              ║');
-    console.log(`║  MFA Secret: ${mfaSecret}              ║`);
+    console.log(`║  Username : ${adminUsername.padEnd(41)}║`);
+    console.log(`║  Password : ${adminPassword.padEnd(41)}║`);
+    console.log(`║  MFA Secret: ${mfaSecret.padEnd(40)}║`);
     console.log('║  (Use this secret in Google Authenticator)           ║');
     console.log('╚══════════════════════════════════════════════════════╝\n');
   }
