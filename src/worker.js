@@ -81,8 +81,9 @@ let isDbInitialized = false;
 app.use('*', async (c, next) => {
   if (!isDbInitialized) {
     const db = c.env.DB;
-    console.log('Creating any missing D1 database schema tables...');
-    try {
+    if (c.env.DB_INIT_ON_STARTUP === 'true') {
+      console.log('Creating any missing D1 database schema tables...');
+      try {
       // Run each CREATE TABLE individually — D1 exec() does not support multi-statement strings
       await db.prepare(`CREATE TABLE IF NOT EXISTS sla_rules (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -491,6 +492,7 @@ app.use('*', async (c, next) => {
     } catch (err2) {
       console.error('Failed to create admin schema:', err2);
     }
+    } // end DB_INIT_ON_STARTUP guard
     isDbInitialized = true;
   }
 
@@ -870,7 +872,8 @@ app.post('/api/admin/system/purge-expired', async (c) => {
       timestamp: new Date().toISOString()
     });
   } catch (err) {
-    return c.json({ error: 'Data retention purge failed: ' + err.message }, 500);
+    console.error('Data retention purge failed:', err);
+    return c.json({ error: 'Data retention purge failed.' }, 500);
   }
 });
 
@@ -997,24 +1000,42 @@ app.get('/images/default-cover.png', (c) => c.redirect('/images/default-cover.sv
 
 // ── In-Memory Rate Limiting ──
 const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+// GC: periodically prune expired entries to prevent unbounded memory growth
+let _lastRateLimitGc = Date.now();
+function pruneRateLimitMap() {
+  const now = Date.now();
+  if (now - _lastRateLimitGc < 5 * 60 * 1000) return; // run at most every 5 min
+  _lastRateLimitGc = now;
+  for (const [key, timestamps] of rateLimitMap.entries()) {
+    const fresh = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+    if (fresh.length === 0) {
+      rateLimitMap.delete(key);
+    } else {
+      rateLimitMap.set(key, fresh);
+    }
+  }
+}
 
 function rateLimit(type, maxPerHour) {
   return async (c, next) => {
     const ip = c.req.header('cf-connecting-ip') || '127.0.0.1';
     const key = `${type}:${ip}`;
     const now = Date.now();
-    const windowMs = 60 * 60 * 1000;
+
+    pruneRateLimitMap();
 
     if (!rateLimitMap.has(key)) {
       rateLimitMap.set(key, []);
     }
 
-    const timestamps = rateLimitMap.get(key).filter(t => now - t < windowMs);
+    const timestamps = rateLimitMap.get(key).filter(t => now - t < RATE_LIMIT_WINDOW_MS);
     if (timestamps.length >= maxPerHour) {
       return c.json({
         error: 'Rate limit exceeded',
         message: `You can only make ${maxPerHour} ${type} requests per hour. Please try again later.`,
-        retryAfter: Math.ceil((timestamps[0] + windowMs - now) / 1000)
+        retryAfter: Math.ceil((timestamps[0] + RATE_LIMIT_WINDOW_MS - now) / 1000)
       }, 429);
     }
 
@@ -1025,8 +1046,41 @@ function rateLimit(type, maxPerHour) {
 }
 
 // ── JWT Secret Helpers ──
-const getAdminJwtSecret = (c) => c.env.ADMIN_JWT_SECRET || 'midnight_stories_admin_secret_2026';
-const getUserJwtSecret = (c) => c.env.JWT_SECRET || 'midnight_stories_user_secret_2026';
+const getAdminJwtSecret = (c) => {
+  const secret = c.env.ADMIN_JWT_SECRET;
+  if (!secret) throw new Error('ADMIN_JWT_SECRET environment variable is missing.');
+  return secret;
+};
+const getUserJwtSecret = (c) => {
+  const secret = c.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET environment variable is missing.');
+  return secret;
+};
+
+// ── Zero-Trust Permissions Config ──
+const ROLE_PERMISSIONS = {
+  admin: [
+    'read_stats',
+    'moderate_content',
+    'manage_users',
+    'manage_settings',
+    'read_audit_log',
+    'upload_book',
+    'edit_book',
+    'delete_book',
+    'edit_others_books',
+    'delete_others_books'
+  ],
+  user: [
+    'upload_book',
+    'edit_book',
+    'delete_book'
+  ]
+};
+
+const hasPermission = (role, permission) => {
+  return !!(ROLE_PERMISSIONS[role] && ROLE_PERMISSIONS[role].includes(permission));
+};
 
 // ── Authentication Middlewares ──
 const requireAdmin = async (c, next) => {
@@ -1435,7 +1489,7 @@ app.post('/api/auth/forgot-password', async (c) => {
       created_at = CURRENT_TIMESTAMP
   `).bind(cleanEmail, otp, expiresAt).run();
 
-  console.log(`[PASSWORD RESET OTP GENERATED] Target: ${cleanEmail} | OTP: ${otp} | Expires: ${expiresAt}`);
+  console.log(`[PASSWORD RESET OTP GENERATED] Transaction processed for password reset request.`);
 
   // Dispatch Real Email
   const sent = await sendOtpEmail(c.env, cleanEmail, otp);
@@ -1681,7 +1735,10 @@ app.get('/api/stories', optionalUser, async (c) => {
   const db = c.env.DB;
   const user = c.get('user');
   const { sort = 'newest', category, search, page = 1, limit = 12, feed, userId } = c.req.query();
-  const offset = (parseInt(page) - 1) * parseInt(limit);
+  let limitVal = parseInt(limit || 12);
+  if (isNaN(limitVal) || limitVal <= 0) limitVal = 12;
+  limitVal = Math.min(limitVal, 50);
+  const offset = (parseInt(page || 1) - 1) * limitVal;
 
   let where = "WHERE s.status = 'approved'";
   const params = [];
@@ -1737,7 +1794,7 @@ app.get('/api/stories', optionalUser, async (c) => {
     LIMIT ? OFFSET ?
   `;
 
-  const { results: stories } = await db.prepare(sql).bind(...params, parseInt(limit), offset).all();
+  const { results: stories } = await db.prepare(sql).bind(...params, limitVal, offset).all();
 
   // Map is_liked status
   if (user && stories.length > 0) {
@@ -1874,7 +1931,7 @@ app.post('/api/stories', optionalUser, checkBan, rateLimit('story', 10), async (
     }, 201);
   } catch (err) {
     console.error('Failed to insert story into DB:', err);
-    return c.json({ error: 'Database submission error: ' + err.message }, 500);
+    return c.json({ error: 'Database submission error.' }, 500);
   }
 });
 
@@ -2020,14 +2077,27 @@ app.get('/api/users/:idOrUserId', optionalUser, async (c) => {
     }
   }
 
-  // Privacy Protection logic
+  // Privacy Protection logic & Response DTO Mapping
   const isOwner = loggedInUser && loggedInUser.id === targetId;
-  if (!isOwner) {
-    user.email = undefined;
-    user.phone_number = undefined;
-  }
+  const safeUser = {
+    id: user.id,
+    user_id: user.user_id,
+    full_name: user.full_name,
+    bio: user.bio,
+    profile_pic: user.profile_pic,
+    dob: isOwner ? user.dob : undefined,
+    email: isOwner ? user.email : undefined,
+    phone_number: isOwner ? user.phone_number : undefined,
+    privacy_settings: user.privacy_settings,
+    created_at: user.created_at,
+    followers_count: user.followers_count,
+    following_count: user.following_count,
+    is_following: user.is_following,
+    is_blocked: user.is_blocked,
+    is_blocked_by: user.is_blocked_by
+  };
 
-  return c.json(user);
+  return c.json(safeUser);
 });
 
 // PUT /api/users/me - Update profile
@@ -2046,6 +2116,20 @@ app.put('/api/users/me', requireUser, async (c) => {
 
   return c.json({ success: true });
 });
+
+function verifyFileMagicBytes(arrayBuffer, allowedTypes) {
+  if (!arrayBuffer || arrayBuffer.byteLength < 4) return false;
+  const arr = new Uint8Array(arrayBuffer.slice(0, 4));
+  let header = '';
+  for (let i = 0; i < arr.length; i++) {
+    header += arr[i].toString(16).padStart(2, '0').toUpperCase();
+  }
+  const allowed = [];
+  if (allowedTypes.includes('image/jpeg')) allowed.push('FFD8FF');
+  if (allowedTypes.includes('image/png')) allowed.push('89504E47');
+  if (allowedTypes.includes('image/webp')) allowed.push('52494646');
+  return allowed.some(sig => header.startsWith(sig));
+}
 
 // POST /api/users/me/upload - Upload profile pic to R2
 app.post('/api/users/me/upload', requireUser, async (c) => {
@@ -2067,6 +2151,11 @@ app.post('/api/users/me/upload', requireUser, async (c) => {
       return c.json({ error: 'Only JPEG, PNG, and WebP are allowed.' }, 400);
     }
 
+    const arrayBuffer = await file.arrayBuffer();
+    if (!verifyFileMagicBytes(arrayBuffer, allowedTypes)) {
+      return c.json({ error: 'Invalid file content signature. Uploaded content does not match image/jpeg, image/png, or image/webp.' }, 400);
+    }
+
     if (!c.env.IMAGES) {
       return c.json({ error: 'Storage bucket (R2) is not configured.' }, 500);
     }
@@ -2074,7 +2163,7 @@ app.post('/api/users/me/upload', requireUser, async (c) => {
     const ext = file.type.split('/')[1] || 'jpg';
     const filename = `profile_${userPayload.id}_${Date.now()}.${ext}`;
 
-    await c.env.IMAGES.put(filename, await file.arrayBuffer(), {
+    await c.env.IMAGES.put(filename, arrayBuffer, {
       httpMetadata: { contentType: file.type }
     });
 
@@ -3440,8 +3529,7 @@ app.post('/api/user/tickets/create', requireUser, async (c) => {
 
     return c.json({ success: true, ticket_id: tracking_number, id: reportRes.meta.last_row_id });
   } catch (err) {
-    console.error('POST /api/user/tickets/create ERROR:', err);
-    return c.json({ success: false, error: 'Internal Server Error: ' + err.message }, 500);
+    return c.json({ success: false, error: 'Internal Server Error' }, 500);
   }
 });
 
@@ -3984,7 +4072,7 @@ app.post('/api/admin/messages/send', requireAdmin, async (c) => {
     });
   } catch (err) {
     console.error('Send admin message error:', err);
-    return c.json({ error: 'Failed to send message: ' + err.message }, 500);
+    return c.json({ error: 'Failed to send message.' }, 500);
   }
 });
 
@@ -4115,8 +4203,8 @@ app.post('/api/admin/books', requireAdminOrUser, async (c) => {
   let uploadedBy = null;
   let approvedBy = null;
 
-  if (role === 'admin') {
-    approvedBy = admin.adminId;
+  if (hasPermission(role, 'moderate_content')) {
+    approvedBy = admin ? admin.adminId : null;
   } else {
     uploadedBy = user.id;
     finalStatus = 'pending';
@@ -4201,7 +4289,10 @@ app.put('/api/admin/books/:id', requireAdminOrUser, async (c) => {
   const book = await db.prepare('SELECT * FROM books WHERE id = ?').bind(bookId).first();
   if (!book) return c.json({ error: 'Book not found.' }, 404);
 
-  if (role !== 'admin' && book.uploaded_by !== user.id) {
+  const isOwner = book.uploaded_by === (user ? user.id : null);
+  const canEditBook = hasPermission(role, 'edit_book');
+  const canEditOthers = hasPermission(role, 'edit_others_books');
+  if (!canEditBook || (!isOwner && !canEditOthers)) {
     return c.json({ error: 'Unauthorized to edit this book.' }, 403);
   }
 
@@ -4211,7 +4302,7 @@ app.put('/api/admin/books/:id', requireAdminOrUser, async (c) => {
   } = body;
 
   let finalStatus = status || book.status;
-  if (role !== 'admin') {
+  if (!hasPermission(role, 'moderate_content')) {
     finalStatus = 'pending';
   }
 
@@ -4265,7 +4356,10 @@ app.delete('/api/admin/books/:id', requireAdminOrUser, async (c) => {
   const book = await db.prepare('SELECT * FROM books WHERE id = ?').bind(bookId).first();
   if (!book) return c.json({ error: 'Book not found.' }, 404);
 
-  if (role !== 'admin' && book.uploaded_by !== user.id) {
+  const isOwner = book.uploaded_by === (user ? user.id : null);
+  const canDeleteBook = hasPermission(role, 'delete_book');
+  const canDeleteOthers = hasPermission(role, 'delete_others_books');
+  if (!canDeleteBook || (!isOwner && !canDeleteOthers)) {
     return c.json({ error: 'Unauthorized to delete this book.' }, 403);
   }
 
@@ -4411,7 +4505,7 @@ app.post('/api/admin/books/bulk-upload', requireAdmin, async (c) => {
     });
   } catch (err) {
     console.error('Bulk upload route error:', err);
-    return c.json({ error: 'Failed to process bulk book upload: ' + err.message }, 500);
+    return c.json({ error: 'Failed to process bulk book upload.' }, 500);
   }
 });
 
@@ -4522,7 +4616,7 @@ app.put('/api/admin/books/:id', requireAdmin, async (c) => {
     });
   } catch (err) {
     console.error('Update book error:', err);
-    return c.json({ error: 'Failed to update book: ' + err.message }, 500);
+    return c.json({ error: 'Failed to update book.' }, 500);
   }
 });
 
@@ -6471,7 +6565,8 @@ app.post('/api/admin/employees/:id/documents', requireAdmin, async (c) => {
 
     return c.json({ success: true, message: 'Document added to vault.', id: res.meta.last_row_id }, 201);
   } catch (err) {
-    return c.json({ error: err.message }, 500);
+    console.error('Failed to add document to vault:', err);
+    return c.json({ error: 'Failed to add document to vault.' }, 500);
   }
 });
 

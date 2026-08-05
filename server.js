@@ -110,10 +110,33 @@ const upload = multer({
   }
 });
 
+function checkUploadedFileSignature(filePath, allowedExtensions) {
+  if (!filePath || !fs.existsSync(filePath)) return false;
+  try {
+    const fd = fs.openSync(filePath, 'r');
+    const buffer = Buffer.alloc(8);
+    fs.readSync(fd, buffer, 0, 8, 0);
+    fs.closeSync(fd);
+
+    const header = buffer.toString('hex', 0, 4).toUpperCase();
+    const allowed = [];
+    if (allowedExtensions.includes('.jpg') || allowedExtensions.includes('.jpeg')) allowed.push('FFD8FF');
+    if (allowedExtensions.includes('.png')) allowed.push('89504E47');
+    if (allowedExtensions.includes('.webp')) allowed.push('52494646');
+    if (allowedExtensions.includes('.pdf')) allowed.push('25504446');
+    if (allowedExtensions.includes('.epub')) allowed.push('504B0304');
+
+    return allowed.some(sig => header.startsWith(sig));
+  } catch (e) {
+    return false;
+  }
+}
+
 // ── Admin Session Management (Simple Token-Based) ──
 const adminSessions = new Map();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'midnight_stories_user_secret_2026';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is missing.');
 
 // Custom JWT verify for Express
 async function verifyJWT(token, secret) {
@@ -201,6 +224,31 @@ const uploadBook = multer({
 function generateAdminToken() {
   return crypto.randomBytes(32).toString('hex');
 }
+
+// ── Zero-Trust Permissions Config ──
+const ROLE_PERMISSIONS = {
+  admin: [
+    'read_stats',
+    'moderate_content',
+    'manage_users',
+    'manage_settings',
+    'read_audit_log',
+    'upload_book',
+    'edit_book',
+    'delete_book',
+    'edit_others_books',
+    'delete_others_books'
+  ],
+  user: [
+    'upload_book',
+    'edit_book',
+    'delete_book'
+  ]
+};
+
+const hasPermission = (role, permission) => {
+  return !!(ROLE_PERMISSIONS[role] && ROLE_PERMISSIONS[role].includes(permission));
+};
 
 function requireAdmin(req, res, next) {
   const token = req.headers['x-admin-token'];
@@ -349,6 +397,10 @@ app.post('/api/stories', checkBan, rateLimit('story', 5), upload.single('image')
   // Process image if uploaded
   let imageUrl = null;
   if (req.file) {
+    if (!checkUploadedFileSignature(req.file.path, ['.jpg', '.jpeg', '.png', '.webp'])) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: 'Invalid image file signature. Only JPG, PNG, and WebP are allowed.' });
+    }
     const safetyCheck = checkImageSafety(req.file.path);
     if (!safetyCheck.safe) {
       fs.unlinkSync(req.file.path);
@@ -896,6 +948,20 @@ app.post('/api/admin/books', requireAdminOrUser, uploadBook.fields([{ name: 'boo
   const bookFile = req.files['book'][0];
   const coverFile = req.files['cover'] ? req.files['cover'][0] : null;
 
+  if (!checkUploadedFileSignature(bookFile.path, ['.pdf', '.epub'])) {
+    fs.unlinkSync(bookFile.path);
+    if (coverFile) {
+      try { fs.unlinkSync(coverFile.path); } catch (e) {}
+    }
+    return res.status(400).json({ error: 'Invalid book file signature. Only PDF and EPUB are allowed.' });
+  }
+
+  if (coverFile && !checkUploadedFileSignature(coverFile.path, ['.jpg', '.jpeg', '.png', '.webp'])) {
+    try { fs.unlinkSync(bookFile.path); } catch (e) {}
+    fs.unlinkSync(coverFile.path);
+    return res.status(400).json({ error: 'Invalid cover image file signature. Only JPG, PNG, and WebP are allowed.' });
+  }
+
   const fileType = bookFile.originalname.endsWith('.pdf') ? 'pdf' : 'epub';
   const fileUrl = `/uploads/${bookFile.filename}`;
   const coverImageUrl = coverFile ? `/uploads/${coverFile.filename}` : '/images/default-cover.svg';
@@ -914,8 +980,8 @@ app.post('/api/admin/books', requireAdminOrUser, uploadBook.fields([{ name: 'boo
   let uploadedBy = null;
   let approvedBy = null;
 
-  if (req.role === 'admin') {
-    approvedBy = req.admin.adminId;
+  if (hasPermission(req.role, 'moderate_content')) {
+    approvedBy = req.admin ? req.admin.adminId : null;
   } else {
     uploadedBy = req.user.id;
     finalStatus = 'pending';
@@ -1020,7 +1086,10 @@ app.put('/api/admin/books/:id', requireAdminOrUser, (req, res) => {
   const book = db.prepare('SELECT * FROM books WHERE id = ?').get(bookId);
   if (!book) return res.status(404).json({ error: 'Book not found.' });
 
-  if (req.role !== 'admin' && book.uploaded_by !== req.user.id) {
+  const isOwner = book.uploaded_by === (req.user ? req.user.id : null);
+  const canEditBook = hasPermission(req.role, 'edit_book');
+  const canEditOthers = hasPermission(req.role, 'edit_others_books');
+  if (!canEditBook || (!isOwner && !canEditOthers)) {
     return res.status(403).json({ error: 'Unauthorized to edit this book.' });
   }
 
@@ -1030,7 +1099,7 @@ app.put('/api/admin/books/:id', requireAdminOrUser, (req, res) => {
   } = req.body;
 
   let finalStatus = status || book.status;
-  if (req.role !== 'admin') {
+  if (!hasPermission(req.role, 'moderate_content')) {
     finalStatus = 'pending';
   }
 
@@ -1096,7 +1165,10 @@ app.delete('/api/admin/books/:id', requireAdminOrUser, (req, res) => {
   const book = db.prepare('SELECT * FROM books WHERE id = ?').get(bookId);
   if (!book) return res.status(404).json({ error: 'Book not found.' });
 
-  if (req.role !== 'admin' && book.uploaded_by !== req.user.id) {
+  const isOwner = book.uploaded_by === (req.user ? req.user.id : null);
+  const canDeleteBook = hasPermission(req.role, 'delete_book');
+  const canDeleteOthers = hasPermission(req.role, 'delete_others_books');
+  if (!canDeleteBook || (!isOwner && !canDeleteOthers)) {
     return res.status(403).json({ error: 'Unauthorized to delete this book.' });
   }
 
@@ -1400,6 +1472,20 @@ app.post('/api/user/books/upload', requireUser, uploadBook.fields([{ name: 'book
 
   const bookFile = req.files['book'][0];
   const coverFile = req.files['cover'] ? req.files['cover'][0] : null;
+
+  if (!checkUploadedFileSignature(bookFile.path, ['.pdf', '.epub'])) {
+    fs.unlinkSync(bookFile.path);
+    if (coverFile) {
+      try { fs.unlinkSync(coverFile.path); } catch (e) {}
+    }
+    return res.status(400).json({ error: 'Invalid book file signature. Only PDF and EPUB are allowed.' });
+  }
+
+  if (coverFile && !checkUploadedFileSignature(coverFile.path, ['.jpg', '.jpeg', '.png', '.webp'])) {
+    try { fs.unlinkSync(bookFile.path); } catch (e) {}
+    fs.unlinkSync(coverFile.path);
+    return res.status(400).json({ error: 'Invalid cover image file signature. Only JPG, PNG, and WebP are allowed.' });
+  }
 
   const fileUrl = `/uploads/${bookFile.filename}`;
   const coverImageUrl = coverFile ? `/uploads/${coverFile.filename}` : '/images/default-cover.svg';

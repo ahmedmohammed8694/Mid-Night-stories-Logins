@@ -150,14 +150,35 @@ const requireAdmin = async (c, next) => {
   }
 };
 
+// ── Zero-Trust Permissions Config ──
+const ROLE_PERMISSIONS = {
+  super_admin: ['*'],
+  superadmin: ['*'],
+  admin: [
+    'stories.read', 'stories.approve', 'stories.reject', 'comments.read',
+    'comments.moderate', 'reports.view', 'reports.resolve', 'users.view',
+    'bans.manage', 'settings.manage', 'accounts.manage', 'teams.manage',
+    'employees.manage', 'roles.manage', 'audit.view'
+  ],
+  moderator: ['stories.read', 'stories.approve', 'stories.reject', 'comments.read', 'comments.moderate', 'reports.view'],
+  agent: ['reports.view', 'reports.resolve']
+};
+
+const hasStaticPermission = (role, resource, action) => {
+  if (!ROLE_PERMISSIONS[role]) return false;
+  if (ROLE_PERMISSIONS[role].includes('*')) return true;
+  const permissionCode = `${resource}.${action}`;
+  return ROLE_PERMISSIONS[role].includes(permissionCode) || ROLE_PERMISSIONS[role].includes(`${resource}.*`);
+};
+
 // ── Permission Checking Helpers ──
 const requirePermission = (resource, action) => {
   return async (c, next) => {
     const admin = c.get('admin');
     if (!admin) return c.json({ error: 'Unauthorized' }, 401);
     
-    // Super admins bypass all checks
-    if (admin.role === 'super_admin') {
+    // Check static permission mapping first (Zero-Trust capability check)
+    if (hasStaticPermission(admin.role, resource, action)) {
       await next();
       return;
     }
