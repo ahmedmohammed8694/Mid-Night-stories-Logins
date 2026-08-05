@@ -47,6 +47,20 @@ app.get('/sitemap.xml', (req, res) => {
 // ── Rate Limiting (In-Memory) ──
 const rateLimitMap = new Map();
 
+// Periodic cleanup of expired rate limit entries to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  const windowMs = 60 * 60 * 1000; // 1 hour window
+  for (const [key, timestamps] of rateLimitMap.entries()) {
+    const activeTimestamps = timestamps.filter(t => now - t < windowMs);
+    if (activeTimestamps.length === 0) {
+      rateLimitMap.delete(key);
+    } else {
+      rateLimitMap.set(key, activeTimestamps);
+    }
+  }
+}, 30 * 60 * 1000).unref(); // Run every 30 minutes
+
 function rateLimit(type, maxPerHour) {
   return (req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress || 'unknown';
@@ -99,7 +113,7 @@ const upload = multer({
 // ── Admin Session Management (Simple Token-Based) ──
 const adminSessions = new Map();
 
-const JWT_SECRET = 'midnight_stories_user_secret_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'midnight_stories_user_secret_2026';
 
 // Custom JWT verify for Express
 async function verifyJWT(token, secret) {
@@ -113,7 +127,9 @@ async function verifyJWT(token, secret) {
   const expectedSignature = hmac.digest('base64')
     .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
     
-  if (signature !== expectedSignature) {
+  const signatureBuf = Buffer.from(signature);
+  const expectedBuf = Buffer.from(expectedSignature);
+  if (signatureBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(signatureBuf, expectedBuf)) {
     throw new Error('Invalid token signature');
   }
   
@@ -490,8 +506,11 @@ app.post('/api/reports', checkBan, rateLimit('report', 10), (req, res) => {
   ).get(target_type, parseInt(target_id)).count;
 
   if (reportCount >= thresholdVal) {
-    const table = target_type === 'story' ? 'stories' : 'comments';
-    db.prepare(`UPDATE ${table} SET status = 'pending' WHERE id = ? AND status = 'approved'`).run(parseInt(target_id));
+    if (target_type === 'story') {
+      db.prepare("UPDATE stories SET status = 'pending' WHERE id = ? AND status = 'approved'").run(parseInt(target_id));
+    } else {
+      db.prepare("UPDATE comments SET status = 'pending' WHERE id = ? AND status = 'approved'").run(parseInt(target_id));
+    }
   }
 
   res.json({ message: 'Report submitted. Thank you for helping keep our community safe.' });

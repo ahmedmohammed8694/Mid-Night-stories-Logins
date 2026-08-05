@@ -82,11 +82,13 @@ function detectCrisisLanguage(text) {
  * Check text against toxicity / banned keywords
  */
 function detectToxicity(text, additionalBanned = []) {
-  const lower = text.toLowerCase();
   const allBanned = [...DEFAULT_TOXICITY_KEYWORDS, ...additionalBanned];
   const found = [];
   for (const keyword of allBanned) {
-    if (lower.includes(keyword.toLowerCase())) {
+    // Escape regex characters and match with word boundaries (\b) case-insensitively
+    const escapedKeyword = keyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const regex = new RegExp(`\\b${escapedKeyword}\\b`, 'i');
+    if (regex.test(text)) {
       found.push(keyword);
     }
   }
