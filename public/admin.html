@@ -1279,107 +1279,6 @@
             </div>
             <button class="btn btn--primary mt-16" id="enableMfaBtn">Enable MFA</button>
           </div>
-        </div>
-
-        <!-- Employees Onboarding Panel -->
-        <div class="admin-panel" id="panel-accounts">
-          <div
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
-            <div>
-              <h1 class="admin-page-title" style="margin-bottom: 4px;">🚀 Employees Onboarding </h1>
-              <p class="admin-page-subtitle">Manage company employee accounts, provision corporate access, assign RBAC
-                roles, and dispatch welcome kits.</p>
-            </div>
-          </div>
-
-          <!-- Onboarding Metrics Cards -->
-          <div
-            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
-            <div
-              style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8;">Onboarded
-                  Staff</span>
-                <span style="font-size: 1.4rem;">👥</span>
-              </div>
-              <div style="font-size: 1.8rem; font-weight: 800; color: #fff;" id="metricActiveEmpsCount">18</div>
-              <div style="font-size: 0.75rem; color: #34d399; margin-top: 4px;">Active across all departments</div>
-            </div>
-            <div
-              style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8;">Pending
-                  Invites</span>
-                <span style="font-size: 1.4rem;">📨</span>
-              </div>
-              <div style="font-size: 1.8rem; font-weight: 800; color: #fbbf24;" id="metricPendingInvitesCount">3</div>
-              <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">Awaiting employee acceptance</div>
-            </div>
-            <div
-              style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8;">Corporate
-                  Accounts</span>
-                <span style="font-size: 1.4rem;">🏛️</span>
-              </div>
-              <div style="font-size: 1.8rem; font-weight: 800; color: #22d3ee;">4</div>
-              <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">105 total allocated seats</div>
-            </div>
-            <div
-              style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8;">MFA
-                  Compliance</span>
-                <span style="font-size: 1.4rem;">🛡️</span>
-              </div>
-              <div style="font-size: 1.8rem; font-weight: 800; color: #34d399;">100%</div>
-              <div style="font-size: 0.75rem; color: #34d399; margin-top: 4px;">Enforced across all accounts</div>
-            </div>
-          </div>
-
-          <!-- Direct In-Page Employee Account Creation Form Card -->
-          <div id="inlineCreateEmployeeFormCard"
-            style="background: #0f172a; border: 1px solid rgba(243, 199, 124, 0.35); border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-            
-            <!-- Wizard Header & Steps Navigation Bar -->
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px; flex-wrap: wrap; gap: 12px;">
-              <div>
-                <h3 style="margin: 0 0 4px 0; font-size: 1.2rem; color: #f3c77c; display: flex; align-items: center; gap: 8px;">
-                  <span>➕</span> Provision New Employee Account (5-Step Onboarding Suite)
-                </h3>
-                <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">Provision employee profile, organization placement, RBAC policies, IT assets, and document compliance vault.</p>
-              </div>
-              <span class="filter-chip"
-                style="background: rgba(243, 199, 124, 0.15); color: #f3c77c; border: 1px solid rgba(243, 199, 124, 0.35); font-weight: 700; font-size: 0.78rem; padding: 6px 12px;">
-                ⚡ Enterprise Onboarding Suite
-              </span>
-            </div>
-
-            <!-- 5-Step Wizard Navigation Tabs -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 20px;">
-              <button type="button" class="wizard-step-tab active" id="tabStep1" onclick="switchWizardTab(1)"
-                style="padding: 10px 6px; font-weight: 700; font-size: 0.8rem; border-radius: 8px; border: 1px solid #10b981; background: rgba(16,185,129,0.15); color: #10b981; cursor: pointer; text-align: center;">
-                1. Personal Info
-              </button>
-              <button type="button" class="wizard-step-tab" id="tabStep2" onclick="switchWizardTab(2)"
-                style="padding: 10px 6px; font-weight: 700; font-size: 0.8rem; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; cursor: pointer; text-align: center;">
-                2. Account &amp; Team
-              </button>
-              <button type="button" class="wizard-step-tab" id="tabStep3" onclick="switchWizardTab(3)"
-                style="padding: 10px 6px; font-weight: 700; font-size: 0.8rem; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; cursor: pointer; text-align: center;">
-                3. RBAC &amp; Security
-              </button>
-              <button type="button" class="wizard-step-tab" id="tabStep4" onclick="switchWizardTab(4)"
-                style="padding: 10px 6px; font-weight: 700; font-size: 0.8rem; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; cursor: pointer; text-align: center;">
-                4. Assets &amp; Kit
-              </button>
-              <button type="button" class="wizard-step-tab" id="tabStep5" onclick="switchWizardTab(5)"
-                style="padding: 10px 6px; font-weight: 700; font-size: 0.8rem; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; cursor: pointer; text-align: center;">
-                5. Docs &amp; Agreements
-              </button>
-            </div>
-
-            <form id="inlineCreateEmployeeForm" onsubmit="handleCreateEmployee(event)">
               <!-- STEP 1: PERSONAL INFO -->
               <div class="wizard-step-pane" id="wizardPane1" style="display: block;">
                 <h4 style="color: #38bdf8; margin: 0 0 14px 0; font-size: 0.92rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">STEP 1: EMPLOYEE PERSONAL DETAILS</h4>
@@ -1606,293 +1505,6 @@
               </div>
             </form>
           </div>
-        </div>
-
-        <!-- Ticket Taxonomy Panel -->
-        <div class="admin-panel" id="panel-taxonomy">
-          <div
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
-            <div>
-              <h1 class="admin-page-title" style="margin-bottom: 4px;">🗂️ Helpdesk Ticket Categories
-              </h1>
-              <p class="admin-page-subtitle">Configure support ticket classifications, SLA resolution targets,
-                escalation paths, and automated tagging rules.</p>
-            </div>
-            <button class="btn btn--primary" onclick="alert('Creating new ticket taxonomy category!')"
-              style="padding: 10px 20px; font-weight: 700;">
-              ➕ Create Taxonomy Category
-            </button>
-          </div>
-
-          <div
-            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
-            <div
-              style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
-              <div
-                style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">
-                Active Categories</div>
-              <div style="font-size: 1.8rem; font-weight: 800; color: #fff;">8</div>
-              <div style="font-size: 0.75rem; color: #34d399; margin-top: 4px;">Across Technical, Billing &amp; General
-              </div>
-            </div>
-            <div
-              style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
-              <div
-                style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">
-                Average Resolution SLA</div>
-              <div style="font-size: 1.8rem; font-weight: 800; color: #22d3ee;">4.2 Hours</div>
-              <div style="font-size: 0.75rem; color: #34d399; margin-top: 4px;">98.4% On-time compliance</div>
-            </div>
-            <div
-              style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 12px; padding: 20px;">
-              <div
-                style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">
-                Automated Tag Rules</div>
-              <div style="font-size: 1.8rem; font-weight: 800; color: #fbbf24;">14 Rules</div>
-              <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">Auto-route tickets to squads</div>
-            </div>
-          </div>
-
-          <div
-            style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; overflow: hidden;">
-            <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-card);">
-              <h3 style="margin: 0; font-size: 1rem; color: #fff;">🗂️ Configured Ticket Categories &amp; SLA Matrix
-              </h3>
-            </div>
-            <div style="overflow-x: auto;">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Category Key</th>
-                    <th>Category Name</th>
-                    <th>Default Priority</th>
-                    <th>SLA Target</th>
-                    <th>Escalation Team</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><code style="color: #f3c77c;">TECH_BUG</code></td>
-                    <td style="font-weight: 600; color: #fff;">💻 Technical Bug / Error</td>
-                    <td><span class="badge-status"
-                        style="background: rgba(239,68,68,0.15); color: #f87171; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">HIGH</span>
-                    </td>
-                    <td>2 Hours</td>
-                    <td>🏢 Tier 2 Engineering</td>
-                    <td><span class="badge-status"
-                        style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span>
-                    </td>
-                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Editing Taxonomy')">✏️ Edit
-                        SLA</button></td>
-                  </tr>
-                  <tr>
-                    <td><code style="color: #f3c77c;">BILLING_SUBS</code></td>
-                    <td style="font-weight: 600; color: #fff;">💳 Billing &amp; Subscriptions</td>
-                    <td><span class="badge-status"
-                        style="background: rgba(245,158,11,0.15); color: #fbbf24; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">MEDIUM</span>
-                    </td>
-                    <td>6 Hours</td>
-                    <td>🏢 Finance &amp; Accounts</td>
-                    <td><span class="badge-status"
-                        style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span>
-                    </td>
-                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Editing Taxonomy')">✏️ Edit
-                        SLA</button></td>
-                  </tr>
-                  <tr>
-                    <td><code style="color: #f3c77c;">AUTH_ACCOUNT</code></td>
-                    <td style="font-weight: 600; color: #fff;">🔑 Account &amp; Login Security</td>
-                    <td><span class="badge-status"
-                        style="background: rgba(239,68,68,0.15); color: #f87171; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">URGENT</span>
-                    </td>
-                    <td>1 Hour</td>
-                    <td>🏢 Security Ops (SIRT)</td>
-                    <td><span class="badge-status"
-                        style="background: rgba(52,211,153,0.15); color: #34d399; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">ACTIVE</span>
-                    </td>
-                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Editing Taxonomy')">✏️ Edit
-                        SLA</button></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Roles & Permissions Panel -->
-        <div class="admin-panel" id="panel-roles">
-          <div
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
-            <div>
-              <h1 class="admin-page-title" style="margin-bottom: 4px;">🔐 Roles Security (RBAC)</h1>
-              <p class="admin-page-subtitle">Configure fine-grained system roles, permission scopes, administrative
-                capabilities, and MFA mandates.</p>
-            </div>
-            <button class="btn btn--primary" onclick="alert('Creating new RBAC Role!')"
-              style="padding: 10px 20px; font-weight: 700;">
-              ➕ Add RBAC Security Role
-            </button>
-          </div>
-
-          <div
-            style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; overflow: hidden; margin-bottom: 24px;">
-            <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-card);">
-              <h3 style="margin: 0; font-size: 1rem; color: #fff;">🔐 Role Access Privileges &amp; Policy Matrix</h3>
-            </div>
-            <div style="overflow-x: auto;">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Role Key</th>
-                    <th>Role Label</th>
-                    <th>Guard Level</th>
-                    <th>MFA Requirement</th>
-                    <th>Permissions Granted</th>
-                    <th>Assigned Users</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><code style="color: #f87171;">super_admin</code></td>
-                    <td style="font-weight: 700; color: #fff;">🛡️ Super Administrator</td>
-                    <td><span class="badge-status"
-                        style="background: rgba(239,68,68,0.2); color: #f87171; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">LEVEL
-                        0 (FULL)</span></td>
-                    <td><span style="color: #34d399; font-weight: 700;">Mandatory TOTP</span></td>
-                    <td><span style="font-size: 0.8rem; color: #94a3b8;">* (All APIs, Data Exports, DB Mutations)</span>
-                    </td>
-                    <td><strong>3 Admins</strong></td>
-                    <td><button class="btn btn--secondary btn--sm"
-                        onclick="alert('Modifying Super Admin Permissions')">⚙️ Configure</button></td>
-                  </tr>
-                  <tr>
-                    <td><code style="color: #fbbf24;">editor_lead</code></td>
-                    <td style="font-weight: 700; color: #fff;">📚 Lead Editorial Officer</td>
-                    <td><span class="badge-status"
-                        style="background: rgba(245,158,11,0.2); color: #fbbf24; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">LEVEL
-                        1</span></td>
-                    <td>Enforced</td>
-                    <td><span style="font-size: 0.8rem; color: #94a3b8;">Publish, Edit Stories, Review
-                        Submissions</span></td>
-                    <td><strong>5 Staff</strong></td>
-                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Modifying Permissions')">⚙️
-                        Configure</button></td>
-                  </tr>
-                  <tr>
-                    <td><code style="color: #818cf8;">support_agent</code></td>
-                    <td style="font-weight: 700; color: #fff;">🎧 Helpdesk Support Specialist</td>
-                    <td><span class="badge-status"
-                        style="background: rgba(99,102,241,0.2); color: #818cf8; padding: 2px 8px; border-radius: 99px; font-weight: 700; font-size: 0.75rem;">LEVEL
-                        2</span></td>
-                    <td>Enforced</td>
-                    <td><span style="font-size: 0.8rem; color: #94a3b8;">Read/Write Tickets, User Notes, Status
-                        Updates</span></td>
-                    <td><strong>12 Staff</strong></td>
-                    <td><button class="btn btn--secondary btn--sm" onclick="alert('Modifying Permissions')">⚙️
-                        Configure</button></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Teams Panel -->
-        <div class="admin-panel" id="panel-teams">
-          <div
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
-            <div>
-              <h1 class="admin-page-title" style="margin-bottom: 4px;">🏢 Department Directory
-              </h1>
-              <p class="admin-page-subtitle">Organize support squads, editorial teams, security teams, and manage squad
-                leads.</p>
-            </div>
-            <button class="btn btn--primary" onclick="alert('Creating new team!')"
-              style="padding: 10px 20px; font-weight: 700;">
-              ➕ Create New Department / Team
-            </button>
-          </div>
-
-          <div
-            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-bottom: 24px;">
-            <div
-              style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; padding: 20px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <span style="font-size: 1.5rem;">🏢</span>
-                <span class="filter-chip" style="font-size: 0.75rem;">6 Members</span>
-              </div>
-              <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 4px;">Global Support Tier 1</h3>
-              <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 14px;">Handles front-line customer inquiries
-                and ticket triage.</p>
-              <div style="font-size: 0.78rem; color: #f3c77c; font-weight: 600;">Team Lead: Sarah Jenkins</div>
-            </div>
-            <div
-              style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; padding: 20px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <span style="font-size: 1.5rem;">📚</span>
-                <span class="filter-chip" style="font-size: 0.75rem;">4 Members</span>
-              </div>
-              <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 4px;">Editorial Guild</h3>
-              <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 14px;">Reviews story submissions and manages
-                publisher content.</p>
-              <div style="font-size: 0.78rem; color: #f3c77c; font-weight: 600;">Team Lead: Marcus Vance</div>
-            </div>
-            <div
-              style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; padding: 20px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <span style="font-size: 1.5rem;">🛡️</span>
-                <span class="filter-chip" style="font-size: 0.75rem;">3 Members</span>
-              </div>
-              <h3 style="color: #fff; font-size: 1.1rem; margin-bottom: 4px;">Security Ops (SIRT)</h3>
-              <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 14px;">Monitors login security, MFA
-                compliance, and user bans.</p>
-              <div style="font-size: 0.78rem; color: #f3c77c; font-weight: 600;">Team Lead: Elena Rostova</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Employees Panel -->
-        <div class="admin-panel" id="panel-employees">
-          <div
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
-            <div>
-              <h1 class="admin-page-title" style="margin-bottom: 4px;">👤 Employees Accounts Manegments </h1>
-              <p class="admin-page-subtitle">Full roster of company employees, staff accounts, email credentials, and
-                onboarding status.</p>
-            </div>
-            <button type="button" class="btn btn--primary"
-              onclick="openCreateEmployeeModal()"
-              style="padding: 10px 20px; font-weight: 700;">
-              ➕ Create Employee Account
-            </button>
-          </div>
-
-          <div
-            style="background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 14px; overflow: hidden;">
-            <div
-              style="padding: 16px 20px; border-bottom: 1px solid var(--border-card); display: flex; justify-content: space-between; align-items: center;">
-              <h3 style="margin: 0; font-size: 1rem; color: #fff;">👤 Company Employee Roster</h3>
-              <button type="button" class="btn btn--secondary btn--sm"
-                onclick="openCreateEmployeeModal()">➕ Create Employee
-                Account</button>
-            </div>
-            <div style="overflow-x: auto;">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Employee ID</th>
-                    <th>Name</th>
-                    <th>Work Email</th>
-                    <th>Organization Account</th>
-                    <th>Department / Team</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
                 <tbody id="employeesBody">
                   <!-- Rendered dynamically -->
                 </tbody>
@@ -3518,7 +3130,7 @@
             <div style="margin-bottom: 10px;">
               <label
                 style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Status</label>
-              <select id="modalUpdateStatus" class="form-input" style="font-size: 0.85rem; height: 36px;">
+              <select id="modalUpdateStatus" class="form-input" style="font-size: 0.85rem; height: 42px; padding: 6px 12px;">
                 <option value="open">Open</option>
                 <option value="investigating">Investigating</option>
                 <option value="waiting_on_user">Waiting on User</option>
@@ -3531,7 +3143,7 @@
               <label
                 style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Priority
                 Level</label>
-              <select id="modalUpdatePriority" class="form-input" style="font-size: 0.85rem; height: 36px;">
+              <select id="modalUpdatePriority" class="form-input" style="font-size: 0.85rem; height: 42px; padding: 6px 12px;">
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
@@ -3542,12 +3154,8 @@
             <div style="margin-bottom: 10px;">
               <label
                 style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Category</label>
-              <select id="modalUpdateCategory" class="form-input" style="font-size: 0.85rem; height: 36px;">
-                <option value="1">Technical Issue</option>
-                <option value="2">Account &amp; Security</option>
-                <option value="3">Billing &amp; Subscriptions</option>
-                <option value="4">Feature Request</option>
-                <option value="5">General Inquiry</option>
+              <select id="modalUpdateCategory" class="form-input" style="font-size: 0.85rem; height: 42px; padding: 6px 12px;">
+                <option value="">-- Select Category --</option>
               </select>
             </div>
 
@@ -3555,13 +3163,13 @@
               <label
                 style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Assigned
                 Support Agent</label>
-              <select id="modalUpdateAgent" class="form-input" style="font-size: 0.85rem; height: 36px;">
+              <select id="modalUpdateAgent" class="form-input" style="font-size: 0.85rem; height: 42px; padding: 6px 12px;">
                 <option value="">-- Unassigned --</option>
               </select>
             </div>
 
             <button class="btn btn--primary btn--sm" onclick="window.saveAdminTicketProperties()"
-              style="width: 100%; height: 34px;">💾 Update Ticket Properties</button>
+              style="width: 100%; height: 38px;">💾 Update Ticket Properties</button>
           </div>
 
           <!-- Audit Trail Timeline -->

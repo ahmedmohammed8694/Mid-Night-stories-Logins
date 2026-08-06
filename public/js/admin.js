@@ -5,6 +5,13 @@
   let preToken = null;
   let allBooksList = [];
 
+  // Helper to set text content safely
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = (val !== undefined && val !== null) ? val : '';
+  };
+
+
   // ── Check Auth State ──
   function checkAuth() {
     adminToken = sessionStorage.getItem('adminToken') || localStorage.getItem('adminToken');
@@ -1090,6 +1097,20 @@
     } catch (e) {}
   }
 
+  async function loadTicketCategoriesForModal() {
+    try {
+      const cats = await api('/api/admin/tax/categories');
+      const select = document.getElementById('modalUpdateCategory');
+      if (select && cats && Array.isArray(cats)) {
+        select.innerHTML = '<option value="">-- Select Category --</option>' +
+          cats.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+      }
+    } catch (e) {
+      console.warn('Failed to load categories for modal:', e);
+    }
+  }
+
+
   window.loadReports = async function (status) {
     if (status !== undefined) currentTicketStatus = status;
     try {
@@ -1167,15 +1188,19 @@
     document.getElementById('modalTargetUserId').textContent = window.currentTicketTargetUser || 'No linked account';
     document.getElementById('modalTargetPreview').textContent = report.subject || report.reason || 'No subject preview.';
     
-    if (document.getElementById('modalUpdateStatus')) document.getElementById('modalUpdateStatus').value = report.ticket_status || 'open';
-    if (document.getElementById('modalUpdatePriority')) document.getElementById('modalUpdatePriority').value = report.priority || 'medium';
-    if (document.getElementById('modalUpdateCategory')) document.getElementById('modalUpdateCategory').value = report.category_id || 1;
-    if (document.getElementById('modalUpdateAgent')) document.getElementById('modalUpdateAgent').value = report.assigned_agent_id || '';
-    
     document.getElementById('adminReplyText').value = '';
     
-    await loadCannedResponses();
-    await loadSupportAgents();
+    // Load dropdown options first
+    await Promise.all([
+      loadCannedResponses(),
+      loadSupportAgents(),
+      loadTicketCategoriesForModal()
+    ]);
+
+    if (document.getElementById('modalUpdateStatus')) document.getElementById('modalUpdateStatus').value = report.ticket_status || 'open';
+    if (document.getElementById('modalUpdatePriority')) document.getElementById('modalUpdatePriority').value = report.priority || 'medium';
+    if (document.getElementById('modalUpdateCategory')) document.getElementById('modalUpdateCategory').value = report.category_id || '';
+    if (document.getElementById('modalUpdateAgent')) document.getElementById('modalUpdateAgent').value = report.assigned_agent_id || '';
 
     document.getElementById('ticketChatMessages').innerHTML = '<div class="empty-state">Loading chat & audit timeline...</div>';
     document.getElementById('reportDetailsModal').classList.add('active');
@@ -1186,13 +1211,26 @@
     ]);
   };
 
+
   async function loadTicketMessages(report) {
     try {
       const data = await api(`/api/tickets/${report.id}/messages`);
       const ticket = data.ticket || report;
+
+      // Update UI elements in case they were modified
+      if (document.getElementById('modalTicketStatus')) {
+        document.getElementById('modalTicketStatus').textContent = (ticket.ticket_status || 'open').replace(/_/g, ' ');
+        document.getElementById('modalTicketStatus').className = `filter-chip status-${(ticket.ticket_status || 'open').replace('_', '-')}`;
+      }
+      if (document.getElementById('modalUpdateStatus')) document.getElementById('modalUpdateStatus').value = ticket.ticket_status || 'open';
+      if (document.getElementById('modalUpdatePriority')) document.getElementById('modalUpdatePriority').value = ticket.priority || 'medium';
+      if (document.getElementById('modalUpdateCategory')) document.getElementById('modalUpdateCategory').value = ticket.category_id || '';
+      if (document.getElementById('modalUpdateAgent')) document.getElementById('modalUpdateAgent').value = ticket.assigned_agent_id || '';
+
       const container = document.getElementById('ticketChatMessages');
       const timeline = document.getElementById('ticketAuditLogTimeline');
       container.innerHTML = '';
+
       
       const descHtml = ticket.report_description ? escapeHtml(ticket.report_description) : (ticket.reason ? escapeHtml(ticket.reason) : '<i>[No description provided]</i>');
       const attachHtml = ticket.attachment_url ? `<div style="margin-top: 0.75rem;"><a href="${ticket.attachment_url}" target="_blank" style="color: var(--primary); text-decoration: underline;">View File Attachment 📁</a></div>` : '';
