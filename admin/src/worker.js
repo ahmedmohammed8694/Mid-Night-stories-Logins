@@ -134,7 +134,11 @@ function rateLimit(type, maxPerHour) {
 }
 
 // ── JWT Secret ──
-const getAdminJwtSecret = (c) => c.env.ADMIN_JWT_SECRET || 'midnight_stories_admin_secret_2026';
+const getAdminJwtSecret = (c) => {
+  const secret = c.env.ADMIN_JWT_SECRET;
+  if (!secret) throw new Error('ADMIN_JWT_SECRET environment variable is missing.');
+  return secret;
+};
 
 // ── Admin Auth Middleware ──
 const requireAdmin = async (c, next) => {

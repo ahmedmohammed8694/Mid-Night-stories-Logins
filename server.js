@@ -1640,7 +1640,8 @@ app.use((err, req, res, next) => {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ error: 'File size must be under 5MB.' });
     }
-    return res.status(400).json({ error: err.message });
+    console.error('[Multer Error]', err.message);
+    return res.status(400).json({ error: 'File upload error. Please check your file and try again.' });
   }
   console.error('Server error:', err);
   res.status(500).json({ error: 'An internal server error occurred.' });

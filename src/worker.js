@@ -1341,7 +1341,8 @@ async function sendOtpEmail(env, toEmail, otp) {
 
       const tokenData = await tokenRes.json();
       if (tokenData.access_token) {
-        const senderEmail = env.GMAIL_USER || 'ahmed.mohammed8694@gmail.com';
+        const senderEmail = env.GMAIL_USER;
+        if (!senderEmail) { console.error('[EMAIL] GMAIL_USER env var is missing.'); throw new Error('GMAIL_USER environment variable is missing.'); }
         const str = `To: ${toEmail}\r\n` +
                     `From: Midnight Stories <${senderEmail}>\r\n` +
                     `Subject: ${subject}\r\n` +
@@ -1371,7 +1372,7 @@ async function sendOtpEmail(env, toEmail, otp) {
   }
 
   // 2. Resend API (Primary Real Email Provider)
-  const resendApiKey = env.RESEND_API_KEY || ['re_', 'j83iHA3Z_', '8hhqShgCJ63WeexeP7eM35SH'].join('');
+  const resendApiKey = env.RESEND_API_KEY;
   if (resendApiKey) {
     try {
       const res = await fetch('https://api.resend.com/emails', {
@@ -1381,14 +1382,14 @@ async function sendOtpEmail(env, toEmail, otp) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: env.FROM_EMAIL || 'Midnight Stories <onboarding@resend.dev>',
+          from: env.FROM_EMAIL || 'Midnight Stories <noreply@midnightstories.dpdns.org>',
           to: [toEmail],
           subject: subject,
           html: htmlContent
         })
       });
       const data = await res.json();
-      console.log('[RESEND OTP EMAIL RESPONSE]:', data);
+      console.log('[RESEND OTP EMAIL] Status:', res.status);
       if (res.ok) return true;
     } catch (err) {
       console.error('[RESEND OTP EMAIL ERROR]:', err);
@@ -1405,14 +1406,14 @@ async function sendOtpEmail(env, toEmail, otp) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          sender: { name: 'Midnight Stories', email: env.FROM_EMAIL || 'ahmed.mohammed8694@gmail.com' },
+          sender: { name: 'Midnight Stories', email: env.FROM_EMAIL || 'noreply@midnightstories.dpdns.org' },
           to: [{ email: toEmail }],
           subject: subject,
           htmlContent: htmlContent
         })
       });
       const data = await res.json();
-      console.log('[BREVO OTP EMAIL RESPONSE]:', data);
+      console.log('[BREVO OTP EMAIL] Status:', res.status);
       if (res.ok) return true;
     } catch (err) {
       console.error('[BREVO OTP EMAIL ERROR]:', err);
@@ -1421,7 +1422,7 @@ async function sendOtpEmail(env, toEmail, otp) {
 
   // 4. Cloudflare Native Email Gateway (Mailchannels) - Works directly without 3rd party!
   try {
-    const senderEmail = env.FROM_EMAIL || 'noreply@midnightstories.dpdns.org';
+    const senderEmail = env.FROM_EMAIL || 'noreply@midnightstories.dpdns.org'; // domain-default; set FROM_EMAIL in env for production
     const mcRes = await fetch('https://api.mailchannels.net/tx/v1/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1594,8 +1595,20 @@ app.post('/api/auth/reset-password', async (c) => {
 app.get('/api/auth/me', requireUser, async (c) => {
   const db = c.env.DB;
   const userPayload = c.get('user');
-  const user = await db.prepare('SELECT id, user_id, full_name, email, profile_pic, dob, phone_number, bio, privacy_settings FROM users WHERE id = ?').bind(userPayload.id).first();
-  return c.json(user);
+  const rawUser = await db.prepare('SELECT id, user_id, full_name, email, profile_pic, dob, phone_number, bio, privacy_settings FROM users WHERE id = ?').bind(userPayload.id).first();
+  if (!rawUser) return c.json({ error: 'User not found.' }, 404);
+  // DTO: explicit field allowlist — never return raw DB row
+  return c.json({
+    id: rawUser.id,
+    user_id: rawUser.user_id,
+    full_name: rawUser.full_name,
+    email: rawUser.email,
+    profile_pic: rawUser.profile_pic,
+    dob: rawUser.dob,
+    phone_number: rawUser.phone_number,
+    bio: rawUser.bio,
+    privacy_settings: rawUser.privacy_settings
+  });
 });
 
 // Google OAuth Integration
@@ -3246,8 +3259,10 @@ app.delete('/api/admin/stories/:id', requireAdmin, async (c) => {
 
 app.get('/api/admin/users', requireAdmin, async (c) => {
   const db = c.env.DB;
-  const page = parseInt(c.req.query('page') || '1');
-  const limit = parseInt(c.req.query('limit') || '100');
+  const page = Math.max(1, parseInt(c.req.query('page') || '1'));
+  let limit = parseInt(c.req.query('limit') || '100');
+  if (isNaN(limit) || limit <= 0) limit = 100;
+  limit = Math.min(limit, 500); // Hard cap: admin panel justifies higher than user endpoints
   const search = c.req.query('search') || '';
   const statusFilter = c.req.query('status') || '';
   const offset = (page - 1) * limit;
@@ -5111,19 +5126,36 @@ app.post('/api/user/books/upload', requireUser, async (c) => {
     return c.json({ error: 'Book file is required.' }, 400);
   }
 
-  const bookExt = bookFile.name.endsWith('.pdf') ? 'pdf' : 'epub';
+  // ── Magic-byte verification for book file (PDF: 25504446, EPUB: 504B0304) ──
+  const bookBuffer = await bookFile.arrayBuffer();
+  const bookHeader = new Uint8Array(bookBuffer.slice(0, 4));
+  const bookHex = Array.from(bookHeader).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
+  const allowedBookSigs = ['25504446', '504B0304']; // PDF, EPUB/ZIP
+  if (!allowedBookSigs.some(sig => bookHex.startsWith(sig))) {
+    return c.json({ error: 'Invalid book file. Only PDF and EPUB files are accepted.' }, 400);
+  }
+  const bookExt = bookHex.startsWith('25504446') ? 'pdf' : 'epub';
   const bookFilename = `${crypto.randomUUID()}.${bookExt}`;
-  await c.env.IMAGES.put(bookFilename, await bookFile.arrayBuffer(), {
-    httpMetadata: { contentType: bookFile.type }
+  await c.env.IMAGES.put(bookFilename, bookBuffer, {
+    httpMetadata: { contentType: bookExt === 'pdf' ? 'application/pdf' : 'application/epub+zip' }
   });
   const fileUrl = `/uploads/${bookFilename}`;
 
   let coverImageUrl = '/images/default-cover.svg';
   if (coverFile && coverFile instanceof File && coverFile.size > 0) {
-    const coverExt = coverFile.type.split('/')[1] || 'jpg';
+    // Magic-byte verification for cover image
+    const coverBuffer = await coverFile.arrayBuffer();
+    const coverHeader = new Uint8Array(coverBuffer.slice(0, 4));
+    const coverHex = Array.from(coverHeader).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join('');
+    const allowedImgSigs = { 'FFD8FF': 'jpeg', '89504E47': 'png', '52494646': 'webp' };
+    const matchedImgType = Object.entries(allowedImgSigs).find(([sig]) => coverHex.startsWith(sig));
+    if (!matchedImgType) {
+      return c.json({ error: 'Invalid cover image. Only JPEG, PNG, and WebP are accepted.' }, 400);
+    }
+    const coverExt = matchedImgType[1];
     const coverFilename = `${crypto.randomUUID()}.${coverExt}`;
-    await c.env.IMAGES.put(coverFilename, await coverFile.arrayBuffer(), {
-      httpMetadata: { contentType: coverFile.type }
+    await c.env.IMAGES.put(coverFilename, coverBuffer, {
+      httpMetadata: { contentType: coverFile.type || `image/${coverExt}` }
     });
     coverImageUrl = `/uploads/${coverFilename}`;
   }
@@ -5513,7 +5545,8 @@ const createTicketHandler = async (c) => {
       const att = await saveTicketAttachment(c, newTicketDbId, messageId, file);
       if (att) attachmentResults.push(att);
     } catch (attErr) {
-      return c.json({ error: attErr.message }, 400);
+      console.error('[Ticket Attachment Error - create]', attErr);
+      return c.json({ error: 'Failed to save attachment. Please check your file and try again.' }, 400);
     }
   }
 
@@ -5754,12 +5787,13 @@ const postTicketReplyHandler = async (c) => {
       const att = await saveTicketAttachment(c, ticketDbId, messageId, file);
       if (att) attachmentResults.push(att);
     } catch (attErr) {
-      return c.json({ error: attErr.message }, 400);
+      console.error('[Ticket Attachment Error - reply]', attErr);
+      return c.json({ error: 'Failed to save attachment. Please check your file and try again.' }, 400);
     }
   }
 
   // Update activity timestamps, previews, and unread counts
-  if (senderRole === 'admin') {
+  if (hasPermission(senderRole, 'moderate_content')) {
     const newStatus = isInternal ? ticket.ticket_status : 'waiting_on_user';
     await db.prepare(`
       UPDATE reports
