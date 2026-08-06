@@ -1621,7 +1621,11 @@ app.post('/api/admin/submissions/:id/reject', requireAdmin, (req, res) => {
 // ── Fallback: serve index.html for SPA-like navigation ──
 app.get('*', (req, res) => {
   // Only serve HTML pages for known routes
-  const knownPages = ['submit', 'story', 'resources', 'about', 'terms', 'privacy', 'guidelines', 'admin', 'library', 'reader', 'upload-book'];
+  const knownPages = [
+    'submit', 'story', 'resources', 'about', 'terms', 'privacy', 'guidelines', 
+    'admin', 'library', 'reader', 'upload-book', 'cookie-policy', 'disclaimer', 
+    'accessibility', 'copyright', 'refund-policy'
+  ];
   const requestedPage = req.path.split('/').filter(Boolean)[0];
 
   if (knownPages.includes(requestedPage)) {
