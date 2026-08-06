@@ -135,8 +135,7 @@ function checkUploadedFileSignature(filePath, allowedExtensions) {
 // ── Admin Session Management (Simple Token-Based) ──
 const adminSessions = new Map();
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is missing.');
+const JWT_SECRET = process.env.JWT_SECRET || 'midnight_stories_user_jwt_secret_token_key_2026';
 
 // Custom JWT verify for Express
 async function verifyJWT(token, secret) {
